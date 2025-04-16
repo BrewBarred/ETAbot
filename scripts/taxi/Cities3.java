@@ -11,7 +11,7 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-@ScriptManifest(author = "E.T.A.", name = "City Walker Shree!", version = 1.2, info = "Walks to popular locations around Gielinor.", logo = "")
+@ScriptManifest(author = "E.T.A.", name = "City Walker Shree!", version = 1.2, logo = "", info = "Walks to popular locations around Gielinor.")
 public class Cities3 extends Script {
 
     private boolean isMemberWorld = false;

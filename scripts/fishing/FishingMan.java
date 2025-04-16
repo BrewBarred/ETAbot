@@ -40,10 +40,6 @@ public abstract class FishingMan extends BotMan {
         super();
     }
 
-    public abstract void onStart();
-    public abstract int onLoop() throws InterruptedException;
-    public abstract void onPaint(Graphics2D g);
-
     /**
      * Check if the player is currently within the preset "Karamja Fishing Dock" zone.
      *
@@ -78,6 +74,7 @@ public abstract class FishingMan extends BotMan {
             setStatus("Unable to find lobster pot, fetching a new one...");
             // TODO: Write logic to search bank for pot or coins
             onExit();
+            return;
         }
 
         // fetch nearest cage/harpoon fishing spot
@@ -87,6 +84,7 @@ public abstract class FishingMan extends BotMan {
         if (fishingSpot == null) {
             setStatus("Unable to find a valid fishing spot.");
             onExit();
+            return;
         }
 
         // start fishing
@@ -112,13 +110,13 @@ public abstract class FishingMan extends BotMan {
             return;
         }
 
-        // ensure lobster pot is still in player inventory
+        // ensure harpoon is still in player inventory
         if (!getInventory().contains("Harpoon")) {
             setStatus("Attempting to find lost harpoon...");
             // TODO: Write logic to find nearby items or search general stores etc for them
             setStatus("Unable to find harpoon, fetching a new one...");
             // TODO: Write logic to search bank for pot or coins
-            onExit();
+            super.onExit();
         }
 
         // fetch nearest cage/harpoon fishing spot
@@ -461,9 +459,10 @@ public abstract class FishingMan extends BotMan {
     public void onExit() throws InterruptedException {
         //TODO: Check to ensure that calling super.onExit() doesn't prevent the chaining of scripts by stopping the
         //      parent script every time a child script is stopped.
-        super.onExit();
+
         // custom exit logic here if needed
-        log("Finishing manager has been closed!");
+        log("Fishing manager has been closed!");
+        super.onExit();
     }
 
 }

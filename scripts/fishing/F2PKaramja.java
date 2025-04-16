@@ -35,42 +35,41 @@ public class F2PKaramja extends FishingMan {
     /**
      * An optional fishing menu user interface reference (incase any is implemented in the child script)
      */
-    private FishingMenu menu;
+    //private FishingMenu menu;
     private ScriptExecutor script;
 
     private boolean isCooking = true;
 
     public F2PKaramja() {
-        super();
+        log("Constructing F2PKaramja script...");
     }
 
     @Override
-    public void onStart() {
-        // welcome message
-        setStatus("Starting " + this.getName() + " script...");
-        // welcome message
+    protected void onSetup() {
+        log("Starting F2PKaramja script...");
+        //setStatus("Starting " + this.getName() + " script...");
         setStatus("Loading bot menu...");
         // invoke script menu
-        SwingUtilities.invokeLater(() -> this.menu = new FishingMenuF2P(this));
+        //SwingUtilities.invokeLater(() -> this.menu = new FishingMenuF2P(this));
         // set method provider in order to utilize utils package
         Utils.setMethodProvider(getBot().getMethods());
-        // initialize script executor to pause/play script (client-side) via code or GUI
+        // initialize script executor to play script (client-side) via code or GUI
         this.script = getBot().getScriptExecutor();
         // initialize inventory listener to track collected items
         //inventoryListener = new InventoryListener(); // buggy? :O
         // set tracker for informative onscreen overlay
-        this.tracker = new Tracker(
-                this.getName(),
-                Arrays.asList(Skill.FISHING, Skill.COOKING),
-                Arrays.asList("Swordfish", "Tuna")
-        );
+//        this.tracker = new Tracker(
+//                this.getName(),
+//                Arrays.asList(Skill.FISHING, Skill.COOKING),
+//                Arrays.asList("Swordfish", "Tuna")
+//        );
     }
 
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
 
     @Override
     public int onLoop() throws InterruptedException {
-        if (isRunning) {
+        if (this.isRunning) {
             setStatus("Settings mode has been " + (isRunning ? "enabled" : "disabled") + "! Pausing script...");
             return 0;
         } else {
@@ -81,14 +80,19 @@ public class F2PKaramja extends FishingMan {
         // track inventory changes
         //inventoryListener.checkInventoryChanges(this);
 
+        log("Checking for required fishing equipment...");
         // if the player has no fishing gear
         if (!hasReqFishingGear()) {
             //TODO: Implement logic to determine and fetch required fishing gear based on GUI settings
-            log("Checking fishing equipment...");
+            log("Unable to find the required fishing equipment... Exiting script...");
+            this.onExit();
         }
 
+        log("Checking for required charter fare...");
         if (!hasReqCharterFare()) {
             //TODO: Implement logic to fetch/collect enough coins for the required charter (e.g., bananas or bank)
+            log("Insufficient GP found! Please upgrade to PRO for the GP fetching feature!");
+            this.onExit();
         }
 
         // if the player currently has a full inventory
@@ -191,7 +195,7 @@ public class F2PKaramja extends FishingMan {
         // drawProgressCircle(g, 20, 250, 35, progress / 100); // turn this into a completion bar?
 
         // update item tracker
-        tracker.draw(g);
+        //tracker.draw(g);
     }
 
     // Helper method to draw a circular progress bar
@@ -218,9 +222,9 @@ public class F2PKaramja extends FishingMan {
     public void onExit() throws InterruptedException {
         //TODO: Check to ensure that calling super.onExit() doesn't prevent the chaining of scripts by stopping the
         //      parent script every time a child script is stopped.
+
+        log("F2P Karamja fishing script has been closed!");
         super.onExit();
-        // custom exit logic here if needed
-        log("Finishing manager has been closed!");
     }
 
 }
