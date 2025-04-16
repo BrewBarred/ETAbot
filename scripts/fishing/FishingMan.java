@@ -3,14 +3,15 @@ package fishing;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.script.MethodProvider;
-import utils.BotMan;
 
-import utils.Rand;
+import utils.BotMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.utility.ConditionalSleep;
+import utils.BotMenu;
+import utils.Rand;
 
 import java.awt.*;
 import java.util.*;
@@ -449,20 +450,6 @@ public abstract class FishingMan extends BotMan {
             //TODO: Consider adding logic to ensure wearable items are equipped
         }
         return true;
-    }
-
-    /**
-     * Overrides the default BotManager.onExit() function to add custom logic before exiting this script.
-     * @throws InterruptedException
-     */
-    @Override
-    public void onExit() throws InterruptedException {
-        //TODO: Check to ensure that calling super.onExit() doesn't prevent the chaining of scripts by stopping the
-        //      parent script every time a child script is stopped.
-
-        // custom exit logic here if needed
-        log("Fishing manager has been closed!");
-        super.onExit();
     }
 
 }

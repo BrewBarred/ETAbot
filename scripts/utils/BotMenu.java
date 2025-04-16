@@ -3,6 +3,8 @@ package utils;
 import javax.swing.*;
 import java.awt.*;
 
+import static com.sun.deploy.uitoolkit.ToolkitStore.dispose;
+
 public abstract class BotMenu {
     protected final JFrame window = new JFrame();
 
@@ -18,13 +20,11 @@ public abstract class BotMenu {
 
     protected JComboBox<String> cbBotMenu = new JComboBox<>();
 
-    protected BotMan bot;
+    public BotMan bot;
 
-    public BotMenu(BotMan bot) {
-        // initialize bot
-        this.bot = bot;
+    public BotMenu(BotMan botMan) {
+        bot = botMan;
         bot.log("Attempting to launch BotMenu...");
-
         // fetch menu layout from child class
         JPanel[] layout = this.getLayout();
         // setup cards
@@ -81,22 +81,31 @@ public abstract class BotMenu {
         window.add(masterTabs, BorderLayout.CENTER);
 
         window.pack();
+        this.show();
+    }
+
+    public void show() {
         window.setVisible(true);
     }
 
+    public void hide() {
+        window.setVisible(false);
+    }
 
     /**
      * Opens the bot menu, displaying it to the user enabling user-bot interaction
      */
     public void open() {
-
+        bot.log("Opening bot menu...");
     }
 
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
     public void close() {
-
+        System.out.println("Closing!");
+        //bot.log("Closing bot menu...");
+        //window.dispose();
     }
 
     //TODO: Check to ensure these 3 functions (onPlay, onPause, onStop) are linked to the script state, may need to

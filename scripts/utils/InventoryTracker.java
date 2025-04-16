@@ -1,4 +1,5 @@
 package utils;
+
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.script.Script;
 

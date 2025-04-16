@@ -1,6 +1,7 @@
 package fishing;
 
 import org.osbot.rs07.api.map.Area;
+import utils.BotMenu;
 import utils.Tracker;
 import utils.Rand;
 import org.osbot.rs07.api.ui.Skill;
@@ -42,6 +43,11 @@ public class F2PKaramja extends FishingMan {
 
     public F2PKaramja() {
         log("Constructing F2PKaramja script...");
+    }
+
+    @Override
+    protected BotMenu getBotMenu() {
+        return new FishingMenu(this);
     }
 
     @Override
@@ -212,19 +218,6 @@ public class F2PKaramja extends FishingMan {
         // Outline
         g.setColor(Color.WHITE);
         g.drawOval(x - radius, y - radius, radius * 2, radius * 2);
-    }
-
-    /**
-     * Overrides the default BotManager.onExit() function to add custom logic before exiting this script.
-     * @throws InterruptedException
-     */
-    @Override
-    public void onExit() throws InterruptedException {
-        //TODO: Check to ensure that calling super.onExit() doesn't prevent the chaining of scripts by stopping the
-        //      parent script every time a child script is stopped.
-
-        log("F2P Karamja fishing script has been closed!");
-        super.onExit();
     }
 
 }

@@ -85,20 +85,6 @@
 //
 //    }
 //
-//    /**
-//     * Function used to execute some code before the script stops, useful for disposing, debriefing or chaining.
-//     */
-//    public void onExit() throws InterruptedException {
-////        //TODO: Check necessity? Might never be null?
-////        if (botMenu != null) {
-////            setStatus("Closing bot menu...");
-////            botMenu.close();
-////        }
-//        log("Bot manager has been closed!");
-//        stop(false);
-//        super.onExit(); //TODO check necessity, looks like this function actually does nothing and need not be called
-//    }
-//
 //
 //    /**
 //     * Check if the players inventory is full. This function will update the script status about a full inventory.
@@ -201,7 +187,6 @@
 
 package utils;
 
-import fishing.FishingMenuF2P;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
@@ -215,35 +200,73 @@ import java.time.Instant;
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
  */
 public abstract class BotMan extends Script {
-    // afk timer
-    protected Instant endAFK = null;
-    protected boolean isAFK = false;
-
     // bot menu
-    protected BotMenu menu;
+    public BotMenu botMenu;
 
     // menu interface items
     public boolean isRunning;
     public String status;
 
+    // afk timer
+    protected boolean isAFK = false;
+    protected Instant endAFK = null;
+
     private ScriptExecutor script;
 
     /**
-     * Optional bot setup logic for child classes to override, called after the base onStart() function
-     * TODO: Check necessity of this class as it may just be replaced by overriding the onStart() method instead.
+     * EXAMPLE DOCUMENTATION STYLE FOR LATER
+     *
+     * Insert optional {@link #onStart()} logic here for overriding child classes. This function is called after
+     * {@link #onStart()}'s execution.
+     * <p>
+     * This abstraction enables users to do stuff on start without needing to call {@code super.onStart()} to ensure
+     * proper initialization, which allows easier inheritance.
+     *
+     * @see utils
+     * @see <a href="https://osbot.org">OSBot Docs</a>
      */
     protected abstract void onSetup();
+    protected abstract BotMenu getBotMenu();
 
     @Override
-    public void onStart() throws InterruptedException {
-        this.bot = getBot();
+    public void onStart() {
         this.script = bot.getScriptExecutor();
+        // get bot menu from child class and update it if necessary
+        this.setBotMenu(getBotMenu());
         this.onSetup();
     }
 
     @Override
     public void pause() {
         // insert custom onPause() logic if needed
+    }
+    
+    public void setBotMenu(BotMenu newMenu) {
+        log("Setting botMenu: " + newMenu.toString());
+        if (botMenu == newMenu)
+            return;
+
+        if (botMenu != null) {
+            botMenu.close(); // close any old UI
+        }
+
+        botMenu = newMenu;
+        botMenu.open(); // launch the new one
+    }
+
+    public void closeBotMenu() {
+        if (botMenu != null)
+            botMenu.close();
+    }
+
+    /**
+     * Function used to execute some code before the script stops, useful for disposing, debriefing or chaining.
+     */
+    public final void onExit() {
+        log("Closing bot manager...");
+        closeBotMenu();
+        log("Bot manager has been closed!");
+        stop(false);
     }
 
     public final void toggleExecutionMode() throws InterruptedException {
