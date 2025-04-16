@@ -99,9 +99,6 @@
 //        super.onExit(); //TODO check necessity, looks like this function actually does nothing and need not be called
 //    }
 //
-//    public void toggleExecutionMode() {
-//
-//    }
 //
 //    /**
 //     * Check if the players inventory is full. This function will update the script status about a full inventory.
@@ -204,7 +201,9 @@
 
 package utils;
 
+import fishing.FishingMenuF2P;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
@@ -220,9 +219,14 @@ public abstract class BotMan extends Script {
     protected Instant endAFK = null;
     protected boolean isAFK = false;
 
+    // bot menu
+    protected BotMenu menu;
+
     // menu interface items
     public boolean isRunning;
     public String status;
+
+    private ScriptExecutor script;
 
     /**
      * Optional bot setup logic for child classes to override, called after the base onStart() function
@@ -232,12 +236,28 @@ public abstract class BotMan extends Script {
 
     @Override
     public void onStart() throws InterruptedException {
-
+        this.bot = getBot();
+        this.script = bot.getScriptExecutor();
+        this.onSetup();
     }
 
     @Override
     public void pause() {
-        log("Botting script has been paused for player " + bot.getDisplayName() + "...");
+        // insert custom onPause() logic if needed
+    }
+
+    public final void toggleExecutionMode() throws InterruptedException {
+        if (isRunning)
+            script.pause();
+        else
+            script.resume();
+
+        isRunning = !isRunning;
+    }
+;
+    public final void restart() {
+        log("Restarting script...");
+        bot.getScriptExecutor().restart();
     }
 
     /**
