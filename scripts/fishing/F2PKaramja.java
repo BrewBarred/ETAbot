@@ -51,6 +51,11 @@ public class F2PKaramja extends FishingMan {
     }
 
     @Override
+    protected Object paintScriptOverlay(Graphics2D g) {
+        return null;
+    }
+
+    @Override
     protected void onSetup() {
         log("Starting F2PKaramja script...");
         //setStatus("Starting " + this.getName() + " script...");
@@ -155,53 +160,6 @@ public class F2PKaramja extends FishingMan {
         isAFK = false;
         //endAFK = null;
         return Rand.getRandShortDelayInt();
-    }
-
-    /**
-     * Draw overlay to display character and script information over the client
-     * @param g The graphics object to paint
-     */
-    @Override
-    public void onPaint(Graphics2D g) {
-        //TODO: Chuck this all into its own class and just call a paint function here
-        int width = 450;
-        int height = 150;
-        Color textColor = Color.WHITE;
-        Font textFontTitle = new Font("Arial", Font.BOLD, 12);
-        Font textFontNormal = new Font("Arial", Font.PLAIN, 12);
-
-        // set antialiasing for smoother graphics
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-        // draw translucent background (black with 50% opacity)
-        g.setColor(new Color(0, 0, 0, 128));
-        g.fillRoundRect(0,  0, width, height, 15, 15);
-
-        // set text properties to title font
-        g.setColor(textColor);
-        g.setFont(textFontTitle);
-
-        // draw title
-        g.drawString(this.getName() + " " + VERSION, 20, 50);
-
-        // set text properties to normal font
-        g.setFont(textFontNormal);
-
-        // draw player position
-        int x = myPlayer().getX();
-        int y = myPlayer().getY();
-        g.drawString("Current Position = X: " + x + ", Y: " + y, 20, 70);
-
-        // draw status + afk time
-        String remainingAFK = getRemainingAFK();
-        String broadcast = ("Status: " + (remainingAFK.isEmpty() ? status : remainingAFK));
-        g.drawString(broadcast, 20, 140);
-
-        // draw progress circle
-        // drawProgressCircle(g, 20, 250, 35, progress / 100); // turn this into a completion bar?
-
-        // update item tracker
-        //tracker.draw(g);
     }
 
     // Helper method to draw a circular progress bar

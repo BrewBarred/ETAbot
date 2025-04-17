@@ -21,18 +21,15 @@ public abstract class BotMenu {
     protected JComboBox<String> cbBotMenu = new JComboBox<>();
 
     public BotMan bot;
+    private JPanel[] layout;
 
     public BotMenu(BotMan botMan) {
+        // fetch a reference to the bot manager that this bot menu interfaces with
         bot = botMan;
         bot.log("Attempting to launch BotMenu...");
-        // fetch menu layout from child class
-        JPanel[] layout = this.getLayout();
-        // setup cards
-        if (layout != null && layout.length == 3) {
-            this.setLayout(layout);
-        } else {
-            bot.log("Error instantiating BotMenu!");
-        }
+
+        setLayout();
+
     }
 
     /**
@@ -46,6 +43,26 @@ public abstract class BotMenu {
      * @return An array of JPanel objects used to override the menu display whenever the user run a new task/script
      */
     public abstract JPanel[] getLayout();
+
+    public boolean isNotNull() {
+        return layout != null;
+    }
+    /**
+     * Fetch the menu layout from the child script
+     * @return
+     */
+
+    private void setLayout() {
+        // fetch layout from child script
+        this.layout = getLayout();
+        // setup cards
+        if (layout != null && layout.length == 3) {
+            setLayout(layout);
+        } else {
+            bot.log("Error instantiating BotMenu!");
+            layout = null;
+        }
+    }
 
     public void setLayout(JPanel[] panels) {
         if (panels == null || panels.length < 3) {
@@ -67,9 +84,9 @@ public abstract class BotMenu {
         tabPresets.removeAll();
         tabSettings.removeAll();
 
-        tabMain.add("Main", cardMain);
+        tabMain.add("Fishing", cardMain);
         tabPresets.add("Presets", cardPresets);
-        tabSettings.add("Settings", cardSettings);
+        tabSettings.add("General", cardSettings);
 
         // Add to root window or root tab system if you have one
         window.getContentPane().removeAll();
@@ -79,6 +96,11 @@ public abstract class BotMenu {
         masterTabs.addTab("Presets", tabPresets);
         masterTabs.addTab("Settings", tabSettings);
         window.add(masterTabs, BorderLayout.CENTER);
+
+        JPanel topBar = new JPanel(new FlowLayout());
+        topBar.add(btnStart);
+        topBar.add(cbBotMenu);
+        window.add(topBar, BorderLayout.NORTH);
 
         window.pack();
         this.show();

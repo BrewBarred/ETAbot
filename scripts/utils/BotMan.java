@@ -1,23 +1,5 @@
-//package utils;
-//
-//import org.osbot.rs07.api.map.Area;
-//import org.osbot.rs07.utility.ConditionalSleep;
-//import org.osbot.rs07.script.Script;
-//
-//import java.time.Duration;
-//import java.time.Instant;
-//
-///**
-// * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
-// * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
-// */
-//public abstract class BotMan extends Script {
-//    // the number of attempts at an action before the script will exit to prevent stack overflow
-//    private final int MAX_ATTEMPTS = 3;
-//    // tracks the number of attempts at a given action
-//    private int attempts;
-//    // import bot menu user interface
-//    //protected BotMenu botMenu;
+
+
 //
 //    // import helper classes
 //    protected BankMan bank;
@@ -28,14 +10,6 @@
 //    // import threaded trackers
 //
 //    protected Tracker tracker;
-//
-//    // menu interface items
-//    public boolean isRunning;
-//    public String status;
-//
-//    // afk timer
-//    protected Instant endAFK = null;
-//    protected boolean isAFK = false;
 //
 //    /**
 //     * Forces child classes to initialize superclass fields
@@ -192,6 +166,7 @@ import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
+import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
 
@@ -200,8 +175,26 @@ import java.time.Instant;
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
  */
 public abstract class BotMan extends Script {
-    // bot menu
+    /**
+     * The number of attempts allowed to complete an action before the script recognizes it as an error and exits.
+     * <p>
+     * This setup may prevent stack overflow errors in cases where an item is required to do a task,
+     * but it cannot be found, obtained and alternative escape has been provided.
+     * <p>
+     * This setup essentially a provides safety net to catch inheriting classes faults and debug them.
+     */
+    private final int MAX_ATTEMPTS = 3;
+    //TODO: Consider later implementing task queue so GUI can manually choose bot sequence
+    //protected final TaskQueue taskQueue = new TaskQueue();
+
+    /**
+     * The bot menu interface used to interact with the botting script
+     */
     public BotMenu botMenu;
+    /**
+     * Bot overlay manager, used to adjust the on-screen graphics (e.g., bot/script overlays)
+     */
+    public BotOverlay botOverlay;
 
     // menu interface items
     public boolean isRunning;
@@ -211,7 +204,28 @@ public abstract class BotMan extends Script {
     protected boolean isAFK = false;
     protected Instant endAFK = null;
 
+    // script executor provides access to
     private ScriptExecutor script;
+    /**
+     * A description of the task currently being attempted by the bot. This is used to skip logic in events where the
+     * loop is restarted prematurely during a check, for example.
+     *
+     * <p>The {@link #setTask(String task)} function that updates this
+     * variable also handles the attempt tracking, so it is important to use that function when performing tasks that
+     * may fail and cause deadlocks.
+     *
+     * <p>Examples of this may include the loop requiring an item in the players inventory
+     * that the player does not have, without any way of obtaining set item or exiting the loop.
+     */
+    private String task;
+    /**
+     * Tracks the number of attempts at a particular task the bot has made. This function can be used for debugging
+     * and as a back-up escape to mitigate stack-overflow using {@link #setTask(String task)}
+     */
+    private int attempts;
+
+
+
 
     /**
      * EXAMPLE DOCUMENTATION STYLE FOR LATER
@@ -227,20 +241,71 @@ public abstract class BotMan extends Script {
      */
     protected abstract void onSetup();
     protected abstract BotMenu getBotMenu();
+    protected abstract Object paintScriptOverlay(Graphics2D g);
 
     @Override
-    public void onStart() {
+    public final void onStart() {
         this.script = bot.getScriptExecutor();
+        // initialize bot overlay to manage on-screen graphics
+        this.botOverlay = new BotOverlay(this);
         // get bot menu from child class and update it if necessary
         this.setBotMenu(getBotMenu());
         this.onSetup();
     }
 
+    /**
+     * Override the base onPaint() function to draw an informative overlay over the game screen.
+     * <p>
+     * This function utilizes the {@link BotOverlay} class for modularity and is intended to later extend
+     * {@link BotOverlay} class to enable easier overlay drawing and automated positioning based on what is currently painted.
+     *
+     * @param g The graphics object to paint
+     */
     @Override
-    public void pause() {
-        // insert custom onPause() logic if needed
+    public final void onPaint(Graphics2D g) {
+        // handles the overlay drawing
+        botOverlay.draw(g);
     }
-    
+
+    /**
+     * Get the current task being performed by the bot script
+     * @return A string detailing the current task being performed by the bot script
+     */
+    public final String getTask() {
+        return task;
+    }
+
+    /**
+     * Sets the current task, which is tells the loop which action to perform in the event that the loop is exited
+     * early.
+     * <p>
+     * This logic style could be used later to implement task queues and to set custom task orders using the GUI.
+     *
+     * @param task The task that the bot should perform.
+     */
+    public final void setTask(String task) {
+        try {
+            // if this is a new task, reset the attempt count
+            if (this.task.toLowerCase() != task.toLowerCase())
+                attempts = 0;
+            attempts++;
+
+            // if this task is looping too much, exit to prevent stack overflow
+            if (attempts >= MAX_ATTEMPTS)
+                throw new RuntimeException();
+        } catch (Exception ex) {
+            // log debug error before exiting script to help remedy issue
+            log(ex.getMessage());
+            onExit();
+        }
+    }
+
+    /**
+     * Sets the currently active bot menu, ensuring only one bot menu is active at a time.
+     *
+     * @param newMenu The menu attempting to be launched.
+     *                This will not be loaded if it is the same as the existing menu.
+     */
     public void setBotMenu(BotMenu newMenu) {
         log("Setting botMenu: " + newMenu.toString());
         if (botMenu == newMenu)
@@ -254,6 +319,9 @@ public abstract class BotMan extends Script {
         botMenu.open(); // launch the new one
     }
 
+    /**
+     * Closes the bot menu associated with this bot manager, if any exists.
+     */
     public void closeBotMenu() {
         if (botMenu != null)
             botMenu.close();
@@ -269,15 +337,25 @@ public abstract class BotMan extends Script {
         stop(false);
     }
 
+    /**
+     * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
+     * @throws InterruptedException
+     */
     public final void toggleExecutionMode() throws InterruptedException {
+        // toggle run mode
         if (isRunning)
             script.pause();
         else
             script.resume();
 
+        // update isRunning variable
         isRunning = !isRunning;
     }
 ;
+
+    /**
+     * Restarts this script from the start.
+     */
     public final void restart() {
         log("Restarting script...");
         bot.getScriptExecutor().restart();
@@ -350,6 +428,8 @@ public abstract class BotMan extends Script {
      * @return A String value denoting the remaining randomized AFK time in seconds.
      */
     public String getRemainingAFK() {
+        if (endAFK == null)
+            return null;
         // calc and return remaining fake afk time as a string
         Duration d = Duration.between(Instant.now(), endAFK);
         // if the player is afk, display fake afk timer
