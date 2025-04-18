@@ -5,7 +5,7 @@ import utils.BotMenu;
 
 import java.awt.*;
 
-@ScriptManifest(name = "F2P Draynor Fisherman", version = 1.0, author = "E.T.A", logo = "", info = "No description provided")
+@ScriptManifest(name = "(Beta) F2P Draynor Fisherman", version = 1.0, author = "E.T.A", logo = "", info = "No description provided")
 public class F2PDraynor extends FishingMan {
     @Override
     protected void onSetup() {
@@ -19,9 +19,8 @@ public class F2PDraynor extends FishingMan {
     }
 
     @Override
-    protected Object paintScriptOverlay(Graphics2D g) {
-        // don't paint any extra on-screen graphics
-        return null;
+    protected void paintScriptOverlay(Graphics2D g) {
+        // custom script overlay logic here
     }
 
     @Override

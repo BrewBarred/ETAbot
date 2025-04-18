@@ -51,8 +51,8 @@ public class F2PKaramja extends FishingMan {
     }
 
     @Override
-    protected Object paintScriptOverlay(Graphics2D g) {
-        return null;
+    protected void paintScriptOverlay(Graphics2D g) {
+
     }
 
     @Override

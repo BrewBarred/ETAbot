@@ -3,10 +3,8 @@ package utils;
 import javax.swing.*;
 import java.awt.*;
 
-import static com.sun.deploy.uitoolkit.ToolkitStore.dispose;
-
 public abstract class BotMenu {
-    protected final JFrame window = new JFrame();
+    protected JFrame window = new JFrame();
 
     protected JTabbedPane tabMain = new JTabbedPane();
     protected JTabbedPane tabPresets = new JTabbedPane();
@@ -35,7 +33,7 @@ public abstract class BotMenu {
     /**
      * TODO: Convert this to a list or an enum later for improved readability
      * Fetch an array containing suitable layout designs for the selected bot menu
-     *
+     * <p>
      * [0] = Main Tab
      * [1] = Presets Tab
      * [2] = Settings Tab
@@ -47,8 +45,10 @@ public abstract class BotMenu {
     public boolean isNotNull() {
         return layout != null;
     }
+
     /**
      * Fetch the menu layout from the child script
+     *
      * @return
      */
 
@@ -91,6 +91,7 @@ public abstract class BotMenu {
         // Add to root window or root tab system if you have one
         window.getContentPane().removeAll();
         window.setLayout(new BorderLayout());
+        window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         JTabbedPane masterTabs = new JTabbedPane();
         masterTabs.addTab("Main", tabMain);
         masterTabs.addTab("Presets", tabPresets);
@@ -124,10 +125,9 @@ public abstract class BotMenu {
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
-    public void close() {
-        System.out.println("Closing!");
-        //bot.log("Closing bot menu...");
-        //window.dispose();
+    public final void close() {
+        bot.log("Closing bot menu...");
+        window.dispose();
     }
 
     //TODO: Check to ensure these 3 functions (onPlay, onPause, onStop) are linked to the script state, may need to

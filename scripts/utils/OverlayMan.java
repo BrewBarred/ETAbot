@@ -4,19 +4,22 @@ import org.osbot.rs07.api.map.Position;
 
 import java.awt.*;
 
-public class BotOverlay {
-    private final BotMan bot;
+public class OverlayMan {
+    public int currentX;
+    public int currentY;
+
     private final int startX = 15;
     private final int startY = 25;
-    private int currentX;
-    private int currentY;
+
     private final int padding = 20;
     private final int lineSpacing = 10;
     private final Color colorText = Color.WHITE;
     private final Font fontTitle = new Font("Arial", Font.BOLD, 16);
     private final Font fontNormal = new Font("Arial", Font.PLAIN, 14);
 
-    public BotOverlay(BotMan bot) {
+    private final BotMan bot;
+
+    public OverlayMan(BotMan bot) {
         this.bot = bot;
     }
 
@@ -44,14 +47,12 @@ public class BotOverlay {
 
         // draw current task
         drawText(g,"Current task: " + bot.getTask());
-        bot.log("Paint 5...");
+//        // draw current status or wait time
+//        String remainingAFK = bot.getRemainingAFK();
+//        boolean isBusy = remainingAFK == null || remainingAFK.isEmpty();
+//        String broadcast = ("Status: " + (isBusy ? bot.status : remainingAFK));
+        String broadcast = bot.getBroadcast();
 
-        // draw current status or wait time
-        String remainingAFK = bot.getRemainingAFK();
-        bot.log("Paint 6...");
-        String broadcast = ("Status: " + (remainingAFK.isEmpty() ? bot.status : remainingAFK));
-        bot.log("Paint 7...");
-        bot.log("Drawing afk...");
         drawText(g, broadcast);
 
         // draw current position if player is not null

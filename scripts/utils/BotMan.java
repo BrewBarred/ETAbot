@@ -194,7 +194,7 @@ public abstract class BotMan extends Script {
     /**
      * Bot overlay manager, used to adjust the on-screen graphics (e.g., bot/script overlays)
      */
-    public BotOverlay botOverlay;
+    public OverlayMan overlayMan;
 
     // menu interface items
     public boolean isRunning;
@@ -228,43 +228,57 @@ public abstract class BotMan extends Script {
 
 
     /**
-     * EXAMPLE DOCUMENTATION STYLE FOR LATER
+     * EXAMPLE DOCUMENTATION STYLE (FOR LATER REFERENCE)
      *
      * Insert optional {@link #onStart()} logic here for overriding child classes. This function is called after
      * {@link #onStart()}'s execution.
      * <p>
-     * This abstraction enables users to do stuff on start without needing to call {@code super.onStart()} to ensure
-     * proper initialization, which allows easier inheritance.
+     * This abstraction enables users to do stuff on start without needing to call {@code super.onStart()}, ensuring
+     * proper initialization, which allows easier inheritance. <a href="https://osbot.org">OSBot Docs</a>
      *
-     * @see utils
+     * @see utils <a href="https://osbot.org">OSBot Docs</a>
      * @see <a href="https://osbot.org">OSBot Docs</a>
      */
     protected abstract void onSetup();
+    /**
+     *
+     *
+     * @return
+     */
     protected abstract BotMenu getBotMenu();
-    protected abstract Object paintScriptOverlay(Graphics2D g);
+
+    /**
+     * Forces child script to define script specific details for the overlay manager
+     *
+     * @param g The graphics object used for drawing 2D graphics over the game window
+     */
+    protected abstract void paintScriptOverlay(Graphics2D g);
 
     @Override
     public final void onStart() {
+        this.setStatus("Initializing bot script...");
+        // initialize script executor to interface with bot client (e.g., pause/play script)
         this.script = bot.getScriptExecutor();
-        // initialize bot overlay to manage on-screen graphics
-        this.botOverlay = new BotOverlay(this);
-        // get bot menu from child class and update it if necessary
+        // initialize overlay manager to draw on-screen graphics
+        this.overlayMan = new OverlayMan(this);
+        // get bot menu from child class if any exists and update it if necessary
         this.setBotMenu(getBotMenu());
+        // enables child classes the opportunity to do stuff on start
         this.onSetup();
     }
 
     /**
      * Override the base onPaint() function to draw an informative overlay over the game screen.
      * <p>
-     * This function utilizes the {@link BotOverlay} class for modularity and is intended to later extend
-     * {@link BotOverlay} class to enable easier overlay drawing and automated positioning based on what is currently painted.
+     * This function utilizes the {@link OverlayMan} class for modularity and is intended to later extend
+     * {@link OverlayMan} class to enable easier overlay drawing and automated positioning based on what is currently painted.
      *
      * @param g The graphics object to paint
      */
     @Override
     public final void onPaint(Graphics2D g) {
         // handles the overlay drawing
-        botOverlay.draw(g);
+        overlayMan.draw(g);
     }
 
     /**
@@ -273,6 +287,12 @@ public abstract class BotMan extends Script {
      */
     public final String getTask() {
         return task;
+    }
+
+    public final String getBroadcast() {
+        // fetch the remaining afk time
+        String afkTimer = getRemainingAFK();
+        return "Status: " + (afkTimer == null ? status : afkTimer);
     }
 
     /**
@@ -286,8 +306,10 @@ public abstract class BotMan extends Script {
     public final void setTask(String task) {
         try {
             // if this is a new task, reset the attempt count
-            if (this.task.toLowerCase() != task.toLowerCase())
+            if (!this.task.equalsIgnoreCase(task))
                 attempts = 0;
+
+            // track the number of times a task has attempted to be executed
             attempts++;
 
             // if this task is looping too much, exit to prevent stack overflow
@@ -296,6 +318,7 @@ public abstract class BotMan extends Script {
         } catch (Exception ex) {
             // log debug error before exiting script to help remedy issue
             log(ex.getMessage());
+            log("Maximum (" + attempts + ") attempts exceeded whilst performing task: " + this.task);
             onExit();
         }
     }
@@ -323,8 +346,11 @@ public abstract class BotMan extends Script {
      * Closes the bot menu associated with this bot manager, if any exists.
      */
     public void closeBotMenu() {
-        if (botMenu != null)
+        log("Closing bot menu...");
+        if (botMenu != null) {
             botMenu.close();
+            botMenu = null;
+        }
     }
 
     /**
@@ -333,7 +359,7 @@ public abstract class BotMan extends Script {
     public final void onExit() {
         log("Closing bot manager...");
         closeBotMenu();
-        log("Bot manager has been closed!");
+        log("Successfully exited ETA's OsBot manager");
         stop(false);
     }
 
@@ -428,15 +454,17 @@ public abstract class BotMan extends Script {
      * @return A String value denoting the remaining randomized AFK time in seconds.
      */
     public String getRemainingAFK() {
+        // return early if the player is not currently afk
         if (endAFK == null)
             return null;
+
         // calc and return remaining fake afk time as a string
         Duration d = Duration.between(Instant.now(), endAFK);
         // if the player is afk, display fake afk timer
         if (isAFK && d.getSeconds() > 0) {
             return "Waiting " + d.getSeconds() + "s...";
         }
-        // else return nothing so no timer is displayed
-        return "";
+
+        return null;
     }
 }

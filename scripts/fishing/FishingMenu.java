@@ -11,7 +11,6 @@ import java.util.Arrays;
 import java.util.List;
 
 public class FishingMenu extends BotMenu {
-    private JFrame frame;
     private JComboBox<String> locationBox;
     private JComboBox<String> methodBox;
     private JCheckBox dropFishBox;
@@ -115,11 +114,4 @@ public class FishingMenu extends BotMenu {
 //
 //        frame.setVisible(true);
 //    }
-
-    /**
-     * Disposes the bot menu
-     */
-    public void close() {
-        this.frame.dispose();
-    }
 }
