@@ -128,12 +128,12 @@ public abstract class BotMenu {
 
     //TODO: Check to ensure these 3 functions (onPlay, onPause, onStop) are linked to the script state, may need to
     //      inherit some sort of method provider or the client or something along those lines? Idk.
-    public void start() {
-        //this.show();
+    public void resume() {
+        // OPTIONAL: custom logic on script resume, e.g., this.hide();
     }
 
     public void pause() {
-        //this.hide();
+        // OPTIONAL: custom logic on script pause, e.g., this.show();
     }
 
     public void stop() {

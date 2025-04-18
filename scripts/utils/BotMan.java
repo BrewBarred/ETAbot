@@ -267,6 +267,18 @@ public abstract class BotMan extends Script {
         this.onSetup();
     }
 
+    @Override
+    public final void pause() {
+        botMenu.pause();
+    }
+
+    @Override
+    public final void resume() {
+        botMenu.resume();
+    }
+
+
+
     /**
      * Override the base onPaint() function to draw an informative overlay over the game screen.
      * <p>
