@@ -174,7 +174,7 @@ import java.time.Instant;
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
  */
-public abstract class BotMan extends Script {
+public abstract class BotMan<T extends BotMenu> extends Script {
     /**
      * The number of attempts allowed to complete an action before the script recognizes it as an error and exits.
      * <p>
@@ -190,7 +190,7 @@ public abstract class BotMan extends Script {
     /**
      * The bot menu interface used to interact with the botting script
      */
-    public BotMenu botMenu;
+    public T botMenu;
     /**
      * Bot overlay manager, used to adjust the on-screen graphics (e.g., bot/script overlays)
      */
@@ -245,7 +245,7 @@ public abstract class BotMan extends Script {
      *
      * @return
      */
-    protected abstract BotMenu getBotMenu();
+    protected abstract T getBotMenu();
 
     /**
      * Forces child script to define script specific details for the overlay manager
@@ -269,12 +269,16 @@ public abstract class BotMan extends Script {
 
     @Override
     public final void pause() {
-        botMenu.pause();
+        try {
+            script.pause();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
     public final void resume() {
-        botMenu.resume();
+        script.resume();
     }
 
 
@@ -341,7 +345,7 @@ public abstract class BotMan extends Script {
      * @param newMenu The menu attempting to be launched.
      *                This will not be loaded if it is the same as the existing menu.
      */
-    public void setBotMenu(BotMenu newMenu) {
+    public void setBotMenu(T newMenu) {
         log("Setting botMenu: " + newMenu.toString());
         if (botMenu == newMenu)
             return;

@@ -1,5 +1,7 @@
 package utils;
 
+import org.osbot.T;
+
 import javax.swing.*;
 import java.awt.*;
 
@@ -17,18 +19,10 @@ public abstract class BotMenu {
 
     protected JButton btnStart = new JButton();
     protected JComboBox<String> cbBotMenu = new JComboBox<>();
-    private JPanel[] layout;
-
-    /**
-     * Hides the bot menu, preventing the user from interacting with the bot menu
-     */
-    public final void close() {
-        bot.log("Closing bot menu...");
-        window.dispose();
-    }
+    protected JPanel[] layout;
 
     public BotMenu(BotMan bot) {
-        // fetch a reference to the bot manager that this bot menu interfaces with
+        // provides a reference to the base BotMan class incase child classes choose not to abstract
         this.bot = bot;
         this.bot.log("Attempting to launch BotMenu...");
         this.setLayout();
@@ -45,6 +39,14 @@ public abstract class BotMenu {
      * @return An array of JPanel objects used to override the menu display whenever the user run a new task/script
      */
     public abstract JPanel[] getLayout();
+
+    /**
+     * Hides the bot menu, preventing the user from interacting with the bot menu
+     */
+    public final void close() {
+        bot.log("Closing bot menu...");
+        window.dispose();
+    }
 
     public boolean isNotNull() {
         return layout != null;
@@ -124,6 +126,7 @@ public abstract class BotMenu {
      */
     public void open() {
         bot.log("Opening bot menu...");
+        //TODO Create logic to handle opening a new menu
     }
 
     //TODO: Check to ensure these 3 functions (onPlay, onPause, onStop) are linked to the script state, may need to

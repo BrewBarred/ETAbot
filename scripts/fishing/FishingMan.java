@@ -1,5 +1,6 @@
 package fishing;
 
+import org.osbot.T;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.script.MethodProvider;
@@ -8,47 +9,112 @@ import utils.BotMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
-import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.utility.ConditionalSleep;
 import utils.BotMenu;
 import utils.Rand;
 
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
 //TODO: Make abstract after testing functionality
-public abstract class FishingMan extends BotMan {
+public abstract class FishingMan extends BotMan<FishingMenu> {
+    /**
+     * The fishing style of this bot (i.e., {@link FishingStyle FISHINGSTYLE.NET}, {@link FishingStyle FISHINGSTYLE.BAIT})
+     * TODO: Ensure these two enums are instantiated automatically later
+     */
+    private FishingStyle fishingStyle = FishingStyle.NET;
+    /**
+     * The fishing area currently selected in the interface, if any exists.
+     */
+    private FishingArea fishingArea = FishingArea.DRAYNOR_VILLAGE;
+    /**
+     *
+     */
+    protected boolean isCooking = true;
     /**
      * The amount of gold points required before the bot will head to Karamja to start fishing
      */
     private final int FULL_GP_REQ = 60;
     private final double VERSION = 2.0;
-    private final Area KARAMJA_FISHING_DOCK = new Area(2919, 3183, 2928, 3173);
-    private static final Area PORT_SARIM_COOKING_RANGE = new Area(3015, 3240, 3019, 3236);
+    private final Area PORT_SARIM_COOKING_RANGE = new Area(3015, 3240, 3019, 3236);
     private final Area PORT_SARIM_DEPOSIT_BOX_AREA = new Area(3043, 3237, 3049, 3234);
-    private static final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
-
-    /**
-     * An optional fishing menu user interface reference (incase any is implemented in the child script)
-     */
-    //private FishingMenu menu;
-    private ScriptExecutor script;
-
-    private boolean isCooking = true;
+    private final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
 
     public FishingMan() {
+        // call super constructor to ensure proper initialization
         super();
+        try {
+            //TODO: Investigate potential fixes for the issue noted in the comment below:
+            // creates a fishing menu and passing it to the BotMan, unfortunately you still need to explicitly cast it to
+            // access functions with this implementation
+            //this.setFishingArea(getFishingArea());
+            //this.setFishingStyle(getFishingStyle());
+        } catch (Exception ex) {
+            ex.getStackTrace();
+            log(ex.getMessage());
+        }
+    }
+
+    @Override
+    protected FishingMenu getBotMenu() {
+        return new FishingMenu(this);
     }
 
     /**
-     * Check if the player is currently within the preset "Karamja Fishing Dock" zone.
+     * Sets the {@link FishingArea} in which the bot shall attempt to fish.
+     * <p>
+     * //TODO make this method a bit smarter by telling it which spots are suitable for which method and returning errors on bad input
+     * @param area The new {@link FishingArea} being set.
+     */
+    public void setFishingArea(FishingArea area) {
+        // validate new area
+        if (area != null) {
+            // assign new area
+            this.fishingArea = area;
+            // update GUI to reflect changes
+            this.botMenu.selectionFishingArea.setSelectedItem(area);
+            log("Fishing area has been set to: " + area);
+        }
+    }
+
+    /**
+     * Gets the currently selected {@link FishingArea} in the {@link BotMenu} interface.
      *
-     * @return True if the player is within the marked zone, else returns false.
+     * @return A {@link FishingArea} object denoting the users desired fishing location.
+     */
+    public FishingArea getFishingArea() {
+        return this.fishingArea;
+    }
+
+    /**
+     /**
+     * Sets the {@link FishingStyle} that the bot shall use while fishing. This function also updates the
+     * {@link BotMenu} interface to reflect changes.
+     *
+     * @see FishingStyle
+     */
+    public void setFishingStyle(FishingStyle style) {
+        this.fishingStyle = style;
+        this.botMenu.selectionFishingStyle.setSelectedItem(style);
+        log("Fishing style has been set to: " + style);
+    }
+
+    /**
+     * Gets the currently selected {@link FishingStyle} in the {@link BotMenu} interface.
+     *
+     * @return A {@link FishingStyle} enum containing information and functions related to the selected fishing style.
+     */
+    public FishingStyle getFishingStyle() {
+        return this.fishingStyle;
+    }
+    /**
+     * Check if the player is currently within the selected fishing Area.
+     *
+     * @return True if the player is within the selected fishing Area, else returns false.
      */
     //TODO: Turn this into an enum of Docks with an isAt() or contains() function to eliminate multiple getters/setters
-    protected boolean isAtKaramjaDock() {
-        return KARAMJA_FISHING_DOCK.contains(myPlayer());
+    protected boolean isAtFishingArea() {
+        return this.fishingArea.contains(myPlayer());
     }
 
     /**
@@ -371,7 +437,7 @@ public abstract class FishingMan extends BotMan {
         // fetch players current coin amount
         int currentCoinAmount = inventory.getItem("Coins").getAmount();
         // if the player is already in karamja
-        if (isAtKaramjaDock()) {
+        if (isAtFishingArea()) {
             // and they have the fishing gear required for this task
             if (hasReqFishingGear())
                 // and they also have enough coins for 1 boat ride back
@@ -426,29 +492,19 @@ public abstract class FishingMan extends BotMan {
      *
      * @return True if the player currently has all the required fishing gear in their inventory, else returns false.
      */
-    protected boolean hasReqFishingGear() throws InterruptedException {
-        setStatus("Checking fishing equipment...", false);
-        // get required fishing equipment
-        HashMap<String, Integer> requiredFishingGear = new HashMap<>();
-        //TODO: Consider revising this code into an enum and linking with GUI toggles to change fishing preference
-        //requiredFishingGear.put("Lobster pot", 301); // Lobster pot
-        requiredFishingGear.put("Harpoon", 311);
+    protected boolean hasReqFishingGear() {
+        setStatus("Checking for required fishing equipment...", false);
+        FishingStyle method = getFishingStyle();
 
-        // for each required item in the requiredFishingGear hashmap
-        for (Map.Entry<String, Integer> entry : requiredFishingGear.entrySet()) {
-            // get each items name and id
-            String name = entry.getKey();
-            int id = entry.getValue();
-
-            // ensure player has this required item equipped or in their inventory
-            if (!inventory.contains(id) && !equipment.contains(id)) {
-                setStatus("Unable to find " + name + " in players inventory.");
-                onExit();
-                return false;
-            }
-
-            //TODO: Consider adding logic to ensure wearable items are equipped
+        // if the player does not have the required items for the selected fishing style
+        if (!getInventory().contains(method.getReqItems())) {
+            log("Unable to find the equipment required for the selected fishing style..."
+                    + "\nFishing style: " + fishingStyle
+                    + "\nRequired items: " + fishingStyle.getReqItemString());
+            return false;
         }
+
+        //TODO: Consider adding additional logic here to check for bonus XP items or optional items via GUI interface
         return true;
     }
 
