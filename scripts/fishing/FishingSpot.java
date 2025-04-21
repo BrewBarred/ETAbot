@@ -23,9 +23,9 @@ public enum FishingSpot {
     private final int[] ids;
 
     /**
-     * Initialize fishing spot enumerators for easier referencing throughout code.
+     * Constructs {@link FishingSpot} enums for easier referencing throughout code.
      *
-     * @param itemIds An array of integer values denoting the NPC ids related to this type of fishing spot.
+     * @param itemIds An array of integer values containing the NPC ids relative to this {@link FishingSpot}.
      */
     FishingSpot(String name, FishingStyle[] styles, int...itemIds) {
         this.name = name;
@@ -34,9 +34,9 @@ public enum FishingSpot {
     }
 
     /**
-     * Overrides the default toString() method to return the name of this FishingSpot.
+     * Overrides the default {@link #toString()} method to return the name of this {@link FishingSpot}.
      *
-     * @return A string denoting the name of this FishingSpot.
+     * @return A string denoting the name of this {@link FishingSpot}.
      */
     @Override
     public final String toString() {
@@ -55,7 +55,8 @@ public enum FishingSpot {
     /**
      * Gets the id of the Item(s) required for this type of fishing spot.
      *
-     * @return An integer array containing any required items for this fishing spot, or null if none are required.
+     * @return An integer array containing any required items for this fishing spot. Returns null if no items
+     * are required for this FishingSpot.
      */
     public int[] getReqItemIds() {
         // ensure there are items to return

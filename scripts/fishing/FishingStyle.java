@@ -1,5 +1,11 @@
 package fishing;
 
+/**
+ * {@link FishingStyle} enum, used to collect information about particular {@link FishingSpot}s around Gielnor such as:
+ *
+ * FishingStyle: The style of fishing used for this spot (e.g., {@link FishingStyle#BAIT}
+ * ReqItems: String Array of items required to use this fishing spot (e.g., ["Fishing Rod", "Bait"])
+ */
 public enum FishingStyle {
     BAIT("Bait", "Fishing rod", "Fishing bait"), // 307 = Fishing rod, 313 = Fishing Bait
     CAGE("Cage", "Lobster pot"), // 301 = Lobster pot
