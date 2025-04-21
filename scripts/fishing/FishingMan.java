@@ -494,10 +494,11 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
      */
     protected boolean hasReqFishingGear() {
         setStatus("Checking for required fishing equipment...", false);
-        FishingStyle method = getFishingStyle();
+        String[] reqItems = getFishingStyle().getReqItems();
 
         // if the player does not have the required items for the selected fishing style
-        if (!getInventory().contains(method.getReqItems())) {
+        //TODO: Rework to use BagMan
+        if (!getInventory().contains(reqItems)) {
             log("Unable to find the equipment required for the selected fishing style..."
                     + "\nFishing style: " + fishingStyle
                     + "\nRequired items: " + fishingStyle.getReqItemString());

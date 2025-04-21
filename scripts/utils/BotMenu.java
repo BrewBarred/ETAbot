@@ -26,7 +26,7 @@ public abstract class BotMenu {
     protected JComboBox<String> cbBotMenu = new JComboBox<>();
     protected JButton btnRunning = new JButton();
 
-    protected boolean isHidingOnClose;
+    protected boolean isHidingOnExit;
     protected boolean isHidingOnPlay;
 
     public BotMenu(BotMan bot) {
@@ -35,7 +35,7 @@ public abstract class BotMenu {
         this.log("Attempting to launch BotMenu...");
 
         // set defaults TODO: create a function to handle setting defaults later?
-        this.isHidingOnClose = true;
+        this.isHidingOnExit = true;
     }
 
     /**
@@ -109,17 +109,17 @@ public abstract class BotMenu {
             });
 
             /*
-             * checkbox: cbHideMenuOnClose
+             * checkbox: cbHideMenuOnExit
              */
-            JCheckBox cbHideMenuOnClose = new JCheckBox("Hide menu on close", isHidingOnClose);
-            cbHideMenuOnClose.addActionListener(e -> {
-                this.isHidingOnClose = cbHideMenuOnClose.isSelected();
-                if (this.isHidingOnClose)
+            JCheckBox cbHideMenuOnExit = new JCheckBox("Hide menu on exit", isHidingOnExit);
+            cbHideMenuOnExit.addActionListener(e -> {
+                this.isHidingOnExit = cbHideMenuOnExit.isSelected();
+                if (this.isHidingOnExit)
                     this.window.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
                 else
                     this.window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
-                log("Hide menu on close has been set to: " + this.isHidingOnClose
+                log("Hide menu on exit has been set to: " + this.isHidingOnExit
                         + ", with a default closing operation of: " + this.window.getDefaultCloseOperation());
             });
 
@@ -127,7 +127,7 @@ public abstract class BotMenu {
             settingsGeneral.add(new JLabel("General Settings"));
             settingsGeneral.add(cbStartOnLaunch);
             settingsGeneral.add(cbHideMenuOnPlay);
-            settingsGeneral.add(cbHideMenuOnClose);
+            settingsGeneral.add(cbHideMenuOnExit);
 
             // add all pro settings
             settingsPro.add(new JLabel("Advanced Settings"));
@@ -159,21 +159,6 @@ public abstract class BotMenu {
         }
     }
 
-//    /**
-//     * Called by the {@link BotMan} when {@link BotMan#pause()} is called. This function allows a seamless connection
-//     * between the client/interface on script pause/resume.
-//     * <p>
-//     * This function is only suitable for client-calling on play/resume, for additional on play/resume logic, inherit
-//     * {@link #onPause()}/{@link #onResume()} from the child class.
-//     */
-//    protected final void syncExecutionMode() {
-//        // reflect execution mode changes here
-//        if (bot.isRunning)
-//            resume();
-//        else
-//            pause();
-//    }
-
     protected final void resume() {
         // if setting hide on play is enabled, hide the menu when script resumes
         if (this.isHidingOnPlay) {
@@ -181,7 +166,7 @@ public abstract class BotMenu {
         }
         // if menu hiding is enabled and menu was closed, resuming the script is the only way to show it again
         //TODO: Add a hotkey to revive the menu? Show it if its dormant and create another one if not using bot.botMenu.
-        else if (this.isHidingOnClose && !this.isVisible())
+        else if (this.isHidingOnExit && !this.isVisible())
             // display the menu
             this.show();
 
@@ -192,6 +177,8 @@ public abstract class BotMenu {
     protected final void pause() {
         // run bot menu pause logic
         this.onPause();
+        if (bot.botMenu != null && this.isHidingOnPlay)
+            this.show();
     }
 
     /**
@@ -219,6 +206,8 @@ public abstract class BotMenu {
         SwingUtilities.invokeLater(() -> {
             this.setLayout(getLayout());
             this.show();
+            if (bot.botMenu == null)
+                bot.botMenu = this;
         });
     }
 
@@ -231,10 +220,12 @@ public abstract class BotMenu {
      */
     public final void close(boolean force) {
         bot.log("Closing bot menu...");
-        if (this.isHidingOnClose)
+        if (this.isHidingOnExit) {
             this.hide();
-        else
+        } else {
+            bot.botMenu = null;
             window.dispose();
+        }
     }
 
     public final void close() {
