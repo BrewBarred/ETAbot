@@ -1,31 +1,38 @@
 package utils;
 
-import org.osbot.T;
+import com.sun.istack.internal.NotNull;
 
 import javax.swing.*;
 import java.awt.*;
 
 public abstract class BotMenu {
     public BotMan bot;
+
     protected JFrame window = new JFrame();
-
-    protected JTabbedPane tabMain = new JTabbedPane();
-    protected JTabbedPane tabPresets = new JTabbedPane();
-    protected JTabbedPane tabSettings = new JTabbedPane();
-
-    protected JPanel cardMain = new JPanel(new CardLayout());
-    protected JPanel cardPresets = new JPanel(new CardLayout());
-    protected JPanel cardSettings = new JPanel(new CardLayout());
-
-    protected JButton btnStart = new JButton();
-    protected JComboBox<String> cbBotMenu = new JComboBox<>();
     protected JPanel[] layout;
+
+    protected JPanel cardMain = new JPanel(new BorderLayout());
+    protected JTabbedPane tabMain = new JTabbedPane();
+
+    protected JPanel cardPresets = new JPanel(new CardLayout());
+    protected JTabbedPane tabPresets = new JTabbedPane();
+
+    protected JPanel cardSettings = new JPanel(new CardLayout());
+    protected JTabbedPane settingsPane = new JTabbedPane();
+
+    protected JPanel settingsGeneral = new JPanel(new FlowLayout(FlowLayout.LEADING));
+    protected JPanel settingsPro = new JPanel();
+
+    protected JComboBox<String> cbBotMenu = new JComboBox<>();
+    protected JButton btnRunning = new JButton();
+
+    protected boolean isHidingOnClose;
+    protected boolean isHidingOnPlay;
 
     public BotMenu(BotMan bot) {
         // provides a reference to the base BotMan class incase child classes choose not to abstract
         this.bot = bot;
-        this.bot.log("Attempting to launch BotMenu...");
-        this.setLayout();
+        this.log("Attempting to launch BotMenu...");
     }
 
     /**
@@ -38,109 +45,216 @@ public abstract class BotMenu {
      *
      * @return An array of JPanel objects used to override the menu display whenever the user run a new task/script
      */
-    public abstract JPanel[] getLayout();
+    protected abstract JPanel[] getLayout();
+    protected abstract void onResume();
+    protected abstract void onPause();
+
+    protected final void setLayout(@NotNull JPanel[] panels) {
+        try {
+            if (panels.length < 3) {
+                throw new IllegalArgumentException("Expected 3 panels (Main, Presets, Settings)");
+            }
+
+            //TODO: Consider permanently removing this code below, I think it was before I implemented cardLayouts
+    //        // clear old content just in case
+    //        cardMain.removeAll();
+    //        cardPresets.removeAll();
+    //        cardSettings.removeAll();
+    //        // clear and reset tabbed panes
+    //        tabMain.removeAll();
+    //        tabPresets.removeAll();
+    //        tabSettings.removeAll();
+
+            /*
+             * Main Card
+             */
+            cardMain.add(panels[0], BorderLayout.CENTER); // add main layout (provided by child)
+            tabMain.add("Bot Manager", cardMain); // add "Bot Manager" tab to this card
+
+            /*
+             * Presets Card
+             */
+            cardPresets.add(panels[1], "Presets"); // add presets layout (provided by child)
+            //tabPresets.add("Simple", cardPresets); // add "Simple" preset tab to this card
+
+            /*
+             * Settings Card
+             */
+            cardSettings.add(panels[2], "Settings"); // add settings layout (provided by child)
+
+            /*
+             *  checkbox: cbStartOnLaunch
+             */
+            JCheckBox cbStartOnLaunch = new JCheckBox("Start on launch");
+            cbStartOnLaunch.addActionListener(e -> {
+                bot.log("[BOTMENU] Incomplete feature triggered!\n" +
+                        "\tSee: Settings -> General Settings -> checkbox: cbStartOnLaunch");
+            });
+
+            /*
+             * checkbox: cbHideMenuOnPlay
+             */
+            JCheckBox cbHideMenuOnPlay = new JCheckBox("Hide menu while running");
+            cbHideMenuOnPlay.addActionListener(e -> {
+                // toggle hiding on play bool when checkbox changes
+                this.isHidingOnPlay = cbHideMenuOnPlay.isSelected();
+                log("Hide menu while running has been set to: " + this.isHidingOnPlay);
+
+                // hide menu if it is currently showing
+                if (bot.isRunning)
+                    this.hide();
+            });
+
+            /*
+             * checkbox: cbHideMenuOnClose
+             */
+            JCheckBox cbHideMenuOnClose = new JCheckBox("Hide menu on close", true);
+            cbHideMenuOnClose.addActionListener(e -> {
+                this.isHidingOnClose = cbHideMenuOnClose.isSelected();
+                log("Hide menu on close has been set to: " + this.isHidingOnClose);
+            });
+
+            // add all general settings to general settings tab
+            settingsGeneral.add(new JLabel("General Settings"));
+            settingsGeneral.add(cbStartOnLaunch);
+            settingsGeneral.add(cbHideMenuOnPlay);
+            settingsGeneral.add(cbHideMenuOnClose);
+
+            // add all pro settings
+            settingsPro.add(new JLabel("Advanced Settings"));
+            settingsPro.add(new JTextField("Max runtime"));
+
+            settingsPane.addTab("General", settingsGeneral);
+            settingsPane.addTab("Advanced", settingsPro);
+
+            cardSettings.add(settingsPane);
+
+
+            // Add to root window or root tab system if you have one
+            window.getContentPane().removeAll();
+            window.setLayout(new BorderLayout());
+            JTabbedPane masterTabs = new JTabbedPane();
+            masterTabs.addTab("Main", tabMain);
+            masterTabs.addTab("Presets", tabPresets);
+            masterTabs.addTab("Settings", settingsPane);
+            window.add(masterTabs, BorderLayout.CENTER);
+
+            window.pack();
+            this.show();
+
+        } catch (Exception ex) {
+            log("Invalid layout passed! Attempting to revert to existing layout...");
+            // revert existing layout on failed GUI update
+            setLayout(this.layout);
+            log("Revert successful!");
+        }
+    }
+
+//    /**
+//     * Called by the {@link BotMan} when {@link BotMan#pause()} is called. This function allows a seamless connection
+//     * between the client/interface on script pause/resume.
+//     * <p>
+//     * This function is only suitable for client-calling on play/resume, for additional on play/resume logic, inherit
+//     * {@link #onPause()}/{@link #onResume()} from the child class.
+//     */
+//    protected final void syncExecutionMode() {
+//        // reflect execution mode changes here
+//        if (bot.isRunning)
+//            resume();
+//        else
+//            pause();
+//    }
+
+    protected final void resume() {
+        // if setting hide on play is enabled, hide the menu when script resumes
+        if (isHidingOnPlay) {
+            this.hide();
+            return;
+        }
+
+        // if menu hiding is enabled and menu was closed, resuming the script is the only way to show it again
+        //TODO: Add a hotkey to revive the menu? Show it if its dormant and create another one if not using bot.botMenu.
+        if (this.isHidingOnClose && !this.isVisible())
+            // display the menu
+            this.open();
+
+        // otherwise make the menu visible if it isn't already
+        if (!isVisible())
+            this.show();
+
+        this.onResume();
+    }
+
+    protected final void pause() {
+        this.onPause();
+    }
+
+    /**
+     * Opens a bot menu, displaying it to the user enabling user-bot interaction. If a menu already exists, this
+     * function will call its {@link BotMenu#show()} function, else {@link BotMenu#open()} will be called.
+     *
+     * @param force Forces this {@link BotMenu} to be opened.
+     * @see BotMenu
+     */
+    public void open(boolean force) {
+        if (!force) {
+            if (this.isVisible()) {
+                log("You can only have one BotMenu open at a time!");
+                return;
+            }
+
+            if (bot.botMenu != null) {
+                log("Reopening BotMenu...");
+                bot.botMenu.show();
+                return;
+            }
+        }
+
+        log("Opening a new BotMenu...");
+        SwingUtilities.invokeLater(() -> {
+            this.setLayout(getLayout());
+            this.show();
+        });
+    }
+
+    protected final void open() {
+        this.open(false);
+    }
 
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
-    public final void close() {
+    public final void close(boolean force) {
         bot.log("Closing bot menu...");
-        window.dispose();
+        if (this.isHidingOnClose)
+            this.hide();
+        else
+            window.dispose();
     }
 
-    public boolean isNotNull() {
-        return layout != null;
+    public final void close() {
+        close(false);
     }
 
-    /**
-     * Fetch the menu layout from the child script
-     *
-     * @return
-     */
-
-    private void setLayout() {
-        // fetch layout from child script
-        this.layout = getLayout();
-        // setup cards
-        if (layout != null && layout.length == 3) {
-            setLayout(layout);
-        } else {
-            bot.log("Error instantiating BotMenu!");
-            layout = null;
-        }
-    }
-
-    public void setLayout(JPanel[] panels) {
-        if (panels == null || panels.length < 3) {
-            throw new IllegalArgumentException("Expected 3 panels (Main, Presets, Settings)");
-        }
-
-        // Clear old content just in case
-        cardMain.removeAll();
-        cardPresets.removeAll();
-        cardSettings.removeAll();
-
-        // Add new content to each card container
-        cardMain.add(panels[0], "Main");
-        cardPresets.add(panels[1], "Presets");
-        cardSettings.add(panels[2], "Settings");
-
-        // Clear and reset tabbed panes
-        tabMain.removeAll();
-        tabPresets.removeAll();
-        tabSettings.removeAll();
-
-        tabMain.add("Fishing", cardMain);
-        tabPresets.add("Presets", cardPresets);
-        tabSettings.add("General", cardSettings);
-
-        // Add to root window or root tab system if you have one
-        window.getContentPane().removeAll();
-        window.setLayout(new BorderLayout());
-        window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        JTabbedPane masterTabs = new JTabbedPane();
-        masterTabs.addTab("Main", tabMain);
-        masterTabs.addTab("Presets", tabPresets);
-        masterTabs.addTab("Settings", tabSettings);
-        window.add(masterTabs, BorderLayout.CENTER);
-
-        JPanel topBar = new JPanel(new FlowLayout());
-        topBar.add(btnStart);
-        topBar.add(cbBotMenu);
-        window.add(topBar, BorderLayout.NORTH);
-
-        window.pack();
-        this.show();
-    }
-
-    public void show() {
+    public final void show() {
         window.setVisible(true);
     }
 
-    public void hide() {
+    public final void hide() {
+        log("Bot menu has been hidden!");
         window.setVisible(false);
     }
 
-    /**
-     * Opens the bot menu, displaying it to the user enabling user-bot interaction
-     */
-    public void open() {
-        bot.log("Opening bot menu...");
-        //TODO Create logic to handle opening a new menu
+    public final boolean isVisible() {
+        return window.isVisible();
     }
 
-    //TODO: Check to ensure these 3 functions (onPlay, onPause, onStop) are linked to the script state, may need to
-    //      inherit some sort of method provider or the client or something along those lines? Idk.
-    public void resume() {
-        // OPTIONAL: custom logic on script resume, e.g., this.hide();
+    public final boolean isNotNull() {
+        return layout != null;
     }
 
-    public void pause() {
-        // OPTIONAL: custom logic on script pause, e.g., this.show();
-    }
-
-    public void stop() {
-        //this.hide();
+    public void log(String string) {
+        bot.log("[BOTMENU] " + string);
     }
 //
 //    protected void addTaskTab(String taskName, JPanel panel) {

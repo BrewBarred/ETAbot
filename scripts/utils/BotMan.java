@@ -186,7 +186,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     private final int MAX_ATTEMPTS = 3;
     //TODO: Consider later implementing task queue so GUI can manually choose bot sequence
     //protected final TaskQueue taskQueue = new TaskQueue();
-
     /**
      * The bot menu interface used to interact with the botting script
      */
@@ -269,18 +268,45 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
     @Override
     public final void pause() {
-        try {
-            script.pause();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        log("Pausing botting script...");
+        // sync BotMenu interface if any exists
+        if (this.botMenu != null)
+            this.botMenu.pause();
+
+        this.isRunning = false;
+
+
+        /*
+         * Insert optional script pause logic here
+         */
     }
 
     @Override
     public final void resume() {
-        script.resume();
+        log("Resuming botting script...");
+        // sync BotMenu interface if any exists
+        if (this.botMenu != null)
+            this.botMenu.resume();
+
+        this.isRunning = true;
+        /*
+         * Insert optional script resume logic here
+         */
     }
 
+    /**
+     * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
+     */
+    public final void toggleExecutionMode() throws InterruptedException {
+        // toggle execution mode of both client and interface (interface handled via Overridden pause() and resume())
+        if (this.isRunning) {
+            this.script.pause();
+            this.pause();
+        } else {
+            this.script.resume();
+            this.resume();
+        }
+    }
 
 
     /**
@@ -355,7 +381,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         }
 
         botMenu = newMenu;
-        botMenu.open(); // launch the new one
+        botMenu.open(true); // launch the new one
     }
 
     /**
@@ -363,44 +389,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public void closeBotMenu() {
         log("Closing bot menu...");
-        if (botMenu != null) {
+        // close botMenu if any exists
+        if (botMenu != null)
             botMenu.close();
-            botMenu = null;
-        }
+
+        // reset botMenu variable to avoid calling a disposed object
+        botMenu = null;
     }
 
     /**
-     * Function used to execute some code before the script stops, useful for disposing, debriefing or chaining.
+     * Function used to execute some code before the script stops, useful for disposing, debriefing or chaining scripts.
      */
     public final void onExit() {
         log("Closing bot manager...");
         closeBotMenu();
-        log("Successfully exited ETA's OsBot manager");
         stop(false);
-    }
-
-    /**
-     * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
-     * @throws InterruptedException
-     */
-    public final void toggleExecutionMode() throws InterruptedException {
-        // toggle run mode
-        if (isRunning)
-            script.pause();
-        else
-            script.resume();
-
-        // update isRunning variable
-        isRunning = !isRunning;
-    }
-;
-
-    /**
-     * Restarts this script from the start.
-     */
-    public final void restart() {
-        log("Restarting script...");
-        bot.getScriptExecutor().restart();
+        log("Successfully exited ETA's OsBot manager");
     }
 
     /**

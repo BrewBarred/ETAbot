@@ -11,6 +11,7 @@ public class F2PDraynor2 extends FishingMan {
     }
     @Override
     protected void onSetup() {
+        isRunning = true;
     }
 
     @Override
@@ -20,7 +21,6 @@ public class F2PDraynor2 extends FishingMan {
 
     @Override
     public int onLoop() {
-        log("Testicles");
         // goto draynor fishing spot
         // fish based on gui preference?
         // if cooking

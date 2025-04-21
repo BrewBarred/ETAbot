@@ -10,9 +10,8 @@ public class FishingMenu extends BotMenu {
 
     protected JComboBox<FishingArea> selectionFishingArea;
     protected JComboBox<FishingStyle> selectionFishingStyle;
-    private JCheckBox checkDropFish;
-    private JCheckBox checkBankFish;
-    private JButton buttonStart;
+    private JCheckBox cbDropFish;
+    private JCheckBox cbBankFish;
 
     /**
      * Creates a new fishing menu which can be used to adjust various fishing script preferences.
@@ -25,76 +24,68 @@ public class FishingMenu extends BotMenu {
     }
 
     @Override
-    public JPanel[] getLayout() {
-        JPanel mainPanel = new JPanel(new GridLayout(6, 1));
-
-        JLabel labelLocation = new JLabel("Select a fishing area:");
-        this.selectionFishingArea = new JComboBox<>(FishingArea.values());
-        // listen for a selection change in fishing areas and pass it to the bot
-        this.selectionFishingArea.addActionListener(e -> {
-                FishingArea area = (FishingArea) selectionFishingArea.getSelectedItem();
-                this.bot.setFishingArea(area);
-            }
-        );
-
-        JLabel labelMethod = new JLabel("Select a fishing style:");
-        this.selectionFishingStyle = new JComboBox<>(FishingStyle.values());
-        this.selectionFishingStyle.addActionListener(e -> {
-                FishingStyle style = (FishingStyle) selectionFishingStyle.getSelectedItem();
-                this.bot.setFishingStyle(style);
-            }
-        );
-
-        this.checkDropFish = new JCheckBox("Drop Fish");
-        this.checkBankFish = new JCheckBox("Bank Fish");
-
-        this.buttonStart = new JButton("Stop Fishing");
-        this.buttonStart.addActionListener(e -> this.toggleFishing());
-
-        // Add all components to the main panel
-        mainPanel.add(labelLocation);
-        mainPanel.add(this.selectionFishingArea);
-        mainPanel.add(labelMethod);
-        mainPanel.add(this.selectionFishingStyle);
-        mainPanel.add(this.checkDropFish);
-        mainPanel.add(this.checkBankFish);
-        mainPanel.add(this.buttonStart);
-
-        // Return it as part of the expected array:
-        return new JPanel[]{
-                mainPanel,         // main tab
-                new JPanel(),      // presets tab (empty for now)
-                new JPanel()       // settings tab (empty for now)
-        };
-    }
-
-//    /**
-//     * Sets the currently selected {@link FishingArea} in the {@link BotMenu} interface.
-//     *
-//     * @param area The {@link FishingArea} in which the bot shall attempt to fish.
-//     */
-//    protected void setFishingArea(FishingArea area) {
-//        if (area == null)
-//            return;
-//
-//        bot.fishingArea = area;
-//        selectionFishingArea.setSelectedItem(area);
-//    }
-//
-
-    /**
-     * Play/pause the botting script based on the current script state. This function will also update the button text
-     * to reflect the button changes.
-     *
-     * @throws RuntimeException If {@link utils.BotMan ToggleExecutionMode()} fails to play/pause the script.
-     */
-    private void toggleFishing() {
-        buttonStart.setText(bot.isRunning ? "Start Fishing" : "Stop Fishing");
+    public JPanel[] getLayout() throws RuntimeException {
         try {
-            bot.toggleExecutionMode();
-        } catch (InterruptedException ex) {
+            JPanel mainPanel = new JPanel(new GridLayout(6, 1));
+
+            JLabel labelLocation = new JLabel("Select a fishing area:");
+            this.selectionFishingArea = new JComboBox<>(FishingArea.values());
+            // listen for a selection change in fishing areas and pass it to the bot
+            this.selectionFishingArea.addActionListener(e -> {
+                        FishingArea area = (FishingArea) selectionFishingArea.getSelectedItem();
+                        this.bot.setFishingArea(area);
+                    }
+            );
+
+            JLabel labelMethod = new JLabel("Select a fishing style:");
+            this.selectionFishingStyle = new JComboBox<>(FishingStyle.values());
+            this.selectionFishingStyle.addActionListener(e -> {
+                        FishingStyle style = (FishingStyle) selectionFishingStyle.getSelectedItem();
+                        this.bot.setFishingStyle(style);
+                    }
+            );
+
+            this.cbDropFish = new JCheckBox("Drop Fish");
+            this.cbBankFish = new JCheckBox("Bank Fish");
+
+            this.btnRunning = new JButton("Pause Fishing");
+            this.btnRunning.addActionListener(e -> {
+                try {
+                    bot.toggleExecutionMode();
+                } catch (InterruptedException ex) {
+                    throw new RuntimeException(ex);
+                }
+            });
+
+            // Add all components to the main panel
+            mainPanel.add(labelLocation);
+            mainPanel.add(this.selectionFishingArea);
+            mainPanel.add(labelMethod);
+            mainPanel.add(this.selectionFishingStyle);
+            mainPanel.add(this.cbDropFish);
+            mainPanel.add(this.cbBankFish);
+            mainPanel.add(this.btnRunning);
+
+            // Return it as part of the expected array:
+            return new JPanel[]{
+                    mainPanel,         // main tab
+                    new JPanel(),      // presets tab (empty for now)
+                    new JPanel()       // settings tab (empty for now)
+            };
+
+        } catch (Exception ex) {
             throw new RuntimeException(ex);
         }
+    }
+
+    @Override
+    protected void onResume() {
+        btnRunning.setText("Pause fishing");
+    }
+
+    @Override
+    protected void onPause() {
+        btnRunning.setText("Start fishing");
     }
 
     //TODO: Consider turning each feature on here into its own function and adding it that way, and calling FishingMan
