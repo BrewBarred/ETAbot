@@ -32,10 +32,9 @@ public class FishingMenu extends BotMenu {
             this.selectionFishingArea = new JComboBox<>(FishingArea.values());
             // listen for a selection change in fishing areas and pass it to the bot
             this.selectionFishingArea.addActionListener(e -> {
-                        FishingArea area = (FishingArea) selectionFishingArea.getSelectedItem();
-                        this.bot.setFishingArea(area);
-                    }
-            );
+                FishingArea area = (FishingArea) selectionFishingArea.getSelectedItem();
+                this.bot.setFishingArea(area);
+            });
 
             JLabel labelMethod = new JLabel("Select a fishing style:");
             this.selectionFishingStyle = new JComboBox<>(FishingStyle.values());

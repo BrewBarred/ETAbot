@@ -33,6 +33,9 @@ public abstract class BotMenu {
         // provides a reference to the base BotMan class incase child classes choose not to abstract
         this.bot = bot;
         this.log("Attempting to launch BotMenu...");
+
+        // set defaults TODO: create a function to handle setting defaults later?
+        this.isHidingOnClose = true;
     }
 
     /**
@@ -108,10 +111,16 @@ public abstract class BotMenu {
             /*
              * checkbox: cbHideMenuOnClose
              */
-            JCheckBox cbHideMenuOnClose = new JCheckBox("Hide menu on close", true);
+            JCheckBox cbHideMenuOnClose = new JCheckBox("Hide menu on close", isHidingOnClose);
             cbHideMenuOnClose.addActionListener(e -> {
                 this.isHidingOnClose = cbHideMenuOnClose.isSelected();
-                log("Hide menu on close has been set to: " + this.isHidingOnClose);
+                if (this.isHidingOnClose)
+                    this.window.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+                else
+                    this.window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+
+                log("Hide menu on close has been set to: " + this.isHidingOnClose
+                        + ", with a default closing operation of: " + this.window.getDefaultCloseOperation());
             });
 
             // add all general settings to general settings tab
@@ -167,25 +176,21 @@ public abstract class BotMenu {
 
     protected final void resume() {
         // if setting hide on play is enabled, hide the menu when script resumes
-        if (isHidingOnPlay) {
+        if (this.isHidingOnPlay) {
             this.hide();
-            return;
         }
-
         // if menu hiding is enabled and menu was closed, resuming the script is the only way to show it again
         //TODO: Add a hotkey to revive the menu? Show it if its dormant and create another one if not using bot.botMenu.
-        if (this.isHidingOnClose && !this.isVisible())
+        else if (this.isHidingOnClose && !this.isVisible())
             // display the menu
-            this.open();
-
-        // otherwise make the menu visible if it isn't already
-        if (!isVisible())
             this.show();
 
+        // run bot menu resume logic
         this.onResume();
     }
 
     protected final void pause() {
+        // run bot menu pause logic
         this.onPause();
     }
 
@@ -237,12 +242,18 @@ public abstract class BotMenu {
     }
 
     public final void show() {
-        window.setVisible(true);
+        if (this.isVisible())
+            return;
+
+        this.window.setVisible(true);
     }
 
     public final void hide() {
-        log("Bot menu has been hidden!");
+        if (!this.isVisible())
+            return;
+
         window.setVisible(false);
+        log("Bot menu has been hidden!");
     }
 
     public final boolean isVisible() {
