@@ -59,9 +59,6 @@ public enum FishingSpot {
      * are required for this FishingSpot.
      */
     public int[] getReqItemIds() {
-        // ensure there are items to return
-        if (this.ids == null || this.ids.length == 0)
-            return null;
         // return items required for this fishing spot
         return this.ids;
     }

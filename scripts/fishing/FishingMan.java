@@ -16,7 +16,6 @@ import utils.Rand;
 import java.util.*;
 import java.util.List;
 
-//TODO: Make abstract after testing functionality
 public abstract class FishingMan extends BotMan<FishingMenu> {
     /**
      * The fishing style of this bot (i.e., {@link FishingStyle FISHINGSTYLE.NET}, {@link FishingStyle FISHINGSTYLE.BAIT})
@@ -28,14 +27,13 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
      */
     private FishingArea fishingArea = FishingArea.DRAYNOR_VILLAGE;
     /**
-     *
+     * A boolean denoting whether the bot will cook the catch or not.
      */
-    protected boolean isCooking = true;
+    protected boolean isCooking = false;
     /**
      * The amount of gold points required before the bot will head to Karamja to start fishing
      */
     private final int FULL_GP_REQ = 60;
-    private final double VERSION = 2.0;
     private final Area PORT_SARIM_COOKING_RANGE = new Area(3015, 3240, 3019, 3236);
     private final Area PORT_SARIM_DEPOSIT_BOX_AREA = new Area(3043, 3237, 3049, 3234);
     private final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
@@ -47,7 +45,7 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
             //TODO: Investigate potential fixes for the issue noted in the comment below:
             // creates a fishing menu and passing it to the BotMan, unfortunately you still need to explicitly cast it to
             // access functions with this implementation
-            //this.setFishingArea(getFishingArea());
+            this.setFishingArea(getFishingArea());
             //this.setFishingStyle(getFishingStyle());
         } catch (Exception ex) {
             ex.getStackTrace();
