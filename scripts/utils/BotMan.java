@@ -238,7 +238,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         if (botMenu != null)
             botMenu.close();
 
-        // reset botMenu variable to avoid calling a disposed object
+        // reset botMenu variable
         botMenu = null;
     }
 
