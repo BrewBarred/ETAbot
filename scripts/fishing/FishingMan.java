@@ -38,21 +38,6 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
     private final Area PORT_SARIM_DEPOSIT_BOX_AREA = new Area(3043, 3237, 3049, 3234);
     private final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
 
-    public FishingMan() {
-        // call super constructor to ensure proper initialization
-        super();
-        try {
-            //TODO: Investigate potential fixes for the issue noted in the comment below:
-            // creates a fishing menu and passing it to the BotMan, unfortunately you still need to explicitly cast it to
-            // access functions with this implementation
-            //this.setFishingArea(getFishingArea());
-            //this.setFishingStyle(getFishingStyle());
-        } catch (Exception ex) {
-            ex.getStackTrace();
-            log(ex.getMessage());
-        }
-    }
-
     @Override
     protected FishingMenu getBotMenu() {
         return new FishingMenu(this);

@@ -226,8 +226,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         botMenu = newMenu;
         // open the new bot menu
         botMenu.open(true);
-        // pause the script for user to choose bot menu options
-        pause();
     }
 
     /**

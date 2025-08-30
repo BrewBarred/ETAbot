@@ -15,7 +15,7 @@ import java.time.Instant;
 import java.util.*;
 
 @ScriptManifest(
-        name = "F2P Karamja Fisherman v2",
+        name = "F2P Karamja Fisherman",
         author = "E.T.A.",
         version = 2.0,
         info = "Fishes, cooks and sells lobsters/swordfish in Karamja utilizing a new framework by ETA (Free-to-Play)",
@@ -45,15 +45,14 @@ public class F2PKaramja extends FishingMan {
 
     @Override
     protected void onSetup() {
-        log("Starting F2PKaramja script...");
-        //setStatus("Starting " + this.getName() + " script...");
-        setStatus("Loading bot menu...");
+        setStatus("Starting " + this.getName() + " script...", true);
         // set method provider (required to access osbot API)
         Utils.setMethodProvider(getBot().getMethods());
-
+        // pause bot to allow users to set menu options
+        this.pause();
         // sets bot to harpoon fish at karamja docks (musa point)
-        this.setFishingStyle(FishingStyle.HARPOON);
-        this.setFishingArea(FishingArea.MUSA_POINT);
+        //this.setFishingStyle((FishingStyle) botMenu.selectionFishingStyle.getSelectedItem());
+        //this.setFishingArea((FishingArea) botMenu.selectionFishingArea.getSelectedItem());
     }
 
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
@@ -61,10 +60,10 @@ public class F2PKaramja extends FishingMan {
     @Override
     public int onLoop() throws InterruptedException {
         if (this.isRunning) {
-            setStatus("Settings mode has been " + (isRunning ? "enabled" : "disabled") + "! Pausing script...");
-            return 0;
-        } else {
             setStatus("Thinking...", false);
+        } else {
+            setStatus("Settings mode has been enabled! Pausing script...");
+            return 0;
         }
 
         //TODO: Fix/implement inventory tracker
