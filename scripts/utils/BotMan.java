@@ -49,8 +49,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     protected boolean isAFK = false;
     protected Instant endAFK = null;
 
-    // script executor provides access to
-    private ScriptExecutor script;
     /**
      * A description of the task currently being attempted by the bot. This is used to skip logic in events where the
      * loop is restarted prematurely during a check, for example.
@@ -99,8 +97,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     @Override
     public final void onStart() {
         this.setStatus("Initializing bot script...");
-        // initialize script executor to interface with game client (e.g., pause/play scripts)
-        this.script = bot.getScriptExecutor();
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
         // this.bank = new BankMan(this);
@@ -218,15 +214,20 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public void setBotMenu(T newMenu) {
         log("Setting botMenu: " + newMenu.toString());
+        // return early if this menu is already open
         if (botMenu == newMenu)
             return;
 
-        if (botMenu != null) {
-            botMenu.close(); // close any old UI
-        }
+        // close existing botmenu before opening a new one
+        if (botMenu != null)
+            botMenu.close();
 
+        // assign the new menu as the current bot menu
         botMenu = newMenu;
-        botMenu.open(true); // force launch a new menu
+        // open the new bot menu
+        botMenu.open(true);
+        // pause the script for user to choose bot menu options
+        pause();
     }
 
     /**
