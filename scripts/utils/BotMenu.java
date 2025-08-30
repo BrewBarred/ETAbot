@@ -170,7 +170,7 @@ public abstract class BotMenu {
             // display the menu
             this.show();
 
-        // run bot menu resume logic
+        // run exclusive bot menu resume logic
         this.onResume();
     }
 

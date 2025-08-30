@@ -80,11 +80,13 @@ public class FishingMenu extends BotMenu {
 
     @Override
     protected void onResume() {
+        log("FishingMenu.onResume() called");
         btnRunning.setText("Pause fishing");
     }
 
     @Override
     protected void onPause() {
+        log("FishingMenu.onPause() called");
         btnRunning.setText("Start fishing");
     }
 }

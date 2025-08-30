@@ -113,11 +113,14 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public final void pause() {
         log("Pausing botting script...");
         // sync BotMenu interface if any exists
-        if (this.botMenu != null)
+        if (this.botMenu != null) {
+            log("Pausing bot menu");
             this.botMenu.pause();
+        }
+        else
+            log("No Bot Menu to pause!!");
 
         this.isRunning = false;
-
 
         /*
          * Insert optional script pause logic here
@@ -143,6 +146,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public final void toggleExecutionMode() throws InterruptedException {
         // toggle execution mode of both client and interface (interface handled via Overridden pause() and resume())
         if (this.isRunning) {
+            // pause script executor??
             this.pause();
         } else {
             this.resume();

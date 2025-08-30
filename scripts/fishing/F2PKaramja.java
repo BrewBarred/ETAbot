@@ -27,7 +27,6 @@ public class F2PKaramja extends FishingMan {
      */
     private final int FULL_GP_REQ = 60;
     private final double VERSION = 2.0;
-    private final Area KARAMJA_FISHING_DOCK = new Area(2919, 3183, 2928, 3173);
     private static final Area PORT_SARIM_COOKING_RANGE = new Area(3015, 3240, 3019, 3236);
     private final Area PORT_SARIM_DEPOSIT_BOX_AREA = new Area(3043, 3237, 3049, 3234);
     private static final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
@@ -70,7 +69,6 @@ public class F2PKaramja extends FishingMan {
         // track inventory changes
         //inventoryListener.checkInventoryChanges(this);
 
-        log("Checking for required fishing equipment...");
         // if the player has no fishing gear
         if (!hasReqFishingGear()) {
             //TODO: Implement logic to determine and fetch required fishing gear based on GUI settings
@@ -78,7 +76,6 @@ public class F2PKaramja extends FishingMan {
             this.onExit();
         }
 
-        log("Checking for required charter fare...");
         if (!hasReqCharterFare()) {
             //TODO: Implement logic to fetch/collect enough coins for the required charter (e.g., bananas or bank)
             log("Insufficient GP found! Please upgrade to PRO for the GP fetching feature!");
@@ -118,7 +115,8 @@ public class F2PKaramja extends FishingMan {
                 if (hasCage())
                     fishCage();
             } else {
-                walkTo(KARAMJA_FISHING_DOCK, "Karamja fishing dock");
+                FishingArea spot = FishingArea.MUSA_POINT;
+                walkTo(spot.getArea(), spot.toString());
                 // set a max afk time of 5 seconds
                 return(Rand.getRand(5));
             }
