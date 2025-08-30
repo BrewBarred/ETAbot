@@ -99,7 +99,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     @Override
     public final void onStart() {
         this.setStatus("Initializing bot script...");
-        // initialize script executor to interface with bot client (e.g., pause/play script)
+        // initialize script executor to interface with game client (e.g., pause/play scripts)
         this.script = bot.getScriptExecutor();
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
@@ -147,10 +147,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public final void toggleExecutionMode() throws InterruptedException {
         // toggle execution mode of both client and interface (interface handled via Overridden pause() and resume())
         if (this.isRunning) {
-            this.script.pause();
             this.pause();
         } else {
-            this.script.resume();
             this.resume();
         }
     }
