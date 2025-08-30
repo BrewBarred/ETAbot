@@ -45,7 +45,7 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
             //TODO: Investigate potential fixes for the issue noted in the comment below:
             // creates a fishing menu and passing it to the BotMan, unfortunately you still need to explicitly cast it to
             // access functions with this implementation
-            this.setFishingArea(getFishingArea());
+            //this.setFishingArea(getFishingArea());
             //this.setFishingStyle(getFishingStyle());
         } catch (Exception ex) {
             ex.getStackTrace();
@@ -184,7 +184,6 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
             super.onExit();
         }
 
-        log("Fishing now!!!!");
         // fetch nearest cage/harpoon fishing spot
         Optional<NPC> harpoonSpot = getNpcs().getAll().stream()
                 .filter(Objects::nonNull) // ensure spot isn't null

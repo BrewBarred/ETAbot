@@ -49,6 +49,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     protected boolean isAFK = false;
     protected Instant endAFK = null;
 
+    // script executor provides access to
     private ScriptExecutor script;
     /**
      * A description of the task currently being attempted by the bot. This is used to skip logic in events where the
@@ -121,6 +122,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
         this.isRunning = false;
 
+
         /*
          * Insert optional script pause logic here
          */
@@ -134,7 +136,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             this.botMenu.resume();
 
         this.isRunning = true;
-        
         /*
          * Insert optional script resume logic here
          */
@@ -275,14 +276,14 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      //     *
      //     * @param area The area in which the player should walk toward.
      //     */
-    public void walkTo(Area area, String dest_status) {
+    public void walkTo(Area area, String status) {
         // return early if the player is already at the destination
         if (area.contains(myPlayer()))
             return;
 
         // update the status if any status message was passed
-        if (!dest_status.isEmpty())
-            setStatus(String.format("Travelling to %s...", dest_status), false);
+        if (!status.isEmpty())
+            setStatus(String.format("Travelling to %s...", status), false);
 
         // walk to the passed area
         if (getWalking().webWalk(area)) {

@@ -48,6 +48,8 @@ public class F2PKaramja extends FishingMan {
         log("Starting F2PKaramja script...");
         //setStatus("Starting " + this.getName() + " script...");
         setStatus("Loading bot menu...");
+        // set method provider (required to access osbot API)
+        Utils.setMethodProvider(getBot().getMethods());
     }
 
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
@@ -136,20 +138,20 @@ public class F2PKaramja extends FishingMan {
         return Rand.getRandShortDelayInt();
     }
 
-//    // Helper method to draw a circular progress bar
-//    private void drawProgressCircle(Graphics2D g, int x, int y, int radius, double progress) {
-//        // Background circle
-//        g.setColor(new Color(255, 255, 255, 50));
-//        g.fillOval(Math.min(0, x - radius), y - radius, radius * 2, radius * 2);
-//
-//        // Progress arc
-//        g.setColor(Color.GREEN);
-//        int angle = (int) (360 * progress);
-//        g.fillArc(x - radius, y - radius, radius * 2, radius * 2, 90, -angle);
-//
-//        // Outline
-//        g.setColor(Color.WHITE);
-//        g.drawOval(x - radius, y - radius, radius * 2, radius * 2);
-//    }
+    // Helper method to draw a circular progress bar
+    private void drawProgressCircle(Graphics2D g, int x, int y, int radius, double progress) {
+        // Background circle
+        g.setColor(new Color(255, 255, 255, 50));
+        g.fillOval(Math.min(0, x - radius), y - radius, radius * 2, radius * 2);
+
+        // Progress arc
+        g.setColor(Color.GREEN);
+        int angle = (int) (360 * progress);
+        g.fillArc(x - radius, y - radius, radius * 2, radius * 2, 90, -angle);
+
+        // Outline
+        g.setColor(Color.WHITE);
+        g.drawOval(x - radius, y - radius, radius * 2, radius * 2);
+    }
 
 }
