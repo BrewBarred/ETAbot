@@ -16,18 +16,12 @@ public class TestFish extends FishingMan  {
     }
 
     @Override
-    protected FishingMenu getBotMenu() {
-        return new FishingMenu(this);
-    }
-
-    @Override
     protected void paintScriptOverlay(Graphics2D g) {
 
     }
 
     @Override
     public int onLoop() throws InterruptedException {
-        log("Please...");
-        return 0;
+        return 1000;
     }
 }

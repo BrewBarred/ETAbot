@@ -5,15 +5,6 @@ import java.awt.*;
 
 @ScriptManifest(name = "F2P Draynor Fisherman", version = 1.0, author = "E.T.A", logo = "", info = "No description provided")
 public class F2PDraynor extends FishingMan {
-    public F2PDraynor() {
-        try {
-            log("Constructing Draynor fisherman...");
-        } catch (Exception ex) {
-            ex.getStackTrace();
-            log(ex.getMessage());
-        }
-    }
-
     @Override
     protected void onSetup() {
         try {
@@ -27,14 +18,16 @@ public class F2PDraynor extends FishingMan {
             // buy it
             // if not enough gp
             // start gp bot
-            } catch (Exception ex) {
-                log("Error setting up F2PDraynor script!\n " + ex.getMessage());
-            }
+
+        } catch (Exception ex) {
+            log("Error setting up F2PDraynor script!\n " + ex.getMessage());
+        }
     }
 
     @Override
     protected void paintScriptOverlay(Graphics2D g) {
         // custom script overlay logic here
+        log("Printing...");
     }
 
     @Override

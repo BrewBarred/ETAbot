@@ -263,7 +263,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         // update status
         this.status = status;
 
-        // only log status if passed boolean is true
+        // optionally log status to console
         if (log)
             log(status);
     }
