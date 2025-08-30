@@ -20,7 +20,6 @@
         <SOURCES />
       </library>
     </orderEntry>
-    <orderEntry type="library" name="osbot 2.7.57" level="project" />
     <orderEntry type="module-library">
       <library>
         <CLASSES>

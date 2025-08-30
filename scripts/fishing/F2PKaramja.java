@@ -50,6 +50,10 @@ public class F2PKaramja extends FishingMan {
         setStatus("Loading bot menu...");
         // set method provider (required to access osbot API)
         Utils.setMethodProvider(getBot().getMethods());
+
+        // sets bot to harpoon fish at karamja docks (musa point)
+        this.setFishingStyle(FishingStyle.HARPOON);
+        this.setFishingArea(FishingArea.MUSA_POINT);
     }
 
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
@@ -132,7 +136,7 @@ public class F2PKaramja extends FishingMan {
             return delay;
         }
 
-        // else skip fakeAFK this iteration
+        // else skip fakeAFK     this iteration
         isAFK = false;
         //endAFK = null;
         return Rand.getRandShortDelayInt();
