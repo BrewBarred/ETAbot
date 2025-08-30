@@ -184,6 +184,7 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
             super.onExit();
         }
 
+        log("Fishing now!!!!");
         // fetch nearest cage/harpoon fishing spot
         Optional<NPC> harpoonSpot = getNpcs().getAll().stream()
                 .filter(Objects::nonNull) // ensure spot isn't null
