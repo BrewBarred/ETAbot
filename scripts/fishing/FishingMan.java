@@ -495,11 +495,11 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
         long ttl = getExperienceTracker().getTimeToLevel(Skill.FISHING);
 
 
-        g.drawString("Woodcut Man v1.0", x, y);
+        g.drawString(this.getName() + " " + this.getVersion(), x, y);
         g.drawString("Status: " + status, x, y += 16);
-        g.drawString("Level: " + getSkills().getStatic(Skill.FISHING) + " (" + getSkills().experienceToLevel(Skill.FISHING) + " xp to " + getSkills().getVirtualLevel(Skill.WOODCUTTING) + 1, x, y += 16);
+        g.drawString("Level: " + getSkills().getStatic(Skill.FISHING) + " (" + getSkills().experienceToLevel(Skill.FISHING) + " xp to " + (getSkills().getVirtualLevel(Skill.FISHING) + 1) + ")", x, y += 16);
         g.drawString("Experience: " + xpGained + " (" + xpHr + "/h)", x, y += 16);
-        g.drawString("Time to level: " + Instant.ofEpochMilli(ttl), x, y += 16);
+        g.drawString("Time to level: " + ttl, x, y += 16);
     }
 
 }
