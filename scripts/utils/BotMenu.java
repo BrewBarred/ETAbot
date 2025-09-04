@@ -175,10 +175,11 @@ public abstract class BotMenu {
     }
 
     protected final void pause() {
-        // run bot menu pause logic
-        this.onPause();
         if (bot.botMenu != null && this.isHidingOnPlay)
             this.show();
+
+        // run specific bot menu pause logic (different scripts have different bot menu pause states)
+        this.onPause();
     }
 
     /**

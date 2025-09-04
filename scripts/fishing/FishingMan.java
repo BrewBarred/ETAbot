@@ -220,8 +220,6 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
                 }
             }.sleep();
 
-            List<String> soldItems = new ArrayList<>();
-
             setStatus("Attempting to sell raw food...");
             if (getStore().isOpen()) {
                 // filter inventory for any raw food and sell it
@@ -233,13 +231,11 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
                     // get the name of this item
                     String name = item.getName();
                     // if this item is raw food and has not already been sold...
-                    if (name.startsWith("Raw ") && !soldItems.contains(name)) {
+                    if (name.startsWith("Raw ")) {
                         setStatus("Selling " + name + "...");
                         // sell 50 of each raw food as it is found to speed up selling process
                         getStore().sell(name, 50);
-                        // add this item
-                        soldItems.add(name);
-                        sleep(Rand.getRand(232, 4034));
+                        sleep(Rand.getRand(1323, 4034));
                     }
                 }
                 getStore().close();

@@ -114,7 +114,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         log("Pausing botting script...");
         // sync BotMenu interface if any exists
         if (this.botMenu != null) {
-            log("Pausing bot menu");
             this.botMenu.pause();
         }
         else
