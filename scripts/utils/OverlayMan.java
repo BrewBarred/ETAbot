@@ -65,7 +65,7 @@ public class OverlayMan {
             bot.log("player is null!");
         }
 
-        //bot.paintScriptOverlay(g);
+        bot.paintScriptOverlay(g);
 
         // any other custom overlay bits go here using drawText(...) or drawBox(...) etc.
             // e.g:

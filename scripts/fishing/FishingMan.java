@@ -3,6 +3,7 @@ package fishing;
 import org.osbot.T;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
+import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.script.MethodProvider;
 
 import utils.BotMan;
@@ -13,6 +14,9 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.BotMenu;
 import utils.Rand;
 
+import java.awt.*;
+import java.sql.Time;
+import java.time.Instant;
 import java.util.*;
 import java.util.List;
 
@@ -235,11 +239,15 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
                         setStatus("Selling " + name + "...");
                         // sell 50 of each raw food as it is found to speed up selling process
                         getStore().sell(name, 50);
-                        sleep(Rand.getRand(1323, 4034));
+                        sleep(Rand.getRand(313, 1323));
                     }
                 }
                 getStore().close();
             }
+
+            // hop worlds after a successful sale
+            getWorlds().hopToF2PWorld();
+            sleep(random(1711, 2322));
         }
     }
 
@@ -367,21 +375,6 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
         }
     }
 
-//    /**
-//     * Check if the players inventory is full. This function will update the script status about a full inventory.
-//     *
-//     * @return True if the players inventory is full, else returns false.
-//     */
-//    protected boolean isFullInv() {
-//        // if inventory is not full, return false
-//        if (!getInventory().isFull())
-//            return false;
-//
-//        // else update status and return true
-//        setStatus("Inventory is full!");
-//        return true;
-//    }
-
     /**
      * Check if the player has a harpoon in their inventory
      *
@@ -475,17 +468,38 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
         setStatus("Checking for required fishing equipment...", false);
         String[] reqItems = getFishingStyle().getReqItems();
 
-        // if the player does not have the required items for the selected fishing style
-        //TODO: Rework to use BagMan
-        if (!getInventory().contains(reqItems)) {
-            log("Unable to find the equipment required for the selected fishing style..."
-                    + "\nFishing style: " + fishingStyle
-                    + "\nRequired items: " + fishingStyle.getReqItemString());
-            return false;
+        if (getInventory().contains(reqItems)) {
+            //TODO: Consider adding additional logic here to check for bonus XP items or optional items via GUI interface
+            return true;
         }
 
-        //TODO: Consider adding additional logic here to check for bonus XP items or optional items via GUI interface
-        return true;
+        // if the player does not have the required items for the selected fishing style
+        //TODO: Rework to use BagMan
+        log("Unable to find the equipment required for the selected fishing style..."
+                + "\nFishing style: " + fishingStyle
+                + "\nRequired items: " + fishingStyle.getReqItemString());
+        return false;
+    }
+
+    @Override
+    protected void paintScriptOverlay(Graphics2D g) {
+        int x = 20, y = 470, w = 600, h = 200;
+        g.setColor(new Color(0, 0, 0, 120));
+        g.fillRoundRect(x - 5, y - 18, w, h, 10, 10);
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Consolas", Font.PLAIN, 12));
+
+
+        long xpGained = getExperienceTracker().getGainedXP(Skill.FISHING);
+        long xpHr = getExperienceTracker().getGainedXPPerHour(Skill.FISHING);
+        long ttl = getExperienceTracker().getTimeToLevel(Skill.FISHING);
+
+
+        g.drawString("Woodcut Man v1.0", x, y);
+        g.drawString("Status: " + status, x, y += 16);
+        g.drawString("Level: " + getSkills().getStatic(Skill.FISHING) + " (" + getSkills().experienceToLevel(Skill.FISHING) + " xp to " + getSkills().getVirtualLevel(Skill.WOODCUTTING) + 1, x, y += 16);
+        g.drawString("Experience: " + xpGained + " (" + xpHr + "/h)", x, y += 16);
+        g.drawString("Time to level: " + Instant.ofEpochMilli(ttl), x, y += 16);
     }
 
 }

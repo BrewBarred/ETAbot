@@ -11,8 +11,11 @@ import utils.Utils;
 
 import javax.swing.*;
 import java.awt.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+
+import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 
 @ScriptManifest(
         name = "F2P Karamja Fisherman",
@@ -37,10 +40,26 @@ public class F2PKaramja extends FishingMan {
         return new FishingMenu(this);
     }
 
-    @Override
-    protected void paintScriptOverlay(Graphics2D g) {
-
-    }
+//    @Override
+//    protected void paintScriptOverlay(Graphics2D g) {
+//        int x = 10, y = 30, w = 220, h = 90;
+//        g.setColor(new Color(0, 0, 0, 120));
+//        g.fillRoundRect(x - 5, y - 18, w, h, 10, 10);
+//        g.setColor(Color.WHITE);
+//        g.setFont(new Font("Consolas", Font.PLAIN, 12));
+//
+//
+//        long xpGained = getExperienceTracker().getGainedXP(Skill.WOODCUTTING);
+//        long xpHr = getExperienceTracker().getGainedXPPerHour(Skill.WOODCUTTING);
+//        long ttl = getExperienceTracker().getTimeToLevel(Skill.WOODCUTTING);
+//
+//
+//        g.drawString("Woodcutter99 v1.0", x, y);
+//        g.drawString("Status: " + status, x, y + 16);
+//        g.drawString("WC Lv: " + getSkills().getStatic(Skill.WOODCUTTING) + " (" + getSkills().experienceToLevel(Skill.WOODCUTTING) + " xp to)" , x, y + 32);
+//        g.drawString("XP: " + xpGained + " (" + xpHr + "/h)", x, y + 48);
+//        //g.drawString("Runtime: " + formatDuration(Duration.between(startTime, Instant.now())), x, y + 80);
+//    }
 
     @Override
     protected void onSetup() {
@@ -137,22 +156,6 @@ public class F2PKaramja extends FishingMan {
         isAFK = false;
         //endAFK = null;
         return Rand.getRandShortDelayInt();
-    }
-
-    // Helper method to draw a circular progress bar
-    private void drawProgressCircle(Graphics2D g, int x, int y, int radius, double progress) {
-        // Background circle
-        g.setColor(new Color(255, 255, 255, 50));
-        g.fillOval(Math.min(0, x - radius), y - radius, radius * 2, radius * 2);
-
-        // Progress arc
-        g.setColor(Color.GREEN);
-        int angle = (int) (360 * progress);
-        g.fillArc(x - radius, y - radius, radius * 2, radius * 2, 90, -angle);
-
-        // Outline
-        g.setColor(Color.WHITE);
-        g.drawOval(x - radius, y - radius, radius * 2, radius * 2);
     }
 
 }
