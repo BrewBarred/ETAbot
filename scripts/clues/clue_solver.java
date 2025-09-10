@@ -1,5 +1,6 @@
 package clues;
 
+import org.osbot.rs07.api.Bank;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.ui.RS2Widget;
@@ -18,6 +19,8 @@ import java.awt.*;
         logo = ""
 )
 public class clue_solver extends ClueMan {
+    // charlie the tramp location
+    final Area VARROCK_SOUTH_GATE = new Area(3207, 3393, 3210, 3389);
     @Override
     public int onLoop() throws InterruptedException {
         setStatus("Starting...", true);
@@ -26,52 +29,176 @@ public class clue_solver extends ClueMan {
             onExit();
             return 0;
         }
-        setStatus("Attempting to solve clue...", true);
 
+        setStatus("Attempting to solve clue...", true);
         // Try to read text from typical places
         String text = readClue();
         log("Text = " + text);
 
-        if (text == null) {
+        solveClue(text);
+
+        return Rand.getRand(3212, 3572);
+    }
+
+    protected boolean solveClue(String scrollText) throws InterruptedException {
+        // validate the passed clue scroll text before continuing
+        if (scrollText == null) {
             setStatus("Unable to process clue scroll! Exiting script...", true);
             onExit();
+            return false;
         }
 
-        switch (text) {
+        // check if a solution exists for this scroll
+        switch (scrollText) {
             // talk to hans by lummy castle
             case "Always walking around the castle grounds and somehow knows everyone's age.":
-                // pass npc function hans and lumbridge castle courtyard area
-                solveNPC("Hans", new Area(3218, 3229, 3226, 3218));
-                break;
+                // define npc and area
+                String hans = "Hans";
+                Area lumbridge_courtyard = new Area(3218, 3229, 3226, 3218);
+
+                // find and talk to hans
+                findNPC(hans, lumbridge_courtyard);
+                talkTo(hans);
+                return true;
 
             // talk to ranael in alkharid skirt store
             case "The anagram reveals<br> who to speak to next:<br>AN EARL":
-                // pass npc function ranel and al kharid skirt shop area
-                solveNPC("Ranael", new Area(3313, 3165, 3317, 3160));
-                break;
+                // define npc and location
+                String ranael = "Ranael";
+                Area alkharidSkirtShop = new Area(3313, 3165, 3317, 3160);
+
+                // find and talk to ranael
+                findNPC(ranael, alkharidSkirtShop);
+                talkTo(ranael);
+                return true;
 
             case "Bow to Brugsen Bursen at the Grand Exchange.":
-                walkTo(new Area(3162, 3477, 3167, 3475), "Grand Exchange");
+                // define the emote area
+                Area ge = new Area(3162, 3477, 3167, 3475);
+                walkTo(ge, "Grand Exchange");
+
+                // perform the emote
                 RS2Widget bow = getWidgets().get(216, 2, 2);
                 doEmote(bow);
+
+                // wait for uri to appear then talk to him
                 sleep(Rand.getRandShortDelayInt());
-                solveNPC("Uri");
-                break;
+                talkTo("Uri");
+                return true;
 
             case "Panic at Al Kharid mine.":
-                walkTo(new Area(3297, 3279, 3300, 3277), "Al'Kharid Mine");
+                // define the emote area
+                Area AL_KHARID_MINE = new Area(3297, 3279, 3300, 3277);
+                walkTo(AL_KHARID_MINE, "Al'Kharid Mine");
+
+                // perform the emote
                 RS2Widget panic = getWidgets().get(216, 2, 18);
                 doEmote(panic);
+
+                // wait for uri to appear then talk to him
                 sleep(Rand.getRandShortDelayInt());
-                solveNPC("Uri");
-                break;
+                talkTo("Uri");
+                return true;
+
+            ///
+            /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
+            ///
+            case "Talk to Charlie the Tramp in Varrock.":
+                String task = getCharlieTask(scrollText);
+                completeCharlieTask(task);
+                return true;
 
             default:
-                log("Unable to read clue scroll text!");
-                onExit();
-        }
+                // if unable to solve clue, check if it's an incomplete charlie clue
+                if (completeCharlieTask(scrollText))
+                    return true;
 
-        return Rand.getRand(3212, 3572);
+                log("Unable to complete this clue scroll! Scroll text: " + scrollText);
+                onExit();
+                return false;
+        }
+    }
+
+    protected String getCharlieTask(String scrollText) throws InterruptedException {
+        setStatus("Attempting to solve charlie clue...", true);
+        setStatus("Attempting to find charlie...", true);
+        findNPC("Charlie the Tramp", VARROCK_SOUTH_GATE);
+        sleep(random(400, 600));
+        dialogues.completeDialogue("Click here to continue",
+                "Click here to continue",
+                "Click here to continue",
+                "Click here to continue");
+        return readClue();
+    }
+
+    protected boolean completeCharlieTask(String scrollText) throws InterruptedException {
+        setStatus("Attempting to complete charlie task...", true);
+        String item = getCharlieItem(scrollText);
+
+        setStatus("Attempting to fetch " + item + "...", true);
+        sleep(random(400, 600));
+        // return false if no task item could be found
+        if (item == null)
+            return false;
+
+        // goto bank to fetch item
+        Area VARROCK_WEST_BANK = new Area(3184, 3436, 3185, 3435);
+        walkTo(VARROCK_WEST_BANK, "Varrock West Bank");
+        sleep(random(400, 600));
+
+        // fetch the required item for this task
+        withdrawItem(item, 1);
+        sleep(random(400, 600));
+
+        // check players invetory for the item to confirm withdrawal
+        if (!inventory.contains(item))
+            return false;
+
+        findNPC("Charlie the Tramp", VARROCK_SOUTH_GATE);
+        dialogues.completeDialogue("Click here to continue",
+                "Click here to continue",
+                "Click here to continue",
+                "Click here to continue");
+        return true;
+    }
+
+    private boolean withdrawItem(String name, int amount) throws InterruptedException {
+        if (!getBank().isOpen() && !getBank().open()) return false;
+
+        // Make sure we’re withdrawing UNNOTED items
+        if (getBank().getWithdrawMode().equals(Bank.BankMode.WITHDRAW_NOTE))
+            getBank().enableMode(Bank.BankMode.WITHDRAW_ITEM);
+
+        // Optional: clear inventory noise (keep clue + essentials)
+        // getBank().depositAllExcept(i -> i != null &&
+        //         (i.getName().contains("Clue") || i.getName().equals("Coins")));
+
+        // return false if the item is not in the bank
+        if (!getBank().contains(name))
+            return false;
+
+        // withdraw the passed number of items
+        if (!getBank().withdraw(name, amount))
+            return false;
+
+        // wait for withdrawal to complete
+        boolean withdrawal = new ConditionalSleep(2500, 100) {
+            @Override public boolean condition() {
+                return getInventory().contains(name);
+            }
+        }.sleep();
+
+        return withdrawal;
+    }
+
+    protected String getCharlieItem(String scrollText) {
+        switch (scrollText) {
+            case "I need to give Charlie a piece of iron ore.":
+                return "Iron ore";
+
+            default:
+                return null;
+        }
     }
 
     public void doEmote(RS2Widget emote) throws InterruptedException {
@@ -87,41 +214,10 @@ public class clue_solver extends ClueMan {
         }
     }
 
-
     /**
-     * Opens a Beginner Clue Scroll if it exists in the player's inventory.
-     *
-     * @return true if the clue was found and opened, false otherwise.
+     * Read and return the contents of a clue by using the widget id
+     * @return The text contained within the clue scroll in a players inventory
      */
-    public boolean openBeginnerClue() {
-        try {
-            String BEGINNER_CLUE = "Clue scroll (beginner)";
-            // Check if inventory contains clue
-            if (getInventory().contains(BEGINNER_CLUE)) {
-                // Ensure inventory tab is open
-                if (!getTabs().isOpen(Tab.INVENTORY)) {
-                    getTabs().open(Tab.INVENTORY);
-                    sleep(random(600, 900));
-                }
-
-                log("trying to read clue");
-                // Interact with clue scroll
-                if (getInventory().interact("Read", BEGINNER_CLUE)) {
-                    log("trying to read clue");
-                    log("Opened Beginner Clue Scroll.");
-                    sleep(random(1200, 1800)); // wait for clue interface
-                    return true;
-                }
-                log("next");
-            } else {
-                log("No Beginner Clue Scroll found in inventory.");
-            }
-        } catch (Exception e) {
-            log("Error opening clue scroll: " + e.getMessage());
-        }
-        return false;
-    }
-
     private String readClue() {
         // 1) Known scroll interface (ids vary; try a few common roots/children)
         int[][] guesses = new int[][]{
@@ -135,31 +231,21 @@ public class clue_solver extends ClueMan {
             }
         }
 
-        // 2) Generic “widget containing text” fallback: look for key phrases
-        String[] probes = new String[]{
-                "clue", "talk to", "solve", "lumbridge", "draynor", "search", "dig", "speak"
-        };
-        for (String p : probes) {
-            RS2Widget w = getWidgets().getWidgetContainingText(p);
-            if (w != null && w.isVisible()) {
-                return w.getMessage();
-            }
-        }
-
         return null;
     }
 
-    private boolean solveNPC(String name) throws InterruptedException {
-        return this.solveNPC(name, null);
+    protected boolean findNPC(String npc) throws InterruptedException {
+        return findNPC(npc, null);
     }
+
     /**
      * Solves NPC clue-scroll types by talking to the NPC with the passed name at the passed area.
-     * @param name The name of the NPC to talk to
+     * @param npc The name of the NPC to talk to
      * @param area The area containing the NPC to talk to
      * @return True if the chat was successful, else returns false
      */
-    private boolean solveNPC(String name, Area area) throws InterruptedException {
-        setStatus("Attempting to solve this NPC clue-scroll type by talking to " + name, true);
+    private boolean findNPC(String npc, Area area) throws InterruptedException {
+        setStatus("Attempting to solve this NPC clue-scroll type by talking to " + npc, true);
 
         if (area == null)
             area = myPosition().getArea(5);
@@ -179,12 +265,27 @@ public class clue_solver extends ClueMan {
             }
         }
 
-        // 2) Find + talk to Hans
+        talkTo(npc);
+        return true;
+
+    }
+
+    protected boolean talkTo(String name) throws InterruptedException {
+        return talkTo(name, "");
+    }
+
+    protected boolean talkTo(String name, String... options) throws InterruptedException {
+        assert name != null;
         NPC npc = getNpcs().closest(name);
+
+        // if npc not found, wait a second and try again
         if (npc == null) {
-            getWalking().webWalk(area);
+            sleep(Rand.getRandShortDelayInt());
+            // attempt to find again
             npc = getNpcs().closest(name);
-            if (npc == null) return false;
+            if (npc == null)
+                // return if still not found
+               return false;
         }
 
         // if you can see hans
@@ -197,13 +298,14 @@ public class clue_solver extends ClueMan {
         npc.interact("Talk-to");
         sleep(random(1200, 2400));
         setStatus("Continuing dialogue...", true);
-        dialogues.clickContinue();
+        if (options.length == 0)
+            dialogues.clickContinue();
+        else
+            dialogues.completeDialogue(options);
         sleep(random(400, 600));
-        //getDialogues().completeDialogue("1"); // alternative?? string combos?
         setStatus("sleeping", true);
         sleep(Rand.getRand(2541));
         return true;
-
     }
 
     @Override
