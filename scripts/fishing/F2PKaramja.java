@@ -70,7 +70,7 @@ public class F2PKaramja extends FishingMan {
 
     @Override
     public int onLoop() throws InterruptedException {
-        if (this.isRunning) {
+        if (this.isAFK) {
             setStatus("Thinking...", false);
         } else {
             setStatus("Settings mode has been enabled! Pausing script...");

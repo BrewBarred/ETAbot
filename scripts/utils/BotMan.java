@@ -29,7 +29,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     /**
      * Script executor enables the toggling of client-side features such as pausing/resuming scripts
      */
-    protected ScriptExecutor executor;
+    //protected ScriptExecutor executor;
     //TODO: Consider later implementing task queue so GUI can manually choose bot sequence
     //protected final TaskQueue taskQueue = new TaskQueue();
     /**
@@ -48,8 +48,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public OverlayMan overlayMan;
 
-    // menu interface items
-    public boolean isRunning;
     public String status;
 
     // afk timer
@@ -112,66 +110,64 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         // this.equipMan = new EquipMan(this);
         // get bot menu from child class if any exists and update it if necessary
         this.setBotMenu(getBotMenu());
-        this.executor = getBot().getScriptExecutor();
+        //this.executor = super.getBot().getScriptExecutor();
         // enables child classes the opportunity to do stuff on start
         this.onSetup();
     }
 
+    private ScriptExecutor getExecutor() {
+        return getBot().getScriptExecutor();
+    }
+
     public boolean isPaused() {
-        return executor.isPaused();
+        // return true if the executor is paused
+        return getExecutor().isPaused();
+    }
+
+    public boolean isRunning() {
+        // return true if the executor is not currently paused (suspended)
+        return !isPaused();
     }
 
     @Override
     public final void pause() {
-        try {
-            // return early if bot is already paused
-            if (this.isPaused())
-                return;
-
-            log("Pausing botting script...");
-            // pause the script (client-side)
-            executor.pause();
-
             // sync BotMenu interface if any exists
             if (this.botMenu != null)
-                this.botMenu.pause();
-
-            this.isRunning = false;
-
+                this.botMenu.onPause();
 
             /*
              * Insert optional script pause logic here
              */
 
-            log("Successfully paused botting script!");
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+            log("Botting script has been paused.");
     }
 
     @Override
     public final void resume() {
-        log("Resuming botting script...");
         // sync BotMenu interface if any exists
         if (this.botMenu != null)
-            this.botMenu.resume();
+            this.botMenu.onResume();
 
-        this.isRunning = true;
         /*
-         * Insert optional script resume logic here
+         * Insert optional script pause logic here
          */
+
+        log("Resuming script...");
     }
 
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
      */
     public final void toggleExecutionMode() throws InterruptedException {
+        ScriptExecutor exec = getBot().getScriptExecutor();
+        boolean paused = exec.isPaused();
         // toggle execution mode of both client and interface (interface handled via Overridden pause() and resume())
-        if (this.isRunning) {
-            // pause script executor??
-            this.pause();
+        if (paused) {
+            // resume script
+            exec.resume();
         } else {
-            this.resume();
+            // pause script
+            exec.pause();
         }
     }
 

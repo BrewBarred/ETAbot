@@ -85,11 +85,11 @@ public class MiningMenu extends BotMenu {
 
     @Override
     protected void onResume() {
-        btnRunning.setText("Pause fishing");
+        btnRunning.setText("Pause mining");
     }
 
     @Override
     protected void onPause() {
-        btnRunning.setText("Start fishing");
+        btnRunning.setText("Start mining");
     }
 }

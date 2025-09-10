@@ -1,5 +1,6 @@
 package mining;
 
+import fishing.FishingArea;
 import org.osbot.rs07.script.ScriptManifest;
 import utils.BotMan;
 import utils.BotMenu;
@@ -22,17 +23,15 @@ public class F2PIronBanker extends MiningMan {
     @Override
     protected void onSetup() throws InterruptedException {
         log("Setting up mining ETA bot...");
-        // pause bot to allow users to set menu options
-        //this.pause();
     }
 
     @Override
     public int onLoop() throws InterruptedException {
-        if (this.isRunning) {
-            setStatus("Thinking...");
+        if (this.isPaused()) {
+            setStatus("Settings mode enabled!");
+            return 100;
         } else {
-            setStatus("Settings mode has been enabled! Pausing script...");
-            return 0;
+            setStatus("Thinking...");
         }
 
         // check if players inventory is full

@@ -85,49 +85,8 @@ public abstract class BotMenu {
              */
             cardSettings.add(panels[2], "Settings"); // add settings layout (provided by child)
 
-            /*
-             *  checkbox: cbStartOnLaunch
-             */
-            JCheckBox cbStartOnLaunch = new JCheckBox("Start on launch");
-            cbStartOnLaunch.addActionListener(e -> {
-                bot.log("[BOTMENU] Incomplete feature triggered!\n" +
-                        "\tSee: Settings -> General Settings -> checkbox: cbStartOnLaunch");
-            });
-
-            /*
-             * checkbox: cbHideMenuOnPlay
-             */
-            JCheckBox cbHideMenuOnPlay = new JCheckBox("Hide menu while running");
-            cbHideMenuOnPlay.addActionListener(e -> {
-                // toggle hiding on play bool when checkbox changes
-                this.isHidingOnPlay = cbHideMenuOnPlay.isSelected();
-                log("Hide menu while running has been set to: " + this.isHidingOnPlay);
-
-                // hide menu if it is currently showing
-                if (bot.isRunning)
-                    this.hide();
-            });
-
-            /*
-             * checkbox: cbHideMenuOnExit
-             */
-            JCheckBox cbHideMenuOnExit = new JCheckBox("Hide menu on exit", isHidingOnExit);
-            cbHideMenuOnExit.addActionListener(e -> {
-                this.isHidingOnExit = cbHideMenuOnExit.isSelected();
-                if (this.isHidingOnExit)
-                    this.window.setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
-                else
-                    this.window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-
-                log("Hide menu on exit has been set to: " + this.isHidingOnExit
-                        + ", with a default closing operation of: " + this.window.getDefaultCloseOperation());
-            });
-
             // add all general settings to general settings tab
             settingsGeneral.add(new JLabel("General Settings"));
-            settingsGeneral.add(cbStartOnLaunch);
-            settingsGeneral.add(cbHideMenuOnPlay);
-            settingsGeneral.add(cbHideMenuOnExit);
 
             // add all pro settings
             settingsPro.add(new JLabel("Advanced Settings"));
@@ -157,32 +116,6 @@ public abstract class BotMenu {
             setLayout(this.layout);
             log("Revert successful!");
         }
-    }
-
-    protected final void resume() {
-        // if setting hide on play is enabled, hide the menu when script resumes
-        if (this.isHidingOnPlay) {
-            this.hide();
-        }
-        // if menu hiding is enabled and menu was closed, resuming the script is the only way to show it again
-        //TODO: Add a hotkey to revive the menu? Show it if its dormant and create another one if not using bot.botMenu.
-        else if (this.isHidingOnExit && !this.isVisible())
-            // display the menu
-            this.show();
-
-        // run exclusive bot menu resume logic
-        this.onResume();
-    }
-
-    protected final void pause() {
-        // if the user hides the bot menu while its running, force it to open on script pause - or it will get lost!
-        if (bot.botMenu != null && this.isHidingOnPlay)
-            this.show();
-
-        // run specific bot menu pause logic (different scripts have different bot menu pause states)
-        this.onPause();
-        // pause bot (client-side)
-        bot.pause();
     }
 
     /**
