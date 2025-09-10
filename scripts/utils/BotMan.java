@@ -3,6 +3,7 @@ package utils;
 import org.osbot.rs07.api.Worlds;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Player;
+import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.MethodProvider;
 import org.osbot.rs07.script.Script;
@@ -369,6 +370,17 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             }
         }
         return false; // no nearby players found
+    }
+
+    public boolean openBag() throws InterruptedException {
+        // Ensure inventory tab is open
+        if (!getTabs().isOpen(Tab.INVENTORY)) {
+            getTabs().open(Tab.INVENTORY);
+            sleep(Rand.getRand(600, 900));
+            return true;
+        }
+
+        return false;
     }
 }
 
