@@ -50,6 +50,22 @@ public class clue_solver extends ClueMan {
                 solveNPC("Ranael", new Area(3313, 3165, 3317, 3160));
                 break;
 
+            case "Bow to Brugsen Bursen at the Grand Exchange.":
+                walkTo(new Area(3162, 3477, 3167, 3475), "Grand Exchange");
+                RS2Widget bow = getWidgets().get(216, 2, 2);
+                doEmote(bow);
+                sleep(Rand.getRandShortDelayInt());
+                solveNPC("Uri");
+                break;
+
+            case "Panic at Al Kharid mine.":
+                walkTo(new Area(3297, 3279, 3300, 3277), "Al'Kharid Mine");
+                RS2Widget panic = getWidgets().get(216, 2, 18);
+                doEmote(panic);
+                sleep(Rand.getRandShortDelayInt());
+                solveNPC("Uri");
+                break;
+
             default:
                 log("Unable to read clue scroll text!");
                 onExit();
@@ -57,6 +73,20 @@ public class clue_solver extends ClueMan {
 
         return Rand.getRand(3212, 3572);
     }
+
+    public void doEmote(RS2Widget emote) throws InterruptedException {
+        setStatus("Attempting to perform emote...", true);
+        if (getTabs().open(Tab.EMOTES)) {
+            if (emote != null && emote.isVisible()) {
+                setStatus("Performing emote...", true);
+                emote.interact();
+                sleep(random(1500, 2000)); // wait for animation
+            } else {
+                setStatus("Emote not found. Widget ID: " + emote, true);
+            }
+        }
+    }
+
 
     /**
      * Opens a Beginner Clue Scroll if it exists in the player's inventory.
@@ -95,7 +125,8 @@ public class clue_solver extends ClueMan {
     private String readClue() {
         // 1) Known scroll interface (ids vary; try a few common roots/children)
         int[][] guesses = new int[][]{
-                {203, 2}, {203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
+                {203, 2}, // readable clues (use readClue() func)
+                {203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
         };
         for (int[] g : guesses) {
             RS2Widget w = getWidgets().get(g[0], g[1]);
@@ -118,18 +149,31 @@ public class clue_solver extends ClueMan {
         return null;
     }
 
+    private boolean solveNPC(String name) throws InterruptedException {
+        return this.solveNPC(name, null);
+    }
+    /**
+     * Solves NPC clue-scroll types by talking to the NPC with the passed name at the passed area.
+     * @param name The name of the NPC to talk to
+     * @param area The area containing the NPC to talk to
+     * @return True if the chat was successful, else returns false
+     */
     private boolean solveNPC(String name, Area area) throws InterruptedException {
         setStatus("Attempting to solve this NPC clue-scroll type by talking to " + name, true);
-        // 1) Go to Hans (Lumbridge courtyard)
+
+        if (area == null)
+            area = myPosition().getArea(5);
+
         if (!area.contains(myPosition())) {
             // walk to the passed area
             if (getWalking().webWalk(area)) {
                 // AFK for a random amount of time up to 5.2s, checking timeout & condition every 0.3-2.6s
+                Area finalArea = area;
                 new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
                     @Override
                     public boolean condition() {
                         // walk until player reaches Edgeville bank
-                        return !area.contains(myPlayer());
+                        return !finalArea.contains(myPlayer());
                     }
                 }.sleep();
             }
