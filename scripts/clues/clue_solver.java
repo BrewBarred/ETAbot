@@ -61,17 +61,32 @@ public class clue_solver extends ClueMan {
                 talkTo(hans);
                 return true;
 
-            // talk to ranael in alkharid skirt store
+            ///
+            /// CLUE SCROLL TYPE: ANAGRAM
+            ///
             case "The anagram reveals<br> who to speak to next:<br>AN EARL":
                 // define npc and location
                 String ranael = "Ranael";
-                Area alkharidSkirtShop = new Area(3313, 3165, 3317, 3160);
+                Area AL_KHARID_SKIRT_SHOP = new Area(3313, 3165, 3317, 3160);
 
                 // find and talk to ranael
-                findNPC(ranael, alkharidSkirtShop);
+                findNPC(ranael, AL_KHARID_SKIRT_SHOP);
                 talkTo(ranael);
                 return true;
 
+            case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
+                // define npc and location
+                String fortunado = "Fortunado";
+                Area DRAYNOR_VILLAGE_MARKET = new Area(3082, 3253, 3086, 3248);
+
+                // find and talk to fortunado
+                findNPC(fortunado);
+                talkTo(fortunado);
+                return true;
+
+            ///
+            /// CLUE SCROLL TYPE: EMOTE
+            ///
             case "Bow to Brugsen Bursen at the Grand Exchange.":
                 // define the emote area
                 Area ge = new Area(3162, 3477, 3167, 3475);
