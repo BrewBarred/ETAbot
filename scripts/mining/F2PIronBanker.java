@@ -3,6 +3,7 @@ package mining;
 import org.osbot.rs07.script.ScriptManifest;
 import utils.BotMan;
 import utils.BotMenu;
+import utils.Rand;
 import utils.Utils;
 
 import static utils.Rand.getRandLongDelayInt;
@@ -21,10 +22,8 @@ public class F2PIronBanker extends MiningMan {
     @Override
     protected void onSetup() throws InterruptedException {
         log("Setting up mining ETA bot...");
-        // set method provider (required to access osbot API)
-        Utils.setMethodProvider(getBot().getMethods());
         // pause bot to allow users to set menu options
-        this.pause();
+        //this.pause();
     }
 
     @Override
@@ -52,7 +51,7 @@ public class F2PIronBanker extends MiningMan {
         if (hasPickaxe()) {
             // mine the nearest mine-able iron ore
             this.mineOre("Iron rocks");
-            sleep(getRandShortDelayInt());
+            return Rand.getRand(3);
         } else {
             log("Unable to find pickaxe!");
             onExit();

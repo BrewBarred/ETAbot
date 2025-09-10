@@ -4,6 +4,7 @@ import org.osbot.rs07.api.Worlds;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Player;
 import org.osbot.rs07.event.ScriptExecutor;
+import org.osbot.rs07.script.MethodProvider;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
@@ -25,6 +26,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * This setup essentially a provides safety net to catch inheriting classes faults and debug them.
      */
     private final int MAX_ATTEMPTS = 3;
+    /**
+     * Script executor enables the toggling of client-side features such as pausing/resuming scripts
+     */
+    protected ScriptExecutor executor;
     //TODO: Consider later implementing task queue so GUI can manually choose bot sequence
     //protected final TaskQueue taskQueue = new TaskQueue();
     /**
@@ -107,27 +112,41 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         // this.equipMan = new EquipMan(this);
         // get bot menu from child class if any exists and update it if necessary
         this.setBotMenu(getBotMenu());
+        this.executor = getBot().getScriptExecutor();
         // enables child classes the opportunity to do stuff on start
         this.onSetup();
     }
 
+    public boolean isPaused() {
+        return executor.isPaused();
+    }
+
     @Override
     public final void pause() {
-        // return early if bot is already paused
-        if (!this.isRunning) {
-            return;
+        try {
+            // return early if bot is already paused
+            if (this.isPaused())
+                return;
+
+            log("Pausing botting script...");
+            // pause the script (client-side)
+            executor.pause();
+
+            // sync BotMenu interface if any exists
+            if (this.botMenu != null)
+                this.botMenu.pause();
+
+            this.isRunning = false;
+
+
+            /*
+             * Insert optional script pause logic here
+             */
+
+            log("Successfully paused botting script!");
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
-
-        log("Pausing botting script...");
-        this.isRunning = false;
-
-        // sync BotMenu interface if any exists
-        if (this.botMenu != null)
-            this.botMenu.pause();
-
-        /*
-         * Insert optional script pause logic here
-         */
     }
 
     @Override
