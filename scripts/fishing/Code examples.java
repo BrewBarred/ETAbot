@@ -6,13 +6,13 @@
 //     * @return A boolean value that is true if the player has an item ending with " axe",
 //     * equipped or in their inventory, else returns false.
 //     */
-//    private boolean hasAxe() {
+//    private boolean hasPickaxe() {
 //        // check inventory for any kind of axe
-//        Item axe = getInventory().getItem(item -> item.getName().endsWith(" axe"));
+//        Item axe = getInventory().getItem(item -> item.getName().endsWith("pickaxe"));
 //
 //        // check worn equipment for any kind of axe
 //        if (axe == null)
-//            axe = getEquipment().getItem(item -> item.getName().endsWith(" axe"));
+//            axe = getEquipment().getItem(item -> item.getName().endsWith("pickaxe"));
 //
 //        return axe == null;
 //    }

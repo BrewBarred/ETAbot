@@ -38,7 +38,7 @@ public enum FishingArea {
             new Area(3242, 3156, 3245, 3153),
             FishingSpot.SMALL_NET_AND_BAIT),
     MUSA_POINT("Karamja Docks (Musa Point)",
-            new Area(2923, 3180, 2925, 3174),
+            new Area(2920, 3181, 2926, 3174),
             FishingSpot.CAGE_AND_HARPOON);
 
     //PORT_SARIM_NORTH("Port Sarim (North)", new Area(2986, 3179, 2988, 3175), FishingSpot.SMALL_NET_AND_BAIT), # P2P?

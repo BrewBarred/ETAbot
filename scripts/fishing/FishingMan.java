@@ -117,7 +117,7 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
         // TODO: remove setStatus debugging message here once it's served its purpose
         // prevent action cancelling
         if (myPlayer().isAnimating()) {
-            setStatus("Fishing skipped! Player is still busy...", false);
+            setStatus("Fishing skipped! Player is busy...", false);
             return;
         }
 
@@ -226,6 +226,7 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
 
             setStatus("Attempting to sell raw food...");
             if (getStore().isOpen()) {
+                List<String> soldItems = new ArrayList<>();
                 // filter inventory for any raw food and sell it
                 for (Item item : inventory.getItems()) {
                     // ignore empty inventory slots
@@ -235,19 +236,21 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
                     // get the name of this item
                     String name = item.getName();
                     // if this item is raw food and has not already been sold...
-                    if (name.startsWith("Raw ")) {
+                    if (!soldItems.contains(name) && name.startsWith("Raw ")) {
                         setStatus("Selling " + name + "...");
                         // sell 50 of each raw food as it is found to speed up selling process
                         getStore().sell(name, 50);
-                        sleep(Rand.getRand(313, 1323));
+                        soldItems.add(name);
+                        sleep(Rand.getRandShortDelayInt());
                     }
                 }
                 getStore().close();
+                sleep(Rand.getRandShortDelayInt());
             }
 
             // hop worlds after a successful sale
             getWorlds().hopToF2PWorld();
-            sleep(random(1711, 2322));
+            sleep(Rand.getRandShortDelayInt());
         }
     }
 

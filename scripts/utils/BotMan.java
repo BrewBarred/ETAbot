@@ -1,6 +1,8 @@
 package utils;
 
+import org.osbot.rs07.api.Worlds;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.model.Player;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
@@ -79,7 +81,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @see utils <a href="https://osbot.org">OSBot Docs</a>
      * @see <a href="https://osbot.org">OSBot Docs</a>
      */
-    protected abstract void onSetup();
+    protected abstract void onSetup() throws InterruptedException;
     /**
      *
      *
@@ -95,7 +97,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     protected abstract void paintScriptOverlay(Graphics2D g);
 
     @Override
-    public final void onStart() {
+    public final void onStart() throws InterruptedException {
         this.setStatus("Initializing bot script...");
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
@@ -111,15 +113,17 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
     @Override
     public final void pause() {
-        log("Pausing botting script...");
-        // sync BotMenu interface if any exists
-        if (this.botMenu != null) {
-            this.botMenu.pause();
+        // return early if bot is already paused
+        if (!this.isRunning) {
+            return;
         }
-        else
-            log("No Bot Menu to pause!!");
 
+        log("Pausing botting script...");
         this.isRunning = false;
+
+        // sync BotMenu interface if any exists
+        if (this.botMenu != null)
+            this.botMenu.pause();
 
         /*
          * Insert optional script pause logic here
@@ -189,7 +193,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      *
      * @param task The task that the bot should perform.
      */
-    public final void setTask(String task) {
+    public final void setTask(String task) throws InterruptedException {
         try {
             // if this is a new task, reset the attempt count
             if (!this.task.equalsIgnoreCase(task))
@@ -247,11 +251,12 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * Function used to execute some code before the script stops, useful for disposing, debriefing or chaining scripts.
      */
     @Override
-    public final void onExit() {
+    public final void onExit() throws InterruptedException {
         log("Closing bot manager...");
         closeBotMenu();
         stop(false);
         log("Successfully exited ETA's OsBot manager");
+        super.onExit();
     }
 
     /**
@@ -333,6 +338,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         }
 
         return null;
+    }
+
+    public boolean hopIfPlayerWithinRadius(int radius) throws InterruptedException {
+        // Loop through all visible players
+        for (Player p : getPlayers().getAll()) {
+            if (p != null && !p.equals(myPlayer())) {
+                if (p.getPosition() != null &&
+                        p.getPosition().distance(myPlayer().getPosition()) <= radius) {
+
+                    getWorlds().hopToF2PWorld();
+                    sleep(Rand.getRandShortDelayInt());
+                    return false;
+                }
+            }
+        }
+        return false; // no nearby players found
     }
 }
 

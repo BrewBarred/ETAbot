@@ -175,11 +175,14 @@ public abstract class BotMenu {
     }
 
     protected final void pause() {
+        // if the user hides the bot menu while its running, force it to open on script pause - or it will get lost!
         if (bot.botMenu != null && this.isHidingOnPlay)
             this.show();
 
         // run specific bot menu pause logic (different scripts have different bot menu pause states)
         this.onPause();
+        // pause bot (client-side)
+        bot.pause();
     }
 
     /**

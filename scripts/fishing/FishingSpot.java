@@ -25,7 +25,7 @@ public enum FishingSpot {
     /**
      * Constructs {@link FishingSpot} enums for easier referencing throughout code.
      *
-     * @param itemIds An array of integer values containing the NPC ids relative to this {@link FishingSpot}.
+     * @param itemIds An array of integer values denoting the id for each item required to use this {@link FishingSpot}.
      */
     FishingSpot(String name, FishingStyle[] styles, int...itemIds) {
         this.name = name;

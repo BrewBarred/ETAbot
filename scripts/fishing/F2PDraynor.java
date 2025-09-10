@@ -43,7 +43,7 @@ public class F2PDraynor extends FishingMan {
         return 0;
     }
 
-    private void getReqFishingGear() {
+    private void getReqFishingGear() throws InterruptedException {
         log("Attempting to fetch required fishing gear...");
         // insert additional logic here to fetch fishing gear
         // if not hasReqEquipment

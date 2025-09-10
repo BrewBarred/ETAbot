@@ -35,11 +35,6 @@ public class F2PKaramja extends FishingMan {
     private static final Area PORT_SARIM_FISHING_SHOP = new Area(3011, 3225, 3016, 3222);
     private boolean isCooking = false;
 
-    @Override
-    protected FishingMenu getBotMenu() {
-        return new FishingMenu(this);
-    }
-
 //    @Override
 //    protected void paintScriptOverlay(Graphics2D g) {
 //        int x = 10, y = 30, w = 220, h = 90;
@@ -64,13 +59,11 @@ public class F2PKaramja extends FishingMan {
     @Override
     protected void onSetup() {
         setStatus("Starting " + this.getName() + " script...", true);
-        // set method provider (required to access osbot API)
-        Utils.setMethodProvider(getBot().getMethods());
+        // sets bot to harpoon fish at karamja docks (musa point)
+        this.setFishingStyle((FishingStyle) botMenu.selectionFishingStyle.getSelectedItem());
+        this.setFishingArea((FishingArea) botMenu.selectionFishingArea.getSelectedItem());
         // pause bot to allow users to set menu options
         this.pause();
-        // sets bot to harpoon fish at karamja docks (musa point)
-        //this.setFishingStyle((FishingStyle) botMenu.selectionFishingStyle.getSelectedItem());
-        //this.setFishingArea((FishingArea) botMenu.selectionFishingArea.getSelectedItem());
     }
 
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
@@ -143,18 +136,17 @@ public class F2PKaramja extends FishingMan {
 
         // 50% chance to start fake AFK
         if (Rand.getRand(1) == 1) {
-            isAFK = true;
             // set a random fake AFK time
-            int delay = Rand.getRand(29893);
-            // set the AFK timer
+            int delay = Rand.getRand(22673);
+            // set AFK timer
             endAFK = Instant.now().plusMillis(delay);
-            // wait for fake AFK delay to end
+            // afk until the delay timer expires
+            isAFK = true;
             return delay;
         }
 
-        // else skip fakeAFK     this iteration
+        // else skip fakeAFK this iteration
         isAFK = false;
-        //endAFK = null;
         return Rand.getRandShortDelayInt();
     }
 
