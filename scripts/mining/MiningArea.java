@@ -8,7 +8,7 @@ import java.util.List;
 
 public enum MiningArea {
     ALKHARID_MINE("Al'Kharid (North)",
-            new Area(3296, 3309, 3295, 3310)),
+            new Area(3295, 3310, 3295, 3310)),
     ALKHARID_FURNACE("Al'Kharid furnace",
             new Area(3275, 3187, 3278, 3185)),
     ALKHARID_BANK("Al'kharid bank",

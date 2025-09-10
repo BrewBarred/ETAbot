@@ -50,7 +50,7 @@ public class F2PIronBanker extends MiningMan {
         if (hasPickaxe()) {
             // mine the nearest mine-able iron ore
             this.mineOre("Iron rocks");
-            return Rand.getRand(786, 2432);
+            return Rand.getRand(423, 1832);
         } else {
             log("Unable to find pickaxe!");
             onExit();
