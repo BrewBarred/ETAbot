@@ -36,25 +36,25 @@ public class clue_solver extends ClueMan {
 
         // check if the clue scroll is a map-type or not
         ClueMap location = readMap();
-        if (location != null)
+        if (location != null) {
             solveClue(location);
+            return Rand.getRand(1243);
+        }
 
+        // else, if the clue is not a map-type, read the clue text
+        String text = readClue();
+        // log text for debugging to easily add more clues
+        log("Text = " + text);
 
-//        // Try to read text from typical places
-//        String text = readClue();
-//        log("Text = " + text);
-//
-//        if (text != null)
-//            solveClue(text);
-//        else {
-//            ClueMap location = Clue
-//
-//            // else exit?
-//            setStatus("Unable to process clue scroll! Exiting script...", true);
-//            onExit();
-//        }
+        // try solve the clue using the text
+        if (solveClue(text)) {
+            return Rand.getRand(1243);
+        }
 
-        return Rand.getRand(1243);
+        // else exit?
+        setStatus("Unable to process clue scroll! Exiting script...", true);
+        onExit();
+        return Rand.getRand(0);
     }
 
     protected boolean solveClue(ClueMap map) throws InterruptedException {
@@ -66,9 +66,7 @@ public class clue_solver extends ClueMan {
             return false;
         }
 
-        fetchSpade();
-        walkTo(map.area, map.label);
-        dig();
+        dig(map);
         sleep(Rand.getRand(1223, 2541));
 
 
@@ -77,9 +75,15 @@ public class clue_solver extends ClueMan {
     }
 
     protected boolean solveClue(String clueScrollText) throws InterruptedException {
+        // return early if invalid text is passed
+        if (clueScrollText == null || clueScrollText.isEmpty())
+            return false;
+
         // check if a solution exists for this scroll
         switch (clueScrollText) {
-            // talk to hans by lummy castle
+            ///
+            /// CLUE SCROLL TYPE: RIDDLE
+            ///
             case "Always walking around the castle grounds and somehow knows everyone's age.":
                 // define npc and area
                 String hans = "Hans";
@@ -88,6 +92,16 @@ public class clue_solver extends ClueMan {
                 // find and talk to hans
                 findNPC(hans, lumbridge_courtyard);
                 talkTo(hans);
+                return true;
+
+            case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
+                // define npc and area
+                String COOK = "Cook";
+                Area LUMBRIDGE_CASTLE_KITCHEN = new Area(3206, 3215, 3211, 3213);
+
+                // find and talk to Duke Horacio
+                findNPC(COOK, LUMBRIDGE_CASTLE_KITCHEN);
+                talkTo(COOK);
                 return true;
 
             ///

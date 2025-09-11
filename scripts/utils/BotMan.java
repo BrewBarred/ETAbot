@@ -382,9 +382,12 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @return True if the tab was successfully opened, else returns false.
      */
     public boolean viewTab(Tab tabType) throws InterruptedException {
-        // Ensure inventory tab is open
-        if (!getTabs().isOpen(tabType)) {
-            getTabs().open(tabType);
+        // return early if inventory is already open
+        if (getTabs().isOpen(tabType))
+            return true;
+
+        // open inventory since it's not already open
+        if (getTabs().open(tabType)) {
             sleep(Rand.getRand(600, 900));
             return true;
         }
@@ -416,7 +419,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
         // now that spade is verified, walk to the players location before fetching a spade
         if (map == null)
-            walkTo(map.area, "Original location");
+            walkTo(area, "Original location");
         // unless a map location was passed, then walk there instead
         else
             walkTo(map.area, map.label);
@@ -429,7 +432,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
         // wait for player to stop walking before digging
         if (myPlayer().isMoving())
-            sleep(Rand.getRand(200));
+            sleep(Rand.getRand(892));
 
         // try to dig with the spade
         boolean clicked = spade.interact("Dig");
