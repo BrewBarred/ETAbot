@@ -37,7 +37,7 @@ public class F2PIronBanker extends MiningMan {
         // check if players inventory is full
         if (isFullInv()) {
             // drop all iron ore if drop checkbox is enabled on GUI
-            if (botMenu.isDropping())
+            if (botMenu != null && botMenu.isDropping())
                 this.dropOre("Iron ore");
             else depositOre();
 

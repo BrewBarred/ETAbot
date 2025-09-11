@@ -5,7 +5,6 @@ import org.osbot.rs07.api.ui.Skill;
 
 import utils.BotMan;
 import org.osbot.rs07.api.model.Item;
-import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.utility.ConditionalSleep;
 import org.osbot.rs07.api.model.RS2Object;
 import utils.Rand;
@@ -48,11 +47,12 @@ Model:
  */
 
 public abstract class MiningMan extends BotMan<MiningMenu> {
+    private final String[] REQUIRED_MINING_ITEMS = new String[] {"Rune Pickaxe", "Clue scroll (beginner)", "Clue scroll", "Spade"};
     /**
      * The mining area currently selected in the interface (if any exists).
      */
     private MiningArea miningArea = MiningArea.ALKHARID_MINE;
-    private MiningTool miningTool = MiningTool.IRON_PICKAXE;
+    //private MiningTool miningTool = MiningTool.IRON_PICKAXE;
 
     @Override
     protected MiningMenu getBotMenu() {
@@ -80,6 +80,29 @@ public abstract class MiningMan extends BotMan<MiningMenu> {
         g.drawString("Time to level: " + ttl, x, y += 16);
     }
 
+    @Override
+    public void onStart() throws InterruptedException {
+        // locate and open the nearest bank
+        if (!getBank().open())
+            // ensure bank is open
+            new ConditionalSleep(Rand.getRandShortDelayInt()) {
+                @Override public boolean condition() throws InterruptedException {
+                    return getBank().open();
+                }
+            }.sleep();
+
+        // make space for the spade if needed
+        if (getInventory().isFull()) {
+            // Keep spade if we somehow already have it; otherwise dump all
+            getBank().depositAllExcept(REQUIRED_MINING_ITEMS);
+            new ConditionalSleep(2500) {
+                @Override public boolean condition() {
+                    return !getInventory().isFull();
+                }
+            }.sleep();
+        }
+    }
+
     /**
      * Sets the target {@link Rock} type in which the bot shall attempt to mine.
      * <p>
@@ -97,16 +120,16 @@ public abstract class MiningMan extends BotMan<MiningMenu> {
         }
     }
 
-    public void setMiningTool(MiningTool tool) {
-        if (tool != null) {
-            // assign selected mining tool
-            this.miningTool = tool;
-            // update GUI to reflect changes
-            this.botMenu.selectionMiningTool.setSelectedItem(tool);
-            log("Mining tool has been set to: " + tool);
-        }
-
-    }
+//    public void setMiningTool(MiningTool tool) {
+//        if (tool != null) {
+//            // assign selected mining tool
+//            this.miningTool = tool;
+//            // update GUI to reflect changes
+//            this.botMenu.selectionMiningTool.setSelectedItem(tool);
+//            log("Mining tool has been set to: " + tool);
+//        }
+//
+//    }
 
     /**
      * Check if the player is currently within the selected {@link MiningArea}.

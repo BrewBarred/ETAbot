@@ -24,17 +24,10 @@ public class MiningMenu extends BotMenu {
         this.bot = bot;
     }
 
-    public boolean isDropping() {
-        if (this.cbDropOre != null)
-            return this.cbDropOre.isSelected();
-        return false;
-    }
-
     @Override
     public JPanel[] getLayout() throws RuntimeException {
         try {
             JPanel mainPanel = new JPanel(new GridLayout(6, 1));
-
             JLabel labelLocation = new JLabel("Select a mining area:");
             this.selectionMiningArea = new JComboBox<>(MiningArea.values());
             // listen for a selection change in fishing areas and pass it to the bot
@@ -52,7 +45,7 @@ public class MiningMenu extends BotMenu {
 //            );
 
             this.cbDropOre = new JCheckBox("Drop Ore");
-            this.cbBankOre = new JCheckBox("Bank Ore");
+            //this.cbBankOre = new JCheckBox("Bank Ore");
 
             this.btnRunning = new JButton("Pause Fishing");
             this.btnRunning.addActionListener(e -> {
@@ -68,7 +61,7 @@ public class MiningMenu extends BotMenu {
             mainPanel.add(this.selectionMiningArea);
             //mainPanel.add(this.selectionMiningTool);
             mainPanel.add(this.cbDropOre);
-            mainPanel.add(this.cbBankOre);
+            //mainPanel.add(this.cbBankOre);
             mainPanel.add(this.btnRunning);
 
             // Return it as part of the expected array:
@@ -91,5 +84,11 @@ public class MiningMenu extends BotMenu {
     @Override
     protected void onPause() {
         btnRunning.setText("Start mining");
+    }
+
+    public boolean isDropping() {
+        if (this.cbDropOre != null)
+            return this.cbDropOre.isSelected();
+        return false;
     }
 }

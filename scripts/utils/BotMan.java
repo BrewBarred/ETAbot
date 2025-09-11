@@ -102,7 +102,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     protected abstract void paintScriptOverlay(Graphics2D g);
 
     @Override
-    public final void onStart() throws InterruptedException {
+    public void onStart() throws InterruptedException {
         this.setStatus("Initializing bot script...");
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
