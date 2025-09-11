@@ -1,11 +1,11 @@
 package utils;
 
-import org.osbot.rs07.api.Worlds;
+import clues.ClueMap;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.Player;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.ScriptExecutor;
-import org.osbot.rs07.script.MethodProvider;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
@@ -18,6 +18,7 @@ import java.time.Instant;
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
  */
 public abstract class BotMan<T extends BotMenu> extends Script {
+    private final String[] REQUIRED_CLUE_ITEMS = new String[] {"Spade", "Strange Device", "Clue scroll (beginner)", "Gold ring", "Red cape", "Chef's hat"};
     /**
      * The number of attempts allowed to complete an action before the script recognizes it as an error and exits.
      * <p>
@@ -372,15 +373,125 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return false; // no nearby players found
     }
 
-    public boolean openBag() throws InterruptedException {
+    /**
+     * Opens the passed Tab then sleeps for a short while.
+     *
+     * Example usage: To display inventory tab: "viewTab(Tab.INVENTORY)"
+     *
+     * @param tabType The tab to open
+     * @return True if the tab was successfully opened, else returns false.
+     */
+    public boolean viewTab(Tab tabType) throws InterruptedException {
         // Ensure inventory tab is open
-        if (!getTabs().isOpen(Tab.INVENTORY)) {
-            getTabs().open(Tab.INVENTORY);
+        if (!getTabs().isOpen(tabType)) {
+            getTabs().open(tabType);
             sleep(Rand.getRand(600, 900));
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Digs in the players current location.
+     * @return True if digging is successful, else returns false.
+     */
+    public boolean dig() throws InterruptedException {
+        return dig(null);
+    }
+    public boolean dig(ClueMap map) throws InterruptedException {
+        // track original position incase player runs script at the digspot without a spade
+        Area area = myPosition().getArea(1);
+
+        // first, check if the player has a spade before relocating
+        Item spade = getInventory().getItem("Spade");
+        if (spade == null) {
+            setStatus("No Spade found in inventory. Attempting to fetch one...");
+            // go fetch a spade if none is found
+            if (!fetchSpade()) {
+                setStatus("Unable to dig... script will now exit.");
+                return false;
+            }
+        }
+
+        // now that spade is verified, walk to the players location before fetching a spade
+        if (map == null)
+            walkTo(map.area, "Original location");
+        // unless a map location was passed, then walk there instead
+        else
+            walkTo(map.area, map.label);
+
+        // ensure inventory is visible before continuing
+        if (!viewTab(Tab.INVENTORY)) {
+            log("Error opening inventory tab!");
+            return false;
+        }
+
+        // wait for player to stop walking before digging
+        if (myPlayer().isMoving())
+            sleep(Rand.getRand(200));
+
+        // try to dig with the spade
+        boolean clicked = spade.interact("Dig");
+        if (!clicked) {
+            setStatus("Digging failed.", true);
+            return false;
+        }
+
+        // wait for dig animation to complete
+        new ConditionalSleep(1673) {
+            @Override
+            public boolean condition() {
+                return myPlayer().isAnimating();
+            }
+        }.sleep();
+
+        // One dig per run; stop or loop again as you prefer
+        setStatus("Digging successful!", true);
+        return true;
+    }
+
+    protected boolean fetchSpade() throws InterruptedException {
+        // if the player already has a spade, exit early
+        if (inventory.contains("Spade"))
+            return true;
+
+        String item = "Spade";
+        // locate and open the nearest bank
+        if (!getBank().open())
+            // ensure bank is open
+            new ConditionalSleep(Rand.getRandShortDelayInt()) {
+                @Override public boolean condition() throws InterruptedException {
+                    return getBank().open();
+                }
+            }.sleep();
+
+        // make space for the spade if needed
+        if (getInventory().isFull()) {
+            // Keep spade if we somehow already have it; otherwise dump all
+            getBank().depositAllExcept(REQUIRED_CLUE_ITEMS);
+            new ConditionalSleep(2500) {
+                @Override public boolean condition() {
+                    return !getInventory().isFull();
+                }
+            }.sleep();
+        }
+
+        // withdraw the spade
+        if (!getBank().withdraw(item, 1)) {
+            log("Failed to withdraw spade from players bank :(");
+            getBank().close();
+            return false;
+        }
+
+        boolean hasSpade = new ConditionalSleep(2500) {
+            @Override public boolean condition() {
+                return getInventory().contains(item);
+            }
+        }.sleep();
+
+        getBank().close();
+        return hasSpade && getInventory().contains(item);
     }
 }
 

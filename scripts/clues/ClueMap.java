@@ -13,20 +13,16 @@ public enum ClueMap {
     RIMMINGTON_MINE("Rimmington Mine", new Area(2979, 3240, 2995, 3226),      10091),
     FALADOR_EAST_BANK("Falador East Bank", new Area(3010, 3359, 3026, 3350),  10311),
 
-    CHAMPIONS_GUILD_SOUTH_WEST("Champions' Guild (South West)", new Area(3166, 3361, 3166, 3361),  351),
+    CHAMPIONS_GUILD_SOUTH_WEST("Champions' Guild (South West)", new Area(3166, 3361, 3166, 3361),  346),
     FALADOR_STONES("Falador Stones", new Area(3043, 3398, 3043, 3398),  351);
     // Add the rest of the beginner map spots you encounter.
 
-    final String label;
-    final Area area;
-    final int id;  // some clues reuse sets; allow multiple
+    public final String label;
+    public final Area area;
+    public final int id;  // some clues reuse sets; allow multiple
 
     ClueMap(String label, Area area, int mapId) {
         this.label = label; this.area = area; this.id = mapId;
-    }
-
-    int getId() {
-        return this.id;
     }
 
     /**

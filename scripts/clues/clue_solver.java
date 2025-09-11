@@ -37,7 +37,8 @@ public class clue_solver extends ClueMan {
         // check if the clue scroll is a map-type or not
         ClueMap location = readMap();
         if (location != null)
-            log("Found location!!!!!!! " + location);
+            solveClue(location);
+
 
 //        // Try to read text from typical places
 //        String text = readClue();
@@ -56,9 +57,28 @@ public class clue_solver extends ClueMan {
         return Rand.getRand(1243);
     }
 
-    protected boolean solveClue(String scrollText) throws InterruptedException {
+    protected boolean solveClue(ClueMap map) throws InterruptedException {
+        //NOTE: NEED TO CHECK FOR SPADE IN INVENTORY FIRST AND FETCH ONE IF NOT!
+        setStatus("Attempting to solve map clue...");
+        if (map == null) {
+            setStatus("Failed to navigate to dig-spot! Exiting script...", true);
+            onExit();
+            return false;
+        }
+
+        fetchSpade();
+        walkTo(map.area, map.label);
+        dig();
+        sleep(Rand.getRand(1223, 2541));
+
+
+
+        return false;
+    }
+
+    protected boolean solveClue(String clueScrollText) throws InterruptedException {
         // check if a solution exists for this scroll
-        switch (scrollText) {
+        switch (clueScrollText) {
             // talk to hans by lummy castle
             case "Always walking around the castle grounds and somehow knows everyone's age.":
                 // define npc and area
@@ -128,16 +148,16 @@ public class clue_solver extends ClueMan {
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
             ///
             case "Talk to Charlie the Tramp in Varrock.":
-                String task = getCharlieTask(scrollText);
+                String task = getCharlieTask(clueScrollText);
                 completeCharlieTask(task);
                 return true;
 
             default:
                 // if unable to solve clue, check if it's an incomplete charlie clue
-                if (completeCharlieTask(scrollText))
+                if (completeCharlieTask(clueScrollText))
                     return true;
 
-                log("Unable to complete this clue scroll! Scroll text: " + scrollText);
+                log("Unable to complete this clue scroll! Scroll text: " + clueScrollText);
                 onExit();
                 return false;
         }
