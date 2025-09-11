@@ -37,4 +37,33 @@ public enum Heat {
     public String toString() {
         return hint;
     }
+
+    // MIGHT BE ABLE TO USE THIS CODE BELOW TO IMPLEMENT HOT AND COLD BOT
+
+    // IF ANYTHING_AND_COLDER, TURN AROUND AND WALK COLDER TILES BACK
+    // IF ANYTHING_AND_WARM, STEADY COURSE, WALK WARM TILES FORWARD
+    // IF ANYTHING_AND_WARMER, STEADY COURSE, CONSIDER REDUCING TILE MOVEMENT SPAN
+    // IF HOT_AND_ANYTHING FILTER LIST OF NEARBY KNOWN SITES, TACKLE RANDOMLY OR ORDER BY DISTANCE
+
+//    // Get current position
+//    Position current = myPosition();
+//
+//    // Get the facing direction (x and y deltas)
+//    int orientation = myPlayer().getOrientation(); // 0=N, 512=E, 1024=S, 1536=W
+//    int dx = 0, dy = 0;
+//
+//        switch (orientation) {
+//        case 0: dy = 1; break;       // facing north
+//        case 512: dx = 1; break;     // facing east
+//        case 1024: dy = -1; break;   // facing south
+//        case 1536: dx = -1; break;   // facing west
+//    }
+//
+//    // Walk opposite (invert dx, dy)
+//    Position opposite = new Position(
+//            current.getX() - dx * 5, // step back ~5 tiles
+//            current.getY() - dy * 5,
+//            current.getZ()
+//    );
+
 }

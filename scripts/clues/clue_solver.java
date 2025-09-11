@@ -73,13 +73,13 @@ public class clue_solver extends ClueMan {
         return false;
     }
 
-    protected boolean solveClue(String npc, ClueLocation location) throws InterruptedException {
+    protected boolean solveClue(ClueNPC npc, ClueLocation location) throws InterruptedException {
         // return false if unable to find passed npc at passed location (probably happen a lot with hands, may need to fix)
-        if (!findNPC(npc, location))
+        if (!findNPC(npc.npcName, location))
             return false;
 
         // return false if npc dialogue somehow fails
-        if (!talkTo(npc))
+        if (!talkTo(npc.npcName))
             return false;
 
         return true;
@@ -108,42 +108,27 @@ public class clue_solver extends ClueMan {
             /// CLUE SCROLL TYPE: RIDDLE
             ///
             case "Always walking around the castle grounds and somehow knows everyone's age.":
-                // define npc and area
-                String HANS = "Hans";
-
                 // find and talk to hans
-                return solveClue(HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
+                return solveClue(ClueNPC.HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
 
             case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
-                // define npc and area
-                String COOK = "Cook";
-
                 // find and talk to Duke Horacio
-                return solveClue(COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
+                return solveClue(ClueNPC.COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
 
             ///
             /// CLUE SCROLL TYPE: ANAGRAM
             ///
             case "The anagram reveals<br> who to speak to next:<br>IN BAR":
-                // define npc and location
-                String BRIAN = "Brian";
-
                 // find and talk to brian
-                return solveClue(BRIAN, ClueLocation.PORT_SARIM_BATTLEAXE_SHOP);
+                return solveClue(ClueNPC.BRIAN, ClueLocation.PORT_SARIM_BATTLEAXE_SHOP);
 
             case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
-                // define npc and location
-                String FORTUNATO = "Fortunato";
-
                 // find and talk to fortunato
-                return solveClue(FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
+                return solveClue(ClueNPC.FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
 
             case "The anagram reveals<br> who to speak to next:<br>AN EARL":
-                // define npc and location
-                String RANAEL = "Ranael";
-
                 // find and talk to ranael
-                return solveClue(RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
+                return solveClue(ClueNPC.RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
 
             ///
             /// CLUE SCROLL TYPE: EMOTE
