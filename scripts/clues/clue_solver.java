@@ -1,6 +1,7 @@
 package clues;
 
 import org.osbot.rs07.api.Bank;
+import org.osbot.rs07.api.Widgets;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.ui.RS2Widget;
@@ -10,6 +11,7 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.Rand;
 
 import java.awt.*;
+import java.util.Arrays;
 
 @ScriptManifest(
         name = "F2P beginner clue solver",
@@ -23,31 +25,38 @@ public class clue_solver extends ClueMan {
     final Area VARROCK_SOUTH_GATE = new Area(3207, 3393, 3210, 3389);
     @Override
     public int onLoop() throws InterruptedException {
-        setStatus("Starting...", true);
+        setStatus("Attempting to solve clue...", true);
+
+        // try to open a clue scroll for completion or exit
         if (!openClue()) {
             setStatus("Unable to find a clue scroll to solve...", true);
             onExit();
             return 0;
         }
 
-        setStatus("Attempting to solve clue...", true);
-        // Try to read text from typical places
-        String text = readClue();
-        log("Text = " + text);
+        // check if the clue scroll is a map-type or not
+        ClueMap location = readMap();
+        if (location != null)
+            log("Found location!!!!!!! " + location);
 
-        solveClue(text);
+//        // Try to read text from typical places
+//        String text = readClue();
+//        log("Text = " + text);
+//
+//        if (text != null)
+//            solveClue(text);
+//        else {
+//            ClueMap location = Clue
+//
+//            // else exit?
+//            setStatus("Unable to process clue scroll! Exiting script...", true);
+//            onExit();
+//        }
 
-        return Rand.getRand(3212, 3572);
+        return Rand.getRand(1243);
     }
 
     protected boolean solveClue(String scrollText) throws InterruptedException {
-        // validate the passed clue scroll text before continuing
-        if (scrollText == null) {
-            setStatus("Unable to process clue scroll! Exiting script...", true);
-            onExit();
-            return false;
-        }
-
         // check if a solution exists for this scroll
         switch (scrollText) {
             // talk to hans by lummy castle
@@ -76,12 +85,12 @@ public class clue_solver extends ClueMan {
 
             case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
                 // define npc and location
-                String fortunado = "Fortunado";
+                String fortunato = "Fortunato";
                 Area DRAYNOR_VILLAGE_MARKET = new Area(3082, 3253, 3086, 3248);
 
-                // find and talk to fortunado
-                findNPC(fortunado);
-                talkTo(fortunado);
+                // find and talk to fortunato
+                findNPC(fortunato, DRAYNOR_VILLAGE_MARKET);
+                talkTo(fortunato);
                 return true;
 
             ///
@@ -135,7 +144,6 @@ public class clue_solver extends ClueMan {
     }
 
     protected String getCharlieTask(String scrollText) throws InterruptedException {
-        setStatus("Attempting to solve charlie clue...", true);
         setStatus("Attempting to find charlie...", true);
         findNPC("Charlie the Tramp", VARROCK_SOUTH_GATE);
         sleep(random(400, 600));
@@ -234,7 +242,8 @@ public class clue_solver extends ClueMan {
      * @return The text contained within the clue scroll in a players inventory
      */
     private String readClue() {
-        // 1) Known scroll interface (ids vary; try a few common roots/children)
+        //NOTE: BUG WHEN READING CLUE IF NPC NAME IS WRONG, MAY NEED TO ADD ATTEMPTS TO PREVENT INFINITE LOOP READING UNSOLVABLE CLUES?
+        setStatus("Attempting to read clue...", true);
         int[][] guesses = new int[][]{
                 {203, 2}, // readable clues (use readClue() func)
                 {203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
@@ -249,7 +258,35 @@ public class clue_solver extends ClueMan {
         return null;
     }
 
+    private ClueMap readMap() {
+        // for each clue map in the game
+        for (Integer widgetId : getWidgets().getActiveWidgetRoots()) {
+            ClueMap map = ClueMap.getMap(widgetId);
+            if (map != null)
+                return map;
+        }
+//
+//
+//
+//        for (int[] w : possibleWidgets) {
+//            RS2Widget widget = getWidgets().get(w[0], w[1]);
+//            if (widget != null && widget.isVisible()) {
+//                log("Finally found the id!! " + widget.getId());
+//                log("Clue message: " + widget.getMessage());
+//                log("Media ID: " + widget.getEnabledMediaId());
+//                log("Content type: " + widget.getContentType());
+//                log("Interact actions: " + Arrays.toString(widget.getInteractActions()));
+//                log("Sprite index 1: " + widget.getSpriteIndex1());
+//                log("Sprite index 2: " + widget.getSpriteIndex2());
+//                return null;
+//            }
+//        }
+//
+        return null;
+    }
+
     protected boolean findNPC(String npc) throws InterruptedException {
+        //NOTE: THIS FUNCTION CAUSES BUGS IF NPC IS NOT VISIBLE - CONSIDER ADDING LOGIC TO FIX
         return findNPC(npc, null);
     }
 

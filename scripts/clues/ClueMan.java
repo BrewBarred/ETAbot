@@ -6,6 +6,7 @@ import utils.BotMan;
 import utils.Rand;
 
 import java.awt.*;
+import java.util.List;
 
 public abstract class ClueMan extends BotMan<ClueMenu> {
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
@@ -31,6 +32,7 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
     }
 
     public boolean openBeginnerBox() throws InterruptedException {
+        setStatus("Attempting to open beginner scroll-box...", true);
         if (getInventory().contains(BEGINNER_SCROLL_BOX)) {
             log("Found scroll box in inventory!");
             if (getInventory().interact("Open", BEGINNER_SCROLL_BOX)) {
@@ -50,30 +52,26 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
         );
 
         if (beginner_clue != null) {
+            setStatus("Attempting to open beginner clue scroll...", true);
+            // open inventory tab
             getTabs().open(org.osbot.rs07.api.ui.Tab.INVENTORY);
             if (beginner_clue.interact("Read")) {
                 // small wait for widget to appear
-                new org.osbot.rs07.utility.ConditionalSleep(2500) {
-                    @Override
-                    public boolean condition() {
-                        RS2Widget w = getWidgets().getWidgetContainingText("clue");
-                        return w != null && w.isVisible();
-                    }
-                }.sleep();
-                sleep(Rand.getRandShortDelayInt());
+                sleep(Rand.getRand(1826, 2832));
+                setStatus("Investigating clue...", true);
                 return true;
             }
         } else {
-            setStatus("Unable to find a clue scroll in players inventory... checking for scrollbox", true);
+            setStatus("Unable to find a clue scroll in players inventory... checking for scroll-box...", true);
             // open a beginner scroll box or exit if unable to
             if (!this.openBeginnerBox()) {
-                log("Unable to open a beginner scroll box... script will now exit...");
+                log("Unable to open a scroll box, script will now exit...");
                 onExit();
             }
-            log("You pull a clue-scroll from the clue scroll!");
-            sleep(Rand.getRandShortDelayInt());
+            log("You pull a clue-scroll from the scroll-box!");
             return openClue();
         }
         return false;
     }
+
 }
