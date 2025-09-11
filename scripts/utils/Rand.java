@@ -34,6 +34,15 @@ public final class Rand {
      *
      * @return A random integer value between two preset 'low' values as defined in Rand.java.
      */
+    public static int getRandReallyShortDelayInt() {
+        return Rand.getRand(MIN_LOW - 2000, MIN_HIGH - 8000);
+    }
+
+    /**
+     * Return a random integer value between two preset 'low' values, intended for minimum delay times.
+     *
+     * @return A random integer value between two preset 'low' values as defined in Rand.java.
+     */
     public static int getRandShortDelayInt() {
         return Rand.getRand(MIN_LOW, MIN_HIGH);
     }

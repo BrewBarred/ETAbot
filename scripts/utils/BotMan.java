@@ -572,6 +572,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         if (closeBank)
             return closeBank();
 
+        // short delay to breathe
+        sleep(Rand.getRandReallyShortDelayInt());
         return true;
     }
 
@@ -582,7 +584,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public boolean closeBank() {
         // return early if there is no open bank
-        if (!getBank().isOpen())
+        if (getBank().isOpen())
             return getBank().close();
 
         return true;
@@ -600,6 +602,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public boolean sleep(long timeout, BooleanSupplier condition) {
         // sleep for the specified amount of seconds and check if the condition is met
         return new ConditionalSleep((int) timeout) {
+            @Override public boolean condition() {
+                return condition.getAsBoolean();
+            }
+        }.sleep();
+    }
+
+    /**
+     * Overrides the default sleep(long timeout) function to sleep until the passed condition is true.
+     *
+     * With this constructor, the sleep times to check the timeout and condition are centered around 25 milliseconds.
+     *
+     * @param condition A boolean condition that will break the sleep once true.
+     */
+    public boolean sleep(BooleanSupplier condition) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        return new ConditionalSleep(Integer.MAX_VALUE / 48) {
             @Override public boolean condition() {
                 return condition.getAsBoolean();
             }
@@ -655,7 +673,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public static void sleepUntil(BooleanSupplier condition) {
         // sleep for the specified amount of seconds and check if the condition is met
-        new ConditionalSleep(Integer.MAX_VALUE) {
+        new ConditionalSleep(Integer.MAX_VALUE / 48) {
             @Override public boolean condition() {
                 return condition.getAsBoolean();
             }
@@ -689,8 +707,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
                 }
             }.sleep();
 
-        // if that failed, wait a couple seconds and try again
-        //sleep(2611);
+        sleep(Rand.getRandReallyShortDelayInt());
         return getBank().open();
     }
 
@@ -702,10 +719,9 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * at least one of the passed items are not found in the players inventory.
      */
     public boolean hasItems(@NotNull  String... requiredItems) {
-        setStatus("Checking players inventory for " + requiredItems.length + " required items...", true);
+        setStatus("Checking players inventory...", true);
         // check to ensure all items aren't already in the players inventory before going to a bank
         for (String item : requiredItems) {
-            log("Checking item: " + item);
             // if this item is null or an empty string, skip.
             if (item == null || item.isEmpty())
                 continue;
@@ -717,6 +733,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             }
         }
 
+        sleep(Rand.getRandReallyShortDelayInt());
         return true;
     }
 }

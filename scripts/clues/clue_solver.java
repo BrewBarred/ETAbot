@@ -182,24 +182,28 @@ public class clue_solver extends ClueMan {
         }};
 
         fetchFromBank(REQUIRED_ITEMS);
+
         setStatus("Attempting to read device...", true);
         // feel device and read hint
-        String heat = readStrangeDevice();
-        if (readStrangeDevice() == null)
+        String hint = feelStrangeDevice();
+        if (hint == null) {
+            setStatus("Error operating strange device...", true);
             return false;
+        }
+        else {
+            log("Hot and cold hint: " + hint);
+        }
 
-//        String hint = waitForDeviceHint(3500); // waits for the chatbox/widget text
-//        if (hint == null) {
-//            log("No device hint found.");
-//            return false;
-//        }
-//
-//        // 5) Switch on hint text (simplified; add more cases as needed)
-//        switch (classifyDeviceHint(hint)) {
-//            case NOT_WORKING_HERE:
-//                log("Device doesn't work here — likely indoors/instanced. Move outdoors.");
-//                // TODO: step outside or to surface level, then loop back to feelDevice()
-//                return true;
+        switch (hint) {
+            case "The strange device doesn't seem to work here.":
+                setStatus("Correcting invalid zone error...");
+                walkTo(myPosition().getArea(1).setPlane(0), "Valid Clue Zone");
+                // sleep until the player is in the correct plane
+                sleep(() -> myPosition().getArea(1).getPlane() == 0);
+                // read the device again
+                String heat = feelStrangeDevice();
+                return true;
+        }
 //
 //            case FREEZING:
 //            case COLD:
@@ -220,16 +224,16 @@ public class clue_solver extends ClueMan {
         return true;
     }
 
-    public String readStrangeDevice() {
+    public String feelStrangeDevice() {
+        setStatus("Feeling strange device...", true);
         // Try to click the Strange device
-        final String STRANGE_DEVICE = "Strange_device";
-        if (getInventory().interact(STRANGE_DEVICE, "Feel")) {
-            // Wait briefly for chatbox update
-            sleep(random(600, 1200));
-
+        final String STRANGE_DEVICE = "Strange device";
+        if (getInventory().interact("Feel", STRANGE_DEVICE)) {
+            sleep(Rand.getRandReallyShortDelayInt());
             // Grab the latest chat message
             String lastMessage = getChatbox().getMessages(Chatbox.MessageType.GAME).stream()
-                    .reduce((first, second) -> second) // get the last element
+                    .findFirst()
+                    .filter(f -> f.startsWith("The device is") || f.contains("strange device"))
                     .orElse(null);
 
             if (lastMessage != null) {
