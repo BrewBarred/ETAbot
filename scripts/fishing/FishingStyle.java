@@ -61,6 +61,7 @@ public enum FishingStyle {
         // loop through each required item concatenating it onto a string
         for (String item : getReqItems())
             sb.append(item).append(", ");
+
         // remove the last ", "
         sb.delete(sb.length() - 2, sb.length());
 

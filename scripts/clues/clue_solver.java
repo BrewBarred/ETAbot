@@ -49,7 +49,7 @@ public class clue_solver extends ClueMan {
             return Rand.getRand(1243);
         }
 
-        // else exit?
+        // else, there must be an unsolvable clue or bug... exit script until I can work on a fix for it :)
         setStatus("Unable to process clue scroll! Exiting script...", true);
         onExit();
         return Rand.getRand(0);
@@ -139,22 +139,13 @@ public class clue_solver extends ClueMan {
                 return solveClue(Emote.BOW, ClueLocation.VARROCK_GRAND_EXCHANGE);
 
             case "Panic at Al Kharid mine.":
-                // perform the emote
-                RS2Widget panic = getWidgets().get(216, 2, 18);
-                doEmote(panic);
-
-                // wait for uri to appear then talk to him
-                sleep(Rand.getRandShortDelayInt());
-                talkTo("Uri");
                 return solveClue(Emote.PANIC, ClueLocation.AL_KHARID_MINE);
 
             ///
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
             ///
             case "Talk to Charlie the Tramp in Varrock.":
-                String task = getCharlieTask(clueScrollText);
-                completeCharlieTask(task);
-                return true;
+                return completeCharlieTask(getCharlieTask());
 
             default:
                 // if unable to solve clue, check if it's an incomplete charlie clue
@@ -162,7 +153,6 @@ public class clue_solver extends ClueMan {
                     return true;
 
                 log("Unable to complete this clue scroll! Scroll text: " + clueScrollText);
-                onExit();
                 return false;
         }
     }
@@ -187,7 +177,7 @@ public class clue_solver extends ClueMan {
         return talkTo("Uri");
     }
 
-    protected String getCharlieTask(String scrollText) throws InterruptedException {
+    protected String getCharlieTask() throws InterruptedException {
         setStatus("Attempting to find charlie...", true);
         findNPC("Charlie the Tramp", ClueLocation.VARROCK_SOUTH_GATE);
         sleep(random(400, 600));
@@ -221,7 +211,7 @@ public class clue_solver extends ClueMan {
         if (!inventory.contains(item))
             return false;
 
-        findNPC("Charlie the Tramp", VARROCK_SOUTH_GATE);
+        findNPC("Charlie the Tramp", ClueLocation.VARROCK_SOUTH_GATE);
         dialogues.completeDialogue("Click here to continue",
                 "Click here to continue",
                 "Click here to continue",
