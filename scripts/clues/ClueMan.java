@@ -51,13 +51,13 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
 
         // if the player has a beginner clue-scroll in their inventory
         if (beginner_clue != null) {
-            setStatus("Attempting to open beginner clue scroll...", true);
+            setStatus("Attempting to open beginner clue...", true);
             // open inventory tab
             getTabs().open(org.osbot.rs07.api.ui.Tab.INVENTORY);
             if (beginner_clue.interact("Read")) {
                 // small wait for widget to appear
-                sleep(Rand.getRand(1826, 2832));
                 setStatus("Investigating clue...", true);
+                sleep(3452);
                 return true;
             }
         // else if the player has a beginner scroll-box in their inventory

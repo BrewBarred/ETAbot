@@ -1,6 +1,7 @@
 package clues;
 
 import org.osbot.rs07.api.Bank;
+import org.osbot.rs07.api.Chatbox;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.ui.RS2Widget;
@@ -11,6 +12,7 @@ import utils.Emote;
 import utils.Rand;
 
 import java.awt.*;
+import java.util.HashMap;
 
 @ScriptManifest(
         name = "F2P beginner clue solver",
@@ -32,21 +34,22 @@ public class clue_solver extends ClueMan {
             return 0;
         }
 
-        // check if the clue scroll is a map-type or not
-        ClueLocation location = readMap();
-        if (location != null) {
-            solveClue(location);
-            return Rand.getRand(1243);
-        }
-
+        sleep(5000);
         // else, if the clue is not a map-type, read the clue text
         String text = readClue();
         // log text for debugging to easily add more clues
         log("Text = " + text);
 
         // try solve the clue using the text
-        if (solveClue(text)) {
+        if (decipherClueText(text)) {
             return Rand.getRand(1243);
+        } else {
+            // if none of the above or a charlie clue, it must be a digging one
+            ClueLocation location = readMap();
+            if (location != null) {
+                solveClue(location);
+                sleep(1243);
+            }
         }
 
         // else, there must be an unsolvable clue or bug... exit script until I can work on a fix for it :)
@@ -60,7 +63,6 @@ public class clue_solver extends ClueMan {
         setStatus("Attempting to solve map clue...");
         if (map == null) {
             setStatus("Failed to navigate to dig-spot! Exiting script...", true);
-            onExit();
             return false;
         }
 
@@ -84,13 +86,26 @@ public class clue_solver extends ClueMan {
         return true;
     }
 
-    protected boolean solveClue(String clueScrollText) throws InterruptedException {
+    protected boolean decipherClueText(String clueScrollText) throws InterruptedException {
         // return early if invalid text is passed
-        if (clueScrollText == null || clueScrollText.isEmpty())
+        if (clueScrollText == null)
             return false;
 
         // check if a solution exists for this scroll
         switch (clueScrollText) {
+            ///
+            /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
+            ///
+            case "Talk to Charlie the Tramp in Varrock.":
+                return completeCharlieTask(getCharlieTask());
+
+            ///
+            /// CLUE SCROLL TYPE: HOT AND COLD
+            ///
+            case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
+                solveClue();
+                return true;
+
             ///
             /// CLUE SCROLL TYPE: RIDDLE
             ///
@@ -141,12 +156,6 @@ public class clue_solver extends ClueMan {
             case "Panic at Al Kharid mine.":
                 return solveClue(Emote.PANIC, ClueLocation.AL_KHARID_MINE);
 
-            ///
-            /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
-            ///
-            case "Talk to Charlie the Tramp in Varrock.":
-                return completeCharlieTask(getCharlieTask());
-
             default:
                 // if unable to solve clue, check if it's an incomplete charlie clue
                 if (completeCharlieTask(clueScrollText))
@@ -155,6 +164,84 @@ public class clue_solver extends ClueMan {
                 log("Unable to complete this clue scroll! Scroll text: " + clueScrollText);
                 return false;
         }
+    }
+
+    /**
+     * Attempts to solve a Hot n Cold clue
+     * @return
+     */
+    protected boolean solveClue() throws InterruptedException {
+        // define required items to solve a hot n cold clue, item/quantity (set quantity -1 to withdraw all)
+        HashMap<String, Integer> REQUIRED_ITEMS = new HashMap<String, Integer>() {{
+            put("Spade", 1); // cant dig without a spade
+            put("Strange Device", 1); // dunno where to dig without this thing
+            put("Clue scroll (beginner)", 1); // no point in digging without this thing
+            put("Law rune", 30); // enough laws to tele around a few times
+            put("Air rune", 1000); // enough airs to tele
+            put("Earth rune", 1000); // enough earths to tele a few times
+            put("Coins", 20000); // enough coins to charter
+        }};
+
+        // ensure required hot and cold items are on-hand
+        if (!hasItems(String.valueOf(REQUIRED_ITEMS.keySet())))
+            fetchFromBank(REQUIRED_ITEMS);
+
+
+        // feel device and read hint
+        String heat = readStrangeDevice();
+        if (readStrangeDevice() == null)
+            return false;
+
+//        String hint = waitForDeviceHint(3500); // waits for the chatbox/widget text
+//        if (hint == null) {
+//            log("No device hint found.");
+//            return false;
+//        }
+//
+//        // 5) Switch on hint text (simplified; add more cases as needed)
+//        switch (classifyDeviceHint(hint)) {
+//            case NOT_WORKING_HERE:
+//                log("Device doesn't work here — likely indoors/instanced. Move outdoors.");
+//                // TODO: step outside or to surface level, then loop back to feelDevice()
+//                return true;
+//
+//            case FREEZING:
+//            case COLD:
+//            case WARM:
+//            case HOT:
+//            case VERY_HOT:
+//            case BURNING:
+//                // TODO: use parseDirection(hint) to pick a heading and step a few tiles,
+//                // then loop: feelDevice() -> re-read hint -> adjust.
+//                log("Hint: " + hint);
+//                return true;
+//
+//            case UNKNOWN:
+//            default:
+//                log("Unrecognized hint: " + hint);
+//                return false;
+//        }
+        return true;
+    }
+
+    public String readStrangeDevice() {
+        // Try to click the Strange device
+        final String STRANGE_DEVICE = "Strange_device";
+        if (getInventory().interact(STRANGE_DEVICE, "Feel")) {
+            // Wait briefly for chatbox update
+            sleep(random(600, 1200));
+
+            // Grab the latest chat message
+            String lastMessage = getChatbox().getMessages(Chatbox.MessageType.GAME).stream()
+                    .reduce((first, second) -> second) // get the last element
+                    .orElse(null);
+
+            if (lastMessage != null) {
+                log("Strange device says: " + lastMessage);
+                return lastMessage;
+            }
+        }
+        return null;
     }
 
     /**
@@ -293,22 +380,32 @@ public class clue_solver extends ClueMan {
         //NOTE: BUG WHEN READING CLUE IF NPC NAME IS WRONG, MAY NEED TO ADD ATTEMPTS TO PREVENT INFINITE LOOP READING UNSOLVABLE CLUES?
         setStatus("Attempting to read clue...", true);
         int[][] guesses = new int[][]{
-                {203, 2}, // readable clues (use readClue() func)
-                {203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
+                {203, 2} // readable clues (use readClue() func)
+                //{203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
         };
+
         for (int[] g : guesses) {
+            setStatus("Scanning clue scroll...", true);
             RS2Widget w = getWidgets().get(g[0], g[1]);
             if (w != null && w.isVisible()) {
                 return w.getMessage();
             }
         }
 
+        setStatus("Failed to read clue...", true);
         return null;
     }
 
+    /**
+     * Attempts to match an open map from a clue scroll, to a set of predefined widget sets to distinguish each map from
+     * each-other.
+     *
+     * @return The clue location required to complete the open scroll.
+     */
     private ClueLocation readMap() {
         // for each clue map in the game
         for (Integer widgetId : getWidgets().getActiveWidgetRoots()) {
+            // check if the clue widgets match that of a clue map
             ClueLocation map = ClueLocation.getMap(widgetId);
             if (map != null)
                 return map;

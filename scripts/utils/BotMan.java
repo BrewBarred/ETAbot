@@ -1,6 +1,7 @@
 package utils;
 
 import clues.ClueLocation;
+import com.sun.istack.internal.NotNull;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.Player;
@@ -12,6 +13,8 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.function.BooleanSupplier;
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -459,46 +462,245 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     protected boolean fetchSpade() throws InterruptedException {
-        // if the player already has a spade, exit early
-        if (inventory.contains("Spade"))
+        return fetchFromBank("Spade");
+    }
+
+    /**
+     * Helper function which fetches the passed item from the players bank if it's not already in their inventory.
+     * If the item is not in the players bank, this function will return false.
+     *
+     * @param item The item to fetch from the players bank.
+     * @return True if the passed item is contained in the players inventory after execution, else returns false.
+     */
+    protected boolean fetchFromBank(String item) throws InterruptedException {
+        // pass this item to the helper function for further processing
+        return fetchFromBank(item, 1);
+    }
+
+    /**
+     * Helper function which fetches the passed item from the players bank if it's not already in their inventory.
+     * If the item is not in the players bank, this function will return false.
+     *
+     * @param item The item to fetch from the players bank.
+     * @return True if the passed item is contained in the players inventory after execution, else returns false.
+     */
+    protected boolean fetchFromBank(String item, int amount) throws InterruptedException {
+        // create a new hashmap the passed number of the passed item name to easily fetch any quantity of a single item.
+        HashMap<String, Integer> map = new HashMap<String, Integer>();
+                map.put(item, amount);
+
+        // pass this map to the main function for processing
+        return fetchFromBank(map);
+    }
+
+    /**
+     * Fetches the passed item(s) from the players bank if it's not already in their inventory. If the item is not
+     * in the players bank, this function will return false.
+     *
+     * @param items The item(s) to fetch from the players bank.
+     * @return True if the passed item(s) is contained in the players inventory after execution, else returns false.
+     */
+    protected boolean fetchFromBank(HashMap<String, Integer> items) throws InterruptedException {
+        // return early if a null or empty hash map is requested
+        if (items == null || items.isEmpty())
+            return false;
+
+        String[] itemList = items.keySet().toArray(new String[0]);
+        // return early if the player already has the requested items
+        if (hasItems(itemList))
             return true;
 
-        String item = "Spade";
+        // open the nearest bank to fetch the requested items
+        openNearestBank();
+
+        // make space in the players inventory for the required items + 1 for good measure, fuck it.
+        makeInventorySpace(items.size() + 1, false);
+
+        // withdraw each of the requested items
+        for (String item : items.keySet()) {
+            if(!inventory.contains(item)) {
+                int amount = items.get(item);
+                if (!getBank().withdraw(item, amount)) {
+                    log("Failed to withdraw spade from players bank :(");
+                    sleep(1243);
+                }
+            }
+        }
+
+        // can close bank now, since we have all the items we need
+        closeBank();
+
+        // check if all items are contained in inventory one last time for extra verification
+        return hasItems(itemList);
+    }
+
+    /**
+     * Checks if the passed number of inventory slots are currently available. If not, the player will attempt to find
+     * the nearest bank and clear enough space.
+     *
+     * @param count The number of inventory slots required (must be between 1 and 28 inclusive)
+     * @param itemsToKeep A String[] of items that shouldn't be deposited if this script needs to bank any items.
+     * @return True if the player already has, or finishes with the requested amount of inventory space.
+     */
+    protected boolean makeInventorySpace(int count, boolean closeBank, String... itemsToKeep) throws InterruptedException {
+        // can't clear negative or greater than maximum inventory space
+        int slotsRequired = count + itemsToKeep.length;
+        if (slotsRequired <= 0 || slotsRequired > 28)
+            return false;
+
+        // return early if there is already enough space
+        if (inventory.getEmptySlots() >= count)
+            return true;
+
+        // check if a bank is open
+        if (!bank.isOpen())
+            // if not, try find and open the nearest one
+            if (!openNearestBank())
+                return false;
+
+        // if there are items needed in the players inventory, deposit everything except those
+        if (itemsToKeep.length > 0)
+            getBank().depositAllExcept(itemsToKeep);
+        // else, just deposit everything
+        else
+            getBank().depositAll();
+
+        if (closeBank)
+            return closeBank();
+
+        return true;
+    }
+
+    /**
+     * Closes any open bank interface currently open.
+     *
+     * @return True if a bank interface is closed, or if none were open to begin with, else returns false.
+     */
+    public boolean closeBank() {
+        // return early if there is no open bank
+        if (!getBank().isOpen())
+            return getBank().close();
+
+        return true;
+    }
+
+    /**
+     * Overrides the default sleep(long timeout) function to sleep until the passed condition is true, or if the timeout
+     * has expired.
+     *
+     * With this constructor, the sleep times to check the timeout and condition are centered around 25 milliseconds.
+     *
+     * @param timeout The specified time out in milliseconds.
+     * @param condition A boolean condition that will be checked once the timeout is executed.
+     */
+    public boolean sleep(long timeout, BooleanSupplier condition) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        return new ConditionalSleep((int) timeout) {
+            @Override public boolean condition() {
+                return condition.getAsBoolean();
+            }
+        }.sleep();
+    }
+
+    /**
+     * Sleeps for the specified amount of time in milliseconds.
+     *
+     * @param timeout The time in milliseconds to sleep for.
+     */
+    public static void sleep(long timeout) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        new ConditionalSleep((int) timeout) {
+            @Override public boolean condition() {
+                return false;
+            }
+        }.sleep();
+    }
+
+    /**
+     * Sleeps for the specified amount of time in milliseconds.
+     *
+     * @param timeout The specified timeout in milliseconds.
+     * @param sleepTime The time to sleep in milliseconds between timeout and condition checks.
+     */
+    public static void sleep(long timeout, long sleepTime) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        new ConditionalSleep((int) timeout, (int) sleepTime) {
+            @Override public boolean condition() {
+                return false;
+            }
+        }.sleep();
+    }
+
+    /**
+     * Sleeps for the specified amount of time in milliseconds.
+     *
+     * @param timeout The specified timeout in milliseconds.
+     * @param sleepTime The time to sleep in milliseconds between timeout and condition checks.
+     */
+    public static void sleep(int timeout, int sleepTime) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        new ConditionalSleep(timeout, sleepTime) {
+            @Override public boolean condition() {
+                return false;
+            }
+        }.sleep();
+    }
+
+    /**
+     * Sleeps until the passed boolean condition is met.
+     */
+    public static void sleepUntil(BooleanSupplier condition) {
+        // sleep for the specified amount of seconds and check if the condition is met
+        new ConditionalSleep(Integer.MAX_VALUE) {
+            @Override public boolean condition() {
+                return condition.getAsBoolean();
+            }
+        }.sleep();
+    }
+
+
+    /**
+     * Find the nearest bank, attempt to open it, and wait a moment for the interface to appear.
+     *
+     * @return True if the bank is successfully opened, else returns false.
+     */
+    protected boolean openNearestBank() throws InterruptedException {
+        setStatus("Finding nearest bank...");
         // locate and open the nearest bank
-        if (!getBank().open())
-            // ensure bank is open
+        if (!getBank().open()) {
+            // check bank is open before returning
             new ConditionalSleep(Rand.getRandShortDelayInt()) {
-                @Override public boolean condition() throws InterruptedException {
+                @Override
+                public boolean condition() throws InterruptedException {
                     return getBank().open();
                 }
             }.sleep();
-
-        // make space for the spade if needed
-        if (getInventory().isFull()) {
-            // Keep spade if we somehow already have it; otherwise dump all
-            getBank().depositAllExcept(REQUIRED_CLUE_ITEMS);
-            new ConditionalSleep(2500) {
-                @Override public boolean condition() {
-                    return !getInventory().isFull();
-                }
-            }.sleep();
         }
 
-        // withdraw the spade
-        if (!getBank().withdraw(item, 1)) {
-            log("Failed to withdraw spade from players bank :(");
-            getBank().close();
-            return false;
+        return bank.isOpen();
+    }
+
+    /**
+     * Checks if the players inventory contains all the passed items or not.
+     *
+     * @param items The items that should be currently contained in the players inventory.
+     * @return True if the player has all of the passed items, else false if
+     * at least one of the passed items are not found in the players inventory.
+     */
+    public boolean hasItems(@NotNull  String... items) {
+        setStatus("Checking players inventory for " + items.length + " required items...", true);
+        // check to ensure all items aren't already in the players inventory before going to a bank
+        for (String item : items) {
+            // if this item is null or an empty string, skip.
+            if (item == null || item.isEmpty())
+                continue;
+
+            // return false if any of the passed items are missing from the players inventory
+            if (!inventory.contains(item))
+                return false;
         }
 
-        boolean hasSpade = new ConditionalSleep(2500) {
-            @Override public boolean condition() {
-                return getInventory().contains(item);
-            }
-        }.sleep();
-
-        getBank().close();
-        return hasSpade && getInventory().contains(item);
+        return true;
     }
 }
 
