@@ -34,7 +34,6 @@ public class clue_solver extends ClueMan {
             return 0;
         }
 
-        sleep(5000);
         // else, if the clue is not a map-type, read the clue text
         String text = readClue();
         // log text for debugging to easily add more clues
@@ -94,17 +93,16 @@ public class clue_solver extends ClueMan {
         // check if a solution exists for this scroll
         switch (clueScrollText) {
             ///
+            /// CLUE SCROLL TYPE: HOT AND COLD
+            ///
+            case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
+                return solveClue();
+
+            ///
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
             ///
             case "Talk to Charlie the Tramp in Varrock.":
                 return completeCharlieTask(getCharlieTask());
-
-            ///
-            /// CLUE SCROLL TYPE: HOT AND COLD
-            ///
-            case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
-                solveClue();
-                return true;
 
             ///
             /// CLUE SCROLL TYPE: RIDDLE
@@ -171,6 +169,7 @@ public class clue_solver extends ClueMan {
      * @return
      */
     protected boolean solveClue() throws InterruptedException {
+        setStatus("Attempting to solve hot and cold clue...", true);
         // define required items to solve a hot n cold clue, item/quantity (set quantity -1 to withdraw all)
         HashMap<String, Integer> REQUIRED_ITEMS = new HashMap<String, Integer>() {{
             put("Spade", 1); // cant dig without a spade
@@ -182,11 +181,8 @@ public class clue_solver extends ClueMan {
             put("Coins", 20000); // enough coins to charter
         }};
 
-        // ensure required hot and cold items are on-hand
-        if (!hasItems(String.valueOf(REQUIRED_ITEMS.keySet())))
-            fetchFromBank(REQUIRED_ITEMS);
-
-
+        fetchFromBank(REQUIRED_ITEMS);
+        setStatus("Attempting to read device...", true);
         // feel device and read hint
         String heat = readStrangeDevice();
         if (readStrangeDevice() == null)
@@ -380,15 +376,18 @@ public class clue_solver extends ClueMan {
         //NOTE: BUG WHEN READING CLUE IF NPC NAME IS WRONG, MAY NEED TO ADD ATTEMPTS TO PREVENT INFINITE LOOP READING UNSOLVABLE CLUES?
         setStatus("Attempting to read clue...", true);
         int[][] guesses = new int[][]{
-                {203, 2} // readable clues (use readClue() func)
-                //{203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2}
+                {203, 2} // all readable beginner clues (use text property to distinguish)
+                //{203, 3}, {73, 3}, {73, 2}, {229, 1}, {229, 2} // mems ? med -> master?
         };
 
         for (int[] g : guesses) {
             setStatus("Scanning clue scroll...", true);
             RS2Widget w = getWidgets().get(g[0], g[1]);
             if (w != null && w.isVisible()) {
-                return w.getMessage();
+                String clue = w.getMessage();
+                sleep(893);
+                getWidgets().closeOpenInterface();
+                return clue;
             }
         }
 

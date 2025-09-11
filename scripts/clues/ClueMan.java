@@ -57,7 +57,7 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
             if (beginner_clue.interact("Read")) {
                 // small wait for widget to appear
                 setStatus("Investigating clue...", true);
-                sleep(3452);
+                sleep(2852);
                 return true;
             }
         // else if the player has a beginner scroll-box in their inventory

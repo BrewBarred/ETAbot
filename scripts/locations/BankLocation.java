@@ -1,6 +1,7 @@
-package scripts.locations;
+package locations;
 
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 
 /**
  * Enum representing various bank locations with their corresponding areas.
@@ -8,79 +9,84 @@ import org.osbot.rs07.api.map.Area;
  */
 public enum BankLocation {
     BANK_AL_KHARID(
-            new Area(3268, 3171, 3270, 3163), // Exact
-            new Area(3268, 3174, 3273, 3163), // Click
-            new Area(3262, 3177, 3278, 3158)  // Extended
+            "Al'kharid: Bank", // name
+            new Area(3268, 3171, 3270, 3163)
     ),
     BANK_GRAND_EXCHANGE(
-            new Area(3161, 3493, 3168, 3486),
-            new Area(3157, 3493, 3172, 3482),
-            new Area(3151, 3500, 3178, 3476)
+            "Varrock: Grand Exchange",
+            new Area(3161, 3493, 3168, 3486)
     ),
     BANK_VARROCK_EAST(
-            new Area(3251, 3420, 3255, 3419),
-            new Area(3250, 3423, 3256, 3419),
-            new Area(3244, 3430, 3263, 3412)
+            "Varrock: Bank (east)",
+            new Area(3251, 3420, 3255, 3419)
     ),
     BANK_VARROCK_WEST(
-            new Area(3183, 3440, 3185, 3436),
-            new Area(3180, 3442, 3186, 3433),
-            new Area(3176, 3450, 3194, 3429)
+            "Varrock: Bank (west)",
+            new Area(3183, 3440, 3185, 3436)
     ),
     BANK_FALADOR_EAST(
-            new Area(3009, 3356, 3016, 3355),
-            new Area(3009, 3358, 3018, 3355),
-            new Area(3006, 3361, 3025, 3350)
+            "Falador: Bank (east)",
+            new Area(3009, 3356, 3016, 3355)
     ),
     BANK_FALADOR_WEST(
-            new Area(2944, 3369, 2949, 3368),
-            new Area(2943, 3373, 2947, 3368),
-            new Area(2941, 3375, 2951, 3365)
+            "Falador: Bank (west)",
+            new Area(2944, 3369, 2949, 3368)
     ),
     BANK_DRAYNOR(
-            new Area(3091, 3245, 3092, 3241),
-            new Area(3090, 3246, 3096, 3240),
-            new Area(3085, 3248, 3100, 3238)
+            "Draynor: Bank",
+            new Area(3091, 3245, 3092, 3241)
     ),
     BANK_EDGEVILLE_NORTH(
-            new Area(3094, 3496, 3097, 3494),
-            new Area(3091, 3499, 3098, 3494),
-            new Area(3088, 3501, 3101, 3485)
+            "Edgeville: Bank (north)",
+            new Area(3092, 3498, 3097, 3494)
     ),
     BANK_EDGEVILLE_SOUTH(
-            new Area(3093, 3492, 3094, 3489),
-            new Area(3091, 3494, 3094, 3488),
-            new Area(3088, 3501, 3101, 3485)
+            "Edgeville: Bank (south)",
+            new Area(3092, 3492, 3094, 3488)
+
     );
 
-    private final Area exactArea;
-    private final Area clickArea;
-    private final Area extendedArea;
+    public final String name;
+    public final Area area;
 
     /**
-     * Constructs a BankLocation enum constant with specified areas.
-     *
-     * @param exactArea    the exact area of the bank location
-     * @param clickArea    the area where clicks are detected or processed
-     * @param extendedArea the extended area surrounding the bank location
+     * Constructs a BankLocation enum with unique features for locations with banks.
      */
-    BankLocation(Area exactArea, Area clickArea, Area extendedArea) {
-        this.exactArea = exactArea;
-        this.clickArea = clickArea;
-        this.extendedArea = extendedArea;
+    BankLocation(String name, Area area) {
+        this.name = name;
+        this.area = area;
     }
 
-    // Getters
-    public Area getExactArea() {
-        return exactArea;
+    public String getName() {
+        return name;
     }
 
-    public Area getClickArea() {
-        return clickArea;
+    public Position getCentre() {
+        return area.getCentralPosition();
     }
 
-    public Area getExtendedArea() {
-        return extendedArea;
+    /**
+     * Return the BankLocation closest to the passed target Position.
+     *
+     * @param target The Area used for BankLocation distance calculations.
+     * @return The BankLocation closest to the target Position, else null.
+     */
+    public static BankLocation getNearest(Position target) {
+        BankLocation closest = null;
+        int bestDistance = Integer.MAX_VALUE;
+
+        for (BankLocation bank : values()) {
+            int distance = bank.getCentre().distance(target);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                closest = bank;
+            }
+        }
+        return closest;
     }
 
+    @Override
+    public String toString() {
+        return name;
+    }
 }

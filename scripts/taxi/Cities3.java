@@ -55,12 +55,7 @@ public class Cities3 extends Script {
             //  ConditionalSleep(java.lang.Runnable sleepTask, int timeout)
             //  Creates a ConditionalSleep instance that will sleep until its
             //  condition is true or if the timeout has expired.
-            new ConditionalSleep(Rand.getRandLongDelayInt(), Rand.getRandShortDelayInt()) {  // 10 seconds to wait for the player to stop moving
-                @Override
-                public boolean condition() {
-                    return !myPlayer().isMoving();  // Ensure the player stops moving
-                }
-            }.sleep();
+
             // remove the location from the list to prevent infinite loop and progress to next destination
             destinationList.remove(location);
             updateDestinationListGUI();

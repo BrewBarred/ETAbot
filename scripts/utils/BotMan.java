@@ -2,9 +2,9 @@ package utils;
 
 import clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
+import locations.BankLocation;
 import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.api.model.Item;
-import org.osbot.rs07.api.model.Player;
+import org.osbot.rs07.api.model.*;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
@@ -284,17 +284,19 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @param status The current status of the bot i.e., "Checking inventory space..."
      * @param log True if the status update should be logged to the client logger, else false.
      */
-    public void setStatus(String status, boolean log) {
+    public boolean setStatus(String status, boolean log) {
         // update status
         this.status = status;
 
         // optionally log status to console
         if (log)
             log(status);
+
+        return true;
     }
 
-    public void setStatus(String status) {
-        setStatus(status, false);
+    public boolean setStatus(String status) {
+        return setStatus(status, false);
     }
 
     /**
@@ -500,11 +502,13 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @param items The item(s) to fetch from the players bank.
      * @return True if the passed item(s) is contained in the players inventory after execution, else returns false.
      */
-    protected boolean fetchFromBank(HashMap<String, Integer> items) throws InterruptedException {
-        // return early if a null or empty hash map is requested
-        if (items == null || items.isEmpty())
+    protected boolean fetchFromBank(@NotNull HashMap<String, Integer> items) throws InterruptedException {
+        setStatus("Attempting to fetch " + items + " from the bank...");
+        // why withdraw nothing?
+        if (items.isEmpty())
             return false;
 
+        // store the items in a set
         String[] itemList = items.keySet().toArray(new String[0]);
         // return early if the player already has the requested items
         if (hasItems(itemList))
@@ -521,7 +525,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             if(!inventory.contains(item)) {
                 int amount = items.get(item);
                 if (!getBank().withdraw(item, amount)) {
-                    log("Failed to withdraw spade from players bank :(");
+                    setStatus("Failed to withdraw " + amount + "x " + item + " from players bank...", true);
                     sleep(1243);
                 }
             }
@@ -665,39 +669,52 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @return True if the bank is successfully opened, else returns false.
      */
     protected boolean openNearestBank() throws InterruptedException {
-        setStatus("Finding nearest bank...");
-        // locate and open the nearest bank
-        if (!getBank().open()) {
-            // check bank is open before returning
-            new ConditionalSleep(Rand.getRandShortDelayInt()) {
+        setStatus("Finding nearest bank...", true);
+        BankLocation location = BankLocation.getNearest(myPosition());
+        setStatus("Found bank: " + location.name);
+
+        if (location != null) {
+            walkTo(location.area, location.name);
+        } else {
+            setStatus("Error finding bank!");
+            return false;
+        }
+
+        // try to open the nearest bank
+        if (!getBank().open())
+            new ConditionalSleep((int) Rand.getRandLongDelayInt()) {
                 @Override
                 public boolean condition() throws InterruptedException {
                     return getBank().open();
                 }
             }.sleep();
-        }
 
-        return bank.isOpen();
+        // if that failed, wait a couple seconds and try again
+        //sleep(2611);
+        return getBank().open();
     }
 
     /**
      * Checks if the players inventory contains all the passed items or not.
      *
-     * @param items The items that should be currently contained in the players inventory.
+     * @param requiredItems The items that should be currently contained in the players inventory.
      * @return True if the player has all of the passed items, else false if
      * at least one of the passed items are not found in the players inventory.
      */
-    public boolean hasItems(@NotNull  String... items) {
-        setStatus("Checking players inventory for " + items.length + " required items...", true);
+    public boolean hasItems(@NotNull  String... requiredItems) {
+        setStatus("Checking players inventory for " + requiredItems.length + " required items...", true);
         // check to ensure all items aren't already in the players inventory before going to a bank
-        for (String item : items) {
+        for (String item : requiredItems) {
+            log("Checking item: " + item);
             // if this item is null or an empty string, skip.
             if (item == null || item.isEmpty())
                 continue;
 
             // return false if any of the passed items are missing from the players inventory
-            if (!inventory.contains(item))
+            if (!inventory.contains(item)) {
+                setStatus("Missing required item: " + item, true);
                 return false;
+            }
         }
 
         return true;
