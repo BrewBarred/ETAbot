@@ -1,6 +1,6 @@
 package utils;
 
-import clues.ClueMap;
+import clues.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.Player;
@@ -300,10 +300,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      //     *
      //     * @param area The area in which the player should walk toward.
      //     */
-    public void walkTo(Area area, String status) {
+    public boolean walkTo(Area area, String status) {
         // return early if the player is already at the destination
         if (area.contains(myPlayer()))
-            return;
+            return false;
 
         // update the status if any status message was passed
         if (!status.isEmpty())
@@ -319,7 +319,11 @@ public abstract class BotMan<T extends BotMenu> extends Script {
                     return !area.contains(myPlayer());
                 }
             }.sleep();
+
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -402,7 +406,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public boolean dig() throws InterruptedException {
         return dig(null);
     }
-    public boolean dig(ClueMap map) throws InterruptedException {
+    public boolean dig(ClueLocation map) throws InterruptedException {
         // track original position incase player runs script at the digspot without a spade
         Area area = myPosition().getArea(1);
 
@@ -422,7 +426,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             walkTo(area, "Original location");
         // unless a map location was passed, then walk there instead
         else
-            walkTo(map.area, map.label);
+            walkTo(map.area, map.name);
 
         // ensure inventory is visible before continuing
         if (!viewTab(Tab.INVENTORY)) {

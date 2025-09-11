@@ -1,17 +1,16 @@
 package clues;
 
 import org.osbot.rs07.api.Bank;
-import org.osbot.rs07.api.Widgets;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
+import utils.Emote;
 import utils.Rand;
 
 import java.awt.*;
-import java.util.Arrays;
 
 @ScriptManifest(
         name = "F2P beginner clue solver",
@@ -22,7 +21,6 @@ import java.util.Arrays;
 )
 public class clue_solver extends ClueMan {
     // charlie the tramp location
-    final Area VARROCK_SOUTH_GATE = new Area(3207, 3393, 3210, 3389);
     @Override
     public int onLoop() throws InterruptedException {
         setStatus("Attempting to solve clue...", true);
@@ -35,7 +33,7 @@ public class clue_solver extends ClueMan {
         }
 
         // check if the clue scroll is a map-type or not
-        ClueMap location = readMap();
+        ClueLocation location = readMap();
         if (location != null) {
             solveClue(location);
             return Rand.getRand(1243);
@@ -57,7 +55,7 @@ public class clue_solver extends ClueMan {
         return Rand.getRand(0);
     }
 
-    protected boolean solveClue(ClueMap map) throws InterruptedException {
+    protected boolean solveClue(ClueLocation map) throws InterruptedException {
         //NOTE: NEED TO CHECK FOR SPADE IN INVENTORY FIRST AND FETCH ONE IF NOT!
         setStatus("Attempting to solve map clue...");
         if (map == null) {
@@ -74,6 +72,18 @@ public class clue_solver extends ClueMan {
         return false;
     }
 
+    protected boolean solveClue(String npc, ClueLocation location) throws InterruptedException {
+        // return false if unable to find passed npc at passed location (probably happen a lot with hands, may need to fix)
+        if (!findNPC(npc, location))
+            return false;
+
+        // return false if npc dialogue somehow fails
+        if (!talkTo(npc))
+            return false;
+
+        return true;
+    }
+
     protected boolean solveClue(String clueScrollText) throws InterruptedException {
         // return early if invalid text is passed
         if (clueScrollText == null || clueScrollText.isEmpty())
@@ -86,69 +96,49 @@ public class clue_solver extends ClueMan {
             ///
             case "Always walking around the castle grounds and somehow knows everyone's age.":
                 // define npc and area
-                String hans = "Hans";
-                Area lumbridge_courtyard = new Area(3218, 3229, 3226, 3218);
+                String HANS = "Hans";
 
                 // find and talk to hans
-                findNPC(hans, lumbridge_courtyard);
-                talkTo(hans);
-                return true;
+                return solveClue(HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
 
             case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
                 // define npc and area
                 String COOK = "Cook";
-                Area LUMBRIDGE_CASTLE_KITCHEN = new Area(3206, 3215, 3211, 3213);
 
                 // find and talk to Duke Horacio
-                findNPC(COOK, LUMBRIDGE_CASTLE_KITCHEN);
-                talkTo(COOK);
-                return true;
+                return solveClue(COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
 
             ///
             /// CLUE SCROLL TYPE: ANAGRAM
             ///
-            case "The anagram reveals<br> who to speak to next:<br>AN EARL":
+            case "The anagram reveals<br> who to speak to next:<br>IN BAR":
                 // define npc and location
-                String ranael = "Ranael";
-                Area AL_KHARID_SKIRT_SHOP = new Area(3313, 3165, 3317, 3160);
+                String BRIAN = "Brian";
 
-                // find and talk to ranael
-                findNPC(ranael, AL_KHARID_SKIRT_SHOP);
-                talkTo(ranael);
-                return true;
+                // find and talk to brian
+                return solveClue(BRIAN, ClueLocation.PORT_SARIM_BATTLEAXE_SHOP);
 
             case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
                 // define npc and location
-                String fortunato = "Fortunato";
-                Area DRAYNOR_VILLAGE_MARKET = new Area(3082, 3253, 3086, 3248);
+                String FORTUNATO = "Fortunato";
 
                 // find and talk to fortunato
-                findNPC(fortunato, DRAYNOR_VILLAGE_MARKET);
-                talkTo(fortunato);
-                return true;
+                return solveClue(FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
+
+            case "The anagram reveals<br> who to speak to next:<br>AN EARL":
+                // define npc and location
+                String RANAEL = "Ranael";
+
+                // find and talk to ranael
+                return solveClue(RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
 
             ///
             /// CLUE SCROLL TYPE: EMOTE
             ///
             case "Bow to Brugsen Bursen at the Grand Exchange.":
-                // define the emote area
-                Area ge = new Area(3162, 3477, 3167, 3475);
-                walkTo(ge, "Grand Exchange");
-
-                // perform the emote
-                RS2Widget bow = getWidgets().get(216, 2, 2);
-                doEmote(bow);
-
-                // wait for uri to appear then talk to him
-                sleep(Rand.getRandShortDelayInt());
-                talkTo("Uri");
-                return true;
+                return solveClue(Emote.BOW, ClueLocation.VARROCK_GRAND_EXCHANGE);
 
             case "Panic at Al Kharid mine.":
-                // define the emote area
-                Area AL_KHARID_MINE = new Area(3297, 3279, 3300, 3277);
-                walkTo(AL_KHARID_MINE, "Al'Kharid Mine");
-
                 // perform the emote
                 RS2Widget panic = getWidgets().get(216, 2, 18);
                 doEmote(panic);
@@ -156,7 +146,7 @@ public class clue_solver extends ClueMan {
                 // wait for uri to appear then talk to him
                 sleep(Rand.getRandShortDelayInt());
                 talkTo("Uri");
-                return true;
+                return solveClue(Emote.PANIC, ClueLocation.AL_KHARID_MINE);
 
             ///
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
@@ -177,9 +167,29 @@ public class clue_solver extends ClueMan {
         }
     }
 
+    /**
+     * Walks to the passed clue emote location and performs the passed emote.
+     *
+     * @param emote The emote to perform on arrival.
+     * @param location The clue location to perform the passed emote.
+     * @return True if the emote was successfully perform at the passed location, else returns false.
+     */
+    protected boolean solveClue(Emote emote, ClueLocation location) throws InterruptedException {
+        // try walk to the passed location
+        if (!walkTo(location.area, location.name))
+            return false;
+
+        // try to perform the passed emote
+        if (!doEmote(emote))
+            return false;
+
+        // try talk to uri
+        return talkTo("Uri");
+    }
+
     protected String getCharlieTask(String scrollText) throws InterruptedException {
         setStatus("Attempting to find charlie...", true);
-        findNPC("Charlie the Tramp", VARROCK_SOUTH_GATE);
+        findNPC("Charlie the Tramp", ClueLocation.VARROCK_SOUTH_GATE);
         sleep(random(400, 600));
         dialogues.completeDialogue("Click here to continue",
                 "Click here to continue",
@@ -258,17 +268,31 @@ public class clue_solver extends ClueMan {
         }
     }
 
-    public void doEmote(RS2Widget emote) throws InterruptedException {
-        setStatus("Attempting to perform emote...", true);
-        if (getTabs().open(Tab.EMOTES)) {
-            if (emote != null && emote.isVisible()) {
-                setStatus("Performing emote...", true);
-                emote.interact();
-                sleep(random(1500, 2000)); // wait for animation
+    public boolean doEmote(Emote emote) throws InterruptedException {
+        setStatus("Performing emote...", true);
+        // return early if passed emote is null
+        if (emote == null)
+            return false;
+
+        // fetch the emote widget using the emotes widget ids
+        RS2Widget emoteWidget = getWidgets().get(emote.getRoot(), emote.getChild(), emote.getSubChild());
+
+        setStatus("Opening emotes tab...", true);
+        // open emotes tab
+        if (viewTab(Tab.EMOTES)) {
+            // if the passed emote is visible
+            if (emoteWidget != null && emoteWidget.isVisible()) {
+                setStatus("Performing \"" + emote + "\" emote", true);
+                emoteWidget.interact();
+                // wait for animation to complete
+                sleep(Rand.getRand(1234, 4532));
+                return true;
             } else {
-                setStatus("Emote not found. Widget ID: " + emote, true);
+                setStatus("Error performing emote!", true);
+                return false;
             }
         }
+        return false;
     }
 
     /**
@@ -292,10 +316,10 @@ public class clue_solver extends ClueMan {
         return null;
     }
 
-    private ClueMap readMap() {
+    private ClueLocation readMap() {
         // for each clue map in the game
         for (Integer widgetId : getWidgets().getActiveWidgetRoots()) {
-            ClueMap map = ClueMap.getMap(widgetId);
+            ClueLocation map = ClueLocation.getMap(widgetId);
             if (map != null)
                 return map;
         }
@@ -326,33 +350,40 @@ public class clue_solver extends ClueMan {
 
     /**
      * Solves NPC clue-scroll types by talking to the NPC with the passed name at the passed area.
-     * @param npc The name of the NPC to talk to
-     * @param area The area containing the NPC to talk to
-     * @return True if the chat was successful, else returns false
+     *
+     * @param npc The name of the NPC to talk to.
+     * @param location The clue location containing the NPC to speak to for clue completion.
+     * @return True if the chat was successful, else returns false.
      */
-    private boolean findNPC(String npc, Area area) throws InterruptedException {
-        setStatus("Attempting to solve this NPC clue-scroll type by talking to " + npc, true);
+    private boolean findNPC(String npc, ClueLocation location) throws InterruptedException {
+        // validate parameters
+        if (npc == null || npc.isEmpty() || location == null)
+            return false;
 
-        if (area == null)
-            area = myPosition().getArea(5);
+        // update status
+        setStatus("Talking to " + npc + " at " + location.name + "...", true);
 
-        if (!area.contains(myPosition())) {
-            // walk to the passed area
-            if (getWalking().webWalk(area)) {
-                // AFK for a random amount of time up to 5.2s, checking timeout & condition every 0.3-2.6s
-                Area finalArea = area;
-                new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
-                    @Override
-                    public boolean condition() {
-                        // walk until player reaches Edgeville bank
-                        return !finalArea.contains(myPlayer());
-                    }
-                }.sleep();
-            }
-        }
+        // try walk to passed npc location
+        if (!walkTo(location.area, location.name))
+            return false;
 
-        talkTo(npc);
-        return true;
+//        if (!area.contains(myPosition())) {
+//            // walk to the passed area
+//            if (getWalking().webWalk(area)) {
+//                // AFK for a random amount of time up to 5.2s, checking timeout & condition every 0.3-2.6s
+//                Area finalArea = area;
+//                new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
+//                    @Override
+//                    public boolean condition() {
+//                        // walk until player reaches Edgeville bank
+//                        return !finalArea.contains(myPlayer());
+//                    }
+//                }.sleep();
+//            }
+//        }
+
+        // complete clue by trying to talk to the npc
+        return talkTo(npc);
 
     }
 
