@@ -32,8 +32,7 @@ public class clue_solver extends ClueMan {
 
         // try to open a clue scroll for completion or exit
         if (!openClue()) {
-            setStatus("Unable to find a clue scroll to solve...", true);
-            onExit();
+            onExit("Unable to find a clue scroll to solve...");
             return 0;
         }
 
@@ -55,8 +54,7 @@ public class clue_solver extends ClueMan {
         }
 
         // else, there must be an unsolvable clue or bug... exit script until I can work on a fix for it :)
-        setStatus("Unable to process clue scroll! Exiting script...", true);
-        onExit();
+        onExit("Unable to process clue scroll! Exiting script...");
         return Rand.getRand(0);
     }
 
@@ -158,6 +156,9 @@ public class clue_solver extends ClueMan {
             case "Panic at Al Kharid mine.":
                 return solveClue(Emote.PANIC, ClueLocation.AL_KHARID_MINE);
 
+            case "Spin at Flynn's Mace Shop.":
+                return solveClue(Emote.SPIN, ClueLocation.FALADOR_MACE_SHOP);
+
             default:
                 // if unable to solve clue, check if it's an incomplete charlie clue
                 if (completeCharlieTask(clueScrollText))
@@ -185,19 +186,18 @@ public class clue_solver extends ClueMan {
             put("Coins", 20000); // enough coins to charter
         }};
 
-        fetchFromBank(REQUIRED_ITEMS);
+        // fetch the required items from the bank if needed
+        if (!fetchFromBank(REQUIRED_ITEMS))
+            return setStatus("Error fetching required hot and cold items from the bank!", true);
 
         setStatus("Attempting to read device...", true);
         // feel device and read hint
         String hint = feelStrangeDevice();
         if (hint == null) {
-            setStatus("Error operating strange device...", true);
-            return false;
-        }
-        else {
-            log("Hot and cold hint: " + hint);
+            return !setStatus("Error operating strange device...", true);
         }
 
+        log("Hot and cold hint: " + hint);
         switch (hint) {
             case "The strange device doesn't seem to work here.":
                 setStatus("Correcting invalid zone error...");
@@ -339,7 +339,7 @@ public class clue_solver extends ClueMan {
         return withdrawal;
     }
 
-    protected String getCharlieItem(String scrollText) {
+    protected String getCharlieItem(String scrollText) throws InterruptedException {
         switch (scrollText) {
             case "I need to give Charlie a piece of iron ore.":
                 return "Iron ore";
@@ -347,7 +347,12 @@ public class clue_solver extends ClueMan {
             case "I need to give Charlie a raw herring.":
                 return "Raw herring";
 
+            case "I need to give Charlie a cooked pike.":
+                return "Cooked pike";
+
             default:
+                setStatus("Unable to retrieve Charlie's requested item... script will now exit.");
+                onExit();
                 return null;
         }
     }

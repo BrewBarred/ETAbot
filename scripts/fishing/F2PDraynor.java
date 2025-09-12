@@ -9,11 +9,6 @@ public class F2PDraynor extends FishingMan {
     protected void onSetup() {
         try {
             log("Setting up Draynor fisherman...");
-
-            // check for required fishing equipment (e.g., net or bait + fishing rod)
-            if (!hasReqFishingGear()) {
-                getReqFishingGear();
-            }
             // if not in bank
             // buy it
             // if not enough gp
@@ -41,17 +36,5 @@ public class F2PDraynor extends FishingMan {
         // else
             // dropAllExceptReq
         return 0;
-    }
-
-    private void getReqFishingGear() throws InterruptedException {
-        log("Attempting to fetch required fishing gear...");
-        // insert additional logic here to fetch fishing gear
-        // if not hasReqEquipment
-        // fetch it from bank
-        // else, fetch coins to purchase
-        // purchase
-        // else exit
-        log("Unable to fetch required fishing gear! Script will now exit...");
-        onExit();
     }
 }

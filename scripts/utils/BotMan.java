@@ -4,6 +4,7 @@ import clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
 import locations.BankLocation;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.*;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
@@ -113,7 +114,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         this.overlayMan = new OverlayMan(this);
         this.setStatus("Successfully loaded overlay manager!", true);
         // initialize a tracker to track all skills
-        this.tracker = new Tracker(this);
+        this.tracker = new Tracker(this, true);
         // this.bank = new BankMan(this);
         // this.bag = new BagMan(this);
         // this.travel = new TravelMan(this);
@@ -279,11 +280,32 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     @Override
     public final void onExit() throws InterruptedException {
-        log("Closing bot manager...");
         closeBotMenu();
         stop(false);
-        log("Successfully exited ETA's OsBot manager");
         super.onExit();
+        log("Successfully exited ETA's OsBot manager");
+    }
+
+    /**
+     * Helper function which enables the one-line exit function call with an explanatory message. This function is
+     * mainly to reduce unnecessary lines of code :P
+     * <p>
+     * This function also tidies up code a bit by reducing the need to throw {@link InterruptedException} everywhere by
+     * surrounding the exit call in a try/catch internally.
+     *
+     * @param reason The reason for calling the onExit() function.
+     * @return True if onExit() would have successfully executed (impossible
+     * - as it ends the script before returning true), else returns false.
+     */
+    public final boolean onExit(String reason) {
+        try {
+            setStatus("Exiting: " + reason, true);
+            onExit();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        // always return false so we can use this to escape functions without looking illogical (even though its redundant)
+        return false;
     }
 
     /**
@@ -299,6 +321,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         if (log)
             log(status);
 
+        // always return true so we can reduce 2-line statements into one while still logging errors ;)
+        // e.g., return setStatus("Successfully...") || return !setStatus("Error...")
         return true;
     }
 
@@ -418,39 +442,28 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public boolean dig() throws InterruptedException {
         return dig(null);
     }
-    public boolean dig(ClueLocation map) throws InterruptedException {
-        // track original position incase player runs script at the digspot without a spade
-        Area area = myPosition().getArea(1);
 
+    public boolean dig(ClueLocation map) throws InterruptedException {
         // first, check if the player has a spade before relocating
         Item spade = getInventory().getItem("Spade");
         if (spade == null) {
             setStatus("No Spade found in inventory. Attempting to fetch one...");
             // go fetch a spade if none is found
             if (!fetchSpade()) {
-                setStatus("Unable to dig... script will now exit.");
-                return false;
+                return !setStatus("Error fetching spade... script will now exit.");
             }
         }
 
-        // now that spade is verified, walk to the players location before fetching a spade
-        if (map == null)
-            walkTo(area, "Original location");
-        // unless a map location was passed, then walk there instead
-        else
-            walkTo(map.area, map.name);
-
         // ensure inventory is visible before continuing
-        if (!viewTab(Tab.INVENTORY)) {
-            log("Error opening inventory tab!");
-            return false;
-        }
+        if (!viewTab(Tab.INVENTORY))
+            return !setStatus("Error opening inventory tab!");
 
-        // wait for player to stop walking before digging
+        // wait for player to stop moving or animating before digging
         if (myPlayer().isMoving())
-            sleep(Rand.getRand(892));
+            sleep(() -> !myPlayer().isMoving() && !myPlayer().isAnimating());
 
         // try to dig with the spade
+        assert spade != null;
         boolean clicked = spade.interact("Dig");
         if (!clicked) {
             setStatus("Digging failed.", true);
@@ -610,7 +623,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     /**
      * Overrides the default sleep(long timeout) function to sleep until the passed condition is true, or if the timeout
      * has expired.
-     *
+     * <p>
      * With this constructor, the sleep times to check the timeout and condition are centered around 25 milliseconds.
      *
      * @param timeout The specified time out in milliseconds.
@@ -626,9 +639,15 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     /**
-     * Overrides the default sleep(long timeout) function to sleep until the passed condition is true.
-     *
-     * With this constructor, the sleep times to check the timeout and condition are centered around 25 milliseconds.
+     * Mimics a {@link ConditionalSleep} function using a BooleanSupplier instead to enable
+     * lambda-style expressions (one-liners).
+     * <p>
+     * This function will sleep until the passed {@link Boolean condition} is true.
+     * <p>
+     * <b>Example usage: </b><p>
+     * : boolean bool = myPenis.isBig() <p>
+     * : // return, eventually... <p>
+     * : sleep(() -> bool) <p>
      *
      * @param condition A boolean condition that will break the sleep once true.
      */

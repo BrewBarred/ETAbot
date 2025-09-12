@@ -166,8 +166,6 @@ public class Tracker {
         this(methodProvider, trackAll ? Skill.values(): null);
     }
 
-
-
     ///
     ///     TIME TRACKER
     ///
