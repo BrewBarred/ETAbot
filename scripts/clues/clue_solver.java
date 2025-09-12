@@ -348,7 +348,7 @@ public class clue_solver extends ClueMan {
                 return "Raw herring";
 
             case "I need to give Charlie a cooked pike.":
-                return "Cooked pike";
+                return "Pike";
 
             default:
                 setStatus("Unable to retrieve Charlie's requested item... script will now exit.");

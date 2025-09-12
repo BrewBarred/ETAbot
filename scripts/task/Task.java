@@ -85,7 +85,6 @@ public abstract class Task {
      * @param bot The {@link BotMan bot manager} being used to execute the task.
      *
      * @return True if the execution is a success, else returns false.
-     * @throws InterruptedException
      */
     public abstract boolean execute(BotMan<?> bot) throws InterruptedException;
 
