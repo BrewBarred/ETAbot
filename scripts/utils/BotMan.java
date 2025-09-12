@@ -639,6 +639,20 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     /**
+     * Tilts the camera toward the passed entity (useful for realism in scripts).
+     * @param entity The Entity object to tilt the camera toward.
+     * @return True if the entity is successfully sighted.
+     */
+    protected boolean lookAt(Entity entity) {
+        // return early if there's nothing to look at
+        if (entity == null)
+            return false;
+
+        // try tilt camera to the passed entity
+        return getCamera().toEntity(entity);
+    }
+
+    /**
      * Sleeps for the specified amount of time in milliseconds.
      *
      * @param timeout The specified timeout in milliseconds.
@@ -737,16 +751,3 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return true;
     }
 }
-
-//    /**
-//     * Function designed to move the camera randomly as an anti-bot tactic, however, this formula is weak and requires
-//     * revision
-//     * TODO: Revise this trash and consider adding to each action perhaps? Especially when searching for things? e.g rotate until object is on screen
-//     */
-//    public void moveCameraRandomly() {
-//        if (random(0, 50) >= 43) {
-//            log("Perform random camera movement...");
-//            getCamera().moveYaw(random(0, 360));
-//            getCamera().movePitch(random(42, 67));
-//        }
-//    }

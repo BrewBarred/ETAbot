@@ -146,7 +146,7 @@ public class clue_solver extends ClueMan {
                 sleep(Rand.getRandReallyShortDelayInt());
                 ladder.interact("Climb-down");
                 sleep(Rand.getRandReallyShortDelayInt());
-                talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName, "Continue", "Continue");
+                talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName);
                 return true;
 
             ///
@@ -489,10 +489,13 @@ public class clue_solver extends ClueMan {
     }
 
     protected boolean talkTo(String name, String... options) throws InterruptedException {
-        assert name != null;
-        NPC npc = getNpcs().closest(name);
+        // return if there's nobody to talk to
+        if (name == null || name.isEmpty())
+            return false;
 
-        // if npc not found, wait a second and try again
+        // try fetch the nearest npc with the passed name
+        NPC npc = getNpcs().closest(name);
+        // if unable to find npc, wait a second and try again
         if (npc == null) {
             sleep(Rand.getRandShortDelayInt());
             // attempt to find again
@@ -502,19 +505,21 @@ public class clue_solver extends ClueMan {
                return false;
         }
 
-        // if you can see hans
+        // if you cant see hans
         if (!npc.isVisible())
-            // tilt camera to hans
-            getCamera().toEntity(npc);
+            // try tilt camera to see him
+            lookAt(npc);
 
         // return false if talking to hans fails
         setStatus("Talking to ..." + name, true);
         npc.interact("Talk-to");
         sleep(random(1200, 2400));
         setStatus("Continuing dialogue...", true);
-        if (options.length == 0)
-            dialogues.clickContinue();
+        if (options != null && options.length == 0)
+            // this should complete the dialogue with continue
+            dialogues.completeDialogue();
         else
+            // this should complete the dialogue with a custom set of options
             dialogues.completeDialogue(options);
         sleep(random(400, 600));
         setStatus("sleeping", true);
