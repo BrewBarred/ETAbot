@@ -5,7 +5,8 @@ public enum ClueNPC {
     COOK("Cook"),
     HANS("Hans"),
     FORTUNATO("Fortunato"),
-    RANAEL("RANAEL");
+    RANAEL("RANAEL"),
+    ARCHMAGE_SEDRIDOR("Archmage Sedridor");
 
     String npcName;
 

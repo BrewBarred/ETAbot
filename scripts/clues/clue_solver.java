@@ -2,8 +2,11 @@ package clues;
 
 import org.osbot.rs07.api.Bank;
 import org.osbot.rs07.api.Chatbox;
+import org.osbot.rs07.api.Objects;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
+import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.script.ScriptManifest;
@@ -96,7 +99,13 @@ public class clue_solver extends ClueMan {
             /// CLUE SCROLL TYPE: HOT AND COLD
             ///
             case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
-                return solveClue();
+                //return solveClue(); // to be completed
+
+                // temporarily drop clues to ensure functionality while this gets implemented
+                Item clue = inventory.getItem("Clue scroll (beginner)");
+                clue.interact("Drop");
+                sleep(Rand.getRandReallyShortDelayInt());
+                return true;
 
             ///
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
@@ -129,6 +138,16 @@ public class clue_solver extends ClueMan {
             case "The anagram reveals<br> who to speak to next:<br>AN EARL":
                 // find and talk to ranael
                 return solveClue(ClueNPC.RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
+
+            case "The anagram reveals<br> who to speak to next:<br>CHAR GAME DISORDER":
+                // since im not sure how to get into the basement, I had to manually guide the character there
+                walkTo(ClueLocation.WIZARDS_TOWER_LADDER.area, ClueLocation.WIZARDS_TOWER_LADDER.name);
+                RS2Object ladder = objects.closest("Ladder");
+                sleep(Rand.getRandReallyShortDelayInt());
+                ladder.interact("Climb-down");
+                sleep(Rand.getRandReallyShortDelayInt());
+                talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName, "Continue", "Continue");
+                return true;
 
             ///
             /// CLUE SCROLL TYPE: EMOTE
@@ -324,6 +343,9 @@ public class clue_solver extends ClueMan {
         switch (scrollText) {
             case "I need to give Charlie a piece of iron ore.":
                 return "Iron ore";
+
+            case "I need to give Charlie a raw herring.":
+                return "Raw herring";
 
             default:
                 return null;
