@@ -5,6 +5,7 @@ import com.sun.istack.internal.NotNull;
 import locations.BankLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.*;
+import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
@@ -96,6 +97,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @return
      */
     protected abstract T getBotMenu();
+    protected Tracker tracker;
 
     /**
      * Forces child script to define script specific details for the overlay manager
@@ -109,13 +111,18 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         this.setStatus("Initializing bot script...");
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
+        this.setStatus("Successfully loaded overlay manager!", true);
+        // initialize a tracker to track all skills
+        this.tracker = new Tracker(this);
         // this.bank = new BankMan(this);
         // this.bag = new BagMan(this);
         // this.travel = new TravelMan(this);
         // this.equipMan = new EquipMan(this);
         // get bot menu from child class if any exists and update it if necessary
         this.setBotMenu(getBotMenu());
+        this.setStatus("Successfully loaded bot menu!", true);
         //this.executor = super.getBot().getScriptExecutor();
+        setStatus("Setting up child classes...");
         // enables child classes the opportunity to do stuff on start
         this.onSetup();
     }
@@ -591,6 +598,16 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     /**
+     * Retrieves the current virtual level for a specific {@link Skill}.
+     *
+     * @param skill The {@link Skill} to query.
+     * @return The current virtual level for the passed {@link Skill}.
+     */
+    public int getCurrentLevel(Skill skill) {
+        return skills.getVirtualLevel(skill);
+    }
+
+    /**
      * Overrides the default sleep(long timeout) function to sleep until the passed condition is true, or if the timeout
      * has expired.
      *
@@ -683,30 +700,17 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     /**
-     * Sleeps until the passed boolean condition is met.
-     */
-    public static void sleepUntil(BooleanSupplier condition) {
-        // sleep for the specified amount of seconds and check if the condition is met
-        new ConditionalSleep(Integer.MAX_VALUE / 48) {
-            @Override public boolean condition() {
-                return condition.getAsBoolean();
-            }
-        }.sleep();
-    }
-
-
-    /**
      * Find the nearest bank, attempt to open it, and wait a moment for the interface to appear.
      *
      * @return True if the bank is successfully opened, else returns false.
      */
     protected boolean openNearestBank() throws InterruptedException {
         setStatus("Finding nearest bank...", true);
-        BankLocation location = BankLocation.getNearest(myPosition());
-        setStatus("Found bank: " + location.name);
+        BankLocation nearestBank = BankLocation.getNearest(myPosition());
+        setStatus("Found bank: " + nearestBank.name);
 
-        if (location != null) {
-            walkTo(location.area, location.name);
+        if (nearestBank != null) {
+            walkTo(nearestBank.area, nearestBank.name);
         } else {
             setStatus("Error finding bank!");
             return false;

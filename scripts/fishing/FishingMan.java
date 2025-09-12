@@ -492,17 +492,15 @@ public abstract class FishingMan extends BotMan<FishingMenu> {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Consolas", Font.PLAIN, 12));
 
-
-        long xpGained = getExperienceTracker().getGainedXP(Skill.FISHING);
-        long xpHr = getExperienceTracker().getGainedXPPerHour(Skill.FISHING);
-        long ttl = getExperienceTracker().getTimeToLevel(Skill.FISHING);
-
+        long xpGained = experienceTracker.getGainedXP(Skill.FISHING);
+        long xpPerHour = experienceTracker.getGainedXPPerHour(Skill.FISHING);
+        long estTimeToLvl = experienceTracker.getTimeToLevel(Skill.FISHING);
 
         g.drawString(this.getName() + " " + this.getVersion(), x, y);
         g.drawString("Status: " + status, x, y += 16);
         g.drawString("Level: " + getSkills().getStatic(Skill.FISHING) + " (" + getSkills().experienceToLevel(Skill.FISHING) + " xp to " + (getSkills().getVirtualLevel(Skill.FISHING) + 1) + ")", x, y += 16);
-        g.drawString("Experience: " + xpGained + " (" + xpHr + "/h)", x, y += 16);
-        g.drawString("Time to level: " + ttl, x, y += 16);
+        g.drawString("Experience: " + xpGained + " (" + xpPerHour + "/h)", x, y += 16);
+        g.drawString("Time to level: " + estTimeToLvl, x, y += 16);
     }
 
 }
