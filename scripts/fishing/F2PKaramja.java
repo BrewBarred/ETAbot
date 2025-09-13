@@ -1,19 +1,10 @@
 package fishing;
 
 import org.osbot.rs07.api.map.Area;
-import utils.BotMenu;
-import utils.Tracker;
 import utils.Rand;
-import org.osbot.rs07.api.ui.Skill;
-import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.ScriptManifest;
-import utils.Utils;
 
-import javax.swing.*;
-import java.awt.*;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
 
 import static org.apache.commons.lang3.time.DurationFormatUtils.formatDuration;
 

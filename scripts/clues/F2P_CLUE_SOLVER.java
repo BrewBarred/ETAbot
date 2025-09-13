@@ -1,10 +1,9 @@
 package clues;
 
+import locations.Location;
 import org.osbot.rs07.api.Bank;
 import org.osbot.rs07.api.Chatbox;
-import org.osbot.rs07.api.Objects;
 import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
@@ -18,19 +17,19 @@ import java.awt.*;
 import java.util.HashMap;
 
 @ScriptManifest(
-        name = "F2P beginner clue solver",
+        name = "F2P Clue Solver",
         author = "E.T.A.",
         version = 1.0,
-        info = "Solves beginner clue scrolls in F2P",
+        info = "Automatically solves beginner clue scrolls in F2P. Still in Beta testing phase. Probably always will be." +
+                "WARNING! This script has a maximum ban rate of 100%. USE AT YOUR OWN RISK!! -xo ETA",
         logo = ""
 )
-public class clue_solver extends ClueMan {
-    // charlie the tramp location
+public class F2P_CLUE_SOLVER extends ClueMan {
     @Override
     public int onLoop() throws InterruptedException {
         setStatus("Attempting to solve clue...", true);
 
-        // try to open a clue scroll for completion or exit
+        // try to open a clue scroll for completion
         if (!openClue()) {
             onExit("Unable to find a clue scroll to solve...");
             return 0;
@@ -97,13 +96,13 @@ public class clue_solver extends ClueMan {
             /// CLUE SCROLL TYPE: HOT AND COLD
             ///
             case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
-                //return solveClue(); // to be completed
+                return solveClue(); // to be completed
 
-                // temporarily drop clues to ensure functionality while this gets implemented
-                Item clue = inventory.getItem("Clue scroll (beginner)");
-                clue.interact("Drop");
-                sleep(Rand.getRandReallyShortDelayInt());
-                return true;
+//                // temporarily drop clues to ensure functionality while this gets implemented
+//                Item clue = inventory.getItem("Clue scroll (beginner)");
+//                clue.interact("Drop");
+//                sleep(Rand.getRandReallyShortDelayInt());
+//                return true;
 
             ///
             /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
@@ -180,10 +179,10 @@ public class clue_solver extends ClueMan {
             put("Spade", 1); // cant dig without a spade
             put("Strange Device", 1); // dunno where to dig without this thing
             put("Clue scroll (beginner)", 1); // no point in digging without this thing
-            put("Law rune", 30); // enough laws to tele around a few times
-            put("Air rune", 1000); // enough airs to tele
-            put("Earth rune", 1000); // enough earths to tele a few times
-            put("Coins", 20000); // enough coins to charter
+//            put("Law rune", 30); // enough laws to tele around a few times
+//            put("Air rune", 1000); // enough airs to tele
+//            put("Earth rune", 1000); // enough earths to tele a few times
+//            put("Coins", 20000); // enough coins to charter
         }};
 
         // fetch the required items from the bank if needed
@@ -207,6 +206,11 @@ public class clue_solver extends ClueMan {
                 // read the device again
                 String heat = feelStrangeDevice();
                 return true;
+
+            default:
+                // default case, just try all locations
+                Location.Clues.getAllClues().stream().findFirst().filter();
+                return false;
         }
 //
 //            case FREEZING:

@@ -1,5 +1,6 @@
 package clues;
 
+import locations.Location;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.ui.RS2Widget;
 import utils.BotMan;

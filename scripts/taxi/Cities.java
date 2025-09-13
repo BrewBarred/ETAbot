@@ -1,17 +1,3 @@
-package taxi;
-
-import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.event.WebWalkEvent;
-import org.osbot.rs07.script.Script;
-import org.osbot.rs07.script.ScriptManifest;
-
-import javax.swing.*;
-import java.awt.*;
-import java.util.HashMap;
-import java.util.Map;
-
-@ScriptManifest(author = "E.T.A.", name = "City Walker 1", version = 1.0, info = "Walks to popular locations around gielnor", logo = "")
-public class Cities extends Script {
 
     private boolean guiDone = false;
     private String selectedLocation = null;
@@ -36,53 +22,6 @@ public class Cities extends Script {
         allLocations.putAll(banks);
         allLocations.putAll(trainingAreas);
         allLocations.putAll(minigames);
-
-        if (allLocations.containsKey(selectedLocation)) {
-            log("Walking to: " + selectedLocation);
-            WebWalkEvent walkEvent = new WebWalkEvent(allLocations.get(selectedLocation));
-            execute(walkEvent);
-            stop();  // Stops script after reaching the destination
-        } else {
-            log("Invalid location selected.");
-        }
-
-        return 100;
-    }
-
-    private void showGUI() {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("City Walker");
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.setSize(400, 300);
-
-            JTabbedPane tabbedPane = new JTabbedPane();
-
-            tabbedPane.add("Cities", createLocationPanel(cities, f2pCities));
-            tabbedPane.add("Banks", createLocationPanel(banks, f2pBanks));
-            tabbedPane.add("Training", createLocationPanel(trainingAreas, f2pTrainingAreas));
-            tabbedPane.add("Minigames", createLocationPanel(minigames, f2pMinigames));
-
-            JPanel settingsPanel = new JPanel();
-            settingsPanel.setLayout(new GridLayout(3, 1));
-
-            // Checkbox for auto-run
-            JCheckBox runCheckbox = new JCheckBox("Enable Auto-Run");
-            runCheckbox.addActionListener(e -> autoRun = runCheckbox.isSelected());
-            settingsPanel.add(runCheckbox);
-
-            // Textbox for user input
-            JTextField inputField = new JTextField();
-            JButton submitButton = new JButton("Submit Input");
-            submitButton.addActionListener(e -> toggleGui());
-            settingsPanel.add(inputField);
-            settingsPanel.add(submitButton);
-
-            tabbedPane.add("Settings", settingsPanel);
-
-            frame.add(tabbedPane);
-            frame.setVisible(true);
-        });
-    }
 
     private void toggleGui() {
         guiDone = !guiDone;

@@ -2,9 +2,7 @@ package utils;
 
 import clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
-import locations.BankLocation;
 import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.*;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
@@ -17,6 +15,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
+
+import locations.Location;
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -280,6 +280,9 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     @Override
     public final void onExit() throws InterruptedException {
+
+        Location location = new Location();
+        location.allLocations
         closeBotMenu();
         stop(false);
         super.onExit();
@@ -718,6 +721,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         }.sleep();
     }
 
+    public boolean isInMembersWorld() {
+        return getWorlds().isMembersWorld();
+    }
+
     /**
      * Find the nearest bank, attempt to open it, and wait a moment for the interface to appear.
      *
@@ -725,7 +732,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected boolean openNearestBank() throws InterruptedException {
         setStatus("Finding nearest bank...", true);
-        BankLocation nearestBank = BankLocation.getNearest(myPosition());
+        Location.BankLocation nearestBank = Location.BankLocation.getNearest(myPosition());
         setStatus("Found bank: " + nearestBank.name);
 
         if (nearestBank != null) {
