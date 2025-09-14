@@ -1,12 +1,9 @@
 package locations.clues.beginner;
 // MAP NOTES:
 
-import locations.Location;
+import locations.Locations;
 import locations.clues.ClueLocation;
 import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.api.map.Position;
-import org.osbot.rs07.api.ui.MagicSpell;
-import utils.BotMan;
 
 // ENUM NAME (not included in class), MAP ID (replace with name), DESCRIPTION
 //Clue scroll (beginner) - At the standing stones north of Falador	Due east of Falador's north gate. Look for the (grapple) agility shortcut icon.
@@ -30,9 +27,9 @@ public enum Map implements ClueLocation {
 
     /**
      * Create a MAP location enum object which provides slightly more functionality than a typical
-     * {@link Location location} object to help with solving map-type clues.
+     * {@link Locations location} object to help with solving map-type clues.
      *
-     * @param area The {@link Area area} associated with this {@link Location location}.
+     * @param area The {@link Area area} associated with this {@link Locations location}.
      * @param mapId The {@link Integer mapId} associated with this clue map object.
      * @param name The name of this clue-map object, used for display purposes.
      */

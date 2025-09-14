@@ -1,7 +1,6 @@
 package locations.clues;
 
-import locations.Location;
-import org.osbot.rs07.api.ai.domain.requirement.ItemRequirement;
+import locations.Locations;
 import org.osbot.rs07.api.ai.domain.requirement.Requirement;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
@@ -9,7 +8,7 @@ import org.osbot.rs07.api.map.Position;
 /**
  * Represents a clue step that the bot can solve.
  * <p>
- * A {@code Clue} is a specialized type of {@link Location} that has all the standard location properties
+ * A {@code Clue} is a specialized type of {@link Locations} that has all the standard location properties
  * (name, {@link Area}, and travel methods), but also includes additional attributes that are unique to clue steps,
  * such as a textual hint and an associated map ID.
  * <p>
@@ -33,7 +32,7 @@ import org.osbot.rs07.api.map.Position;
  * generate an unknown clue scroll on completion, or creates a new potential task to do based on the players current
  * location and status after receiving something the bot perceives as a "reward", such as a casket, money, or xp.
  */
-public abstract class Clue extends Location implements ClueLocation {
+public abstract class ClueSpot extends Locations implements ClueLocation {
     ///
     ///     ~ Clue interface ~
     ///
@@ -67,15 +66,4 @@ public abstract class Clue extends Location implements ClueLocation {
      * an item required for a given clue step.
      */
     Requirement[] requirements;
-
-    /**
-     * Constructs a new interface which assists with the solving of clue-scrolls.
-     *
-     * @param area The {@link Area area} of completion for a given scroll.
-     * @param name The name of this {@link ClueLocation clue location}, used for display purposes.
-     * @param description A short description of this {@link ClueLocation clue location}, used for display purposes.
-     */
-    public Clue(Area area, String name, String description) {
-        super(area, name, description);
-    }
 }

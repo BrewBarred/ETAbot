@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  * The travel manager which forces all locations to implement a travel function (because why have a location listed if
  * we can't go there? right?)
  * <p>
- * This also ensures consistency between {@link Location locations}. For example, this interface will encourage
+ * This also ensures consistency between {@link Locations locations}. For example, this interface will encourage
  * inheritors to always have an {@link Area area} and {@link String description} of the listed location for easier
  * script management when walking to various location and outputting task descriptions.
  */
@@ -42,7 +42,7 @@ public interface TravelMan {
     //TODO: Consider adding features here to collect data while a bot walks
 
     /**
-     * Enables the simple retrieval and grouping of different {@link Location location} types.
+     * Enables the simple retrieval and grouping of different {@link Locations location} types.
      * <p>
      * Usage: City[] allCities = City.values()
      *
@@ -115,7 +115,7 @@ public interface TravelMan {
      * {@link Integer integer} value
      *
      * @param pos The {@link Position position} used to calculate the distance from this city (current position recommended)
-     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Location location}.
+     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Locations location}.
      */
     default int distanceTo(Position pos) {
         return pos.distance(getArea().getCentralPosition());

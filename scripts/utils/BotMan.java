@@ -98,6 +98,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected abstract T getBotMenu();
     protected Tracker tracker;
+    protected Instant botClock;
+    protected Instant trackedTime;
 
     /**
      * Forces child script to define script specific details for the overlay manager
@@ -108,7 +110,11 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
     @Override
     public void onStart() throws InterruptedException {
-        this.setStatus("Initializing bot script...");
+        //TODO: implement a stopwatch for this
+        // start a run time timer which can also be used as a stopwatch later for tasks
+        Instant startTime = Instant.now();
+        botClock = startTime;
+        this.setStatus("Initializing bot script @ " + startTime.toString(), true);
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
         this.setStatus("Successfully loaded overlay manager!", true);
@@ -116,19 +122,35 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         this.tracker = new Tracker(this, true);
         // this.bank = new BankMan(this);
         // this.bag = new BagMan(this);
-        // this.travel = new TravelMan(this);
         // this.equipMan = new EquipMan(this);
         // get bot menu from child class if any exists and update it if necessary
         this.setBotMenu(getBotMenu());
         this.setStatus("Successfully loaded bot menu!", true);
-        //this.executor = super.getBot().getScriptExecutor();
-        setStatus("Setting up child classes...");
         // enables child classes the opportunity to do stuff on start
+        setStatus("Setting up child classes...");
         this.onSetup();
+        this.setStatus("Initializing bot script...", true);
+        Duration launchTime = Duration.between(startTime, Instant.now());
+        setStatus("Successfully initailized " + getName() + " in " + launchTime.toMillis() + "ms.");
+        // don't include launch time in global time counter
+        botClock = Instant.now();
     }
 
     private ScriptExecutor getExecutor() {
         return getBot().getScriptExecutor();
+    }
+
+    public Instant getBotClock() { return botClock; }
+    public Instant setTimer() {
+        trackedTime = Instant.now();
+        // return the current time to show when this bot started
+        setStatus("Set timer at: " + this.botClock.now(), true);
+        return botClock.now();
+    }
+    public Duration stopTimer() {
+        Duration time = Duration.between(trackedTime, Instant.now());
+        setStatus("Stopped timer at: " + Instant.now() + " after executing for " + time + "ms.", true);
+        return time;
     }
 
     public boolean isPaused() {

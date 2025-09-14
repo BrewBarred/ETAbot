@@ -1,9 +1,7 @@
 package clues;
 
-import org.osbot.rs07.api.model.Item;
+import locations.Locations;
 import utils.BotMan;
-
-import java.awt.*;
 
 /**
  * Base class for all clue-solving scripts which allows scripts to share functions common between numerous clue types.
@@ -16,21 +14,20 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
     protected ClueMenu getBotMenu() {
         return new ClueMenu(this);
     }
+
+    public boolean openScrollBox(String difficulty) throws InterruptedException {
+        setStatus("Attempting open ("+difficulty+") scroll-box...", true);
+        if (getInventory().interact("Open", "Scroll box ("+difficulty+")")) {
+            // wait for animation/interface
+            sleep(random(1200, 1800));
+            return true;
+        }
+
+        log("Error opening clue box!");
+        return false;
+    }
 }
 
-
-
-//    public boolean openBeginnerBox() throws InterruptedException {
-//        setStatus("Attempting to open beginner scroll-box...", true);
-//        log("Found scroll box in inventory!");
-//        if (getInventory().interact("Open", BEGINNER_SCROLL_BOX)) {
-//            log("Opening Beginner Scroll Box...");
-//            sleep(random(1200, 1800)); // wait for animation/interface
-//            return true;
-//        }
-//        log("No beginner scroll box was found!");
-//        return false;
-//    }
 //
 //    protected boolean openClue() throws InterruptedException {
 //        Item beginner_clue = getInventory().getItem(i ->

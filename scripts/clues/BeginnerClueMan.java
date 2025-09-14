@@ -1,10 +1,12 @@
 package clues;
 
+import locations.cities.CityMan;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.script.ScriptManifest;
 import utils.BotMan;
 
 import java.awt.*;
+import java.time.Instant;
 
 @ScriptManifest(
         name = "F2P Beginner clue-man by ETA (Beta)",
@@ -26,6 +28,7 @@ public class BeginnerClueMan extends ClueMan {
     // define static attributes
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
     private static final String BEGINNER_SCROLL = "Clue scroll (beginner)";
+    private static final String DIFFICULTY = "beginner";
     public static final Item[] requiredItems = null;
 
     // declare class variables
@@ -33,7 +36,41 @@ public class BeginnerClueMan extends ClueMan {
 
     @Override
     protected void onSetup() throws InterruptedException {
-        setStatus("Initializing beginner clue-man...");
+        setStatus("Initializing beginner clue-man...", true);
+
+        setTimer();
+        sleep(1200);
+        setStatus("Sleepin", true);
+        stopTimer();
+        onExit();
+
+        setStatus("Running testicles...", true);
+
+        setStatus("Trying first method... start: " + setTimer(), true);
+        CityMan.getAll();
+        CityMan.getAll();
+        CityMan.getAll2();
+        CityMan.getAll3();
+    }
+
+    @Override
+    public int onLoop() throws InterruptedException {
+        try {
+            setStatus("Attempting to open a clue...", true);
+            // check if a player has a clue scroll in their inventory
+                // if clue
+                // open clue scroll
+            // else
+                openScrollBox(DIFFICULTY);
+
+            // if clue in inventory
+                // isSolving =
+        } catch (Exception e) {
+            setStatus("Error! Shutting down...");
+            onExit();
+        }
+
+        return 0;
     }
 
     @Override
@@ -48,16 +85,5 @@ public class BeginnerClueMan extends ClueMan {
         // set overlay output
         g.drawString(this.getName() + " " + this.getVersion(), x, y);
         g.drawString("Status: " + status, x, y += 16);
-    }
-
-    @Override
-    public int onLoop() throws InterruptedException {
-//        // try to open a clue scroll for completion
-//        if (!openClue()) {
-//            onExit("Unable to find a clue scroll to solve...");
-//            return 0;
-//        }
-        setStatus("Attempting to solve clue...", true);
-        return 0;
     }
 }

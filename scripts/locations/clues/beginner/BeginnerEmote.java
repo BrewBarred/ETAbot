@@ -21,11 +21,9 @@ package locations.clues.beginner;
 //Panic at Al Kharid mine.		Al Kharid mine is located just north of Al Kharid. The area is quite large, so the step can also be completed at the southern entrance of the mine or standing in the north-western corner outside the mine.
 //Spin at Flynn's Mace Shop.		Flynn's Mace Market is located near the north entrance of Falador.
 
-import locations.Location;
+import locations.Locations;
 import locations.TravelMan;
 import locations.banks.Bank;
-import org.osbot.rs07.api.ai.domain.requirement.ItemRequirement;
-import org.osbot.rs07.api.ai.domain.requirement.Requirement;
 import org.osbot.rs07.api.map.Area;
 import utils.Emote;
 
@@ -54,11 +52,11 @@ public enum BeginnerEmote {
 
     /**
      * Create a MAP location enum object which provides slightly more functionality than a typical
-     * {@link Location} object to help with solving map-type clues.
+     * {@link Locations} object to help with solving map-type clues.
      *
-     * @param area  The {@link Area} associated with this {@link Location}.
-     * @param hint  The hint received by the clue scroll {@link Location}.
-     * @param emote The {@link Area} associated with this {@link Location}.
+     * @param area  The {@link Area} associated with this {@link Locations}.
+     * @param hint  The hint received by the clue scroll {@link Locations}.
+     * @param emote The {@link Area} associated with this {@link Locations}.
      */
     BeginnerEmote(Area area, String name, String description, String hint, Emote emote, String... requiredItems) {
         this.area = area;
