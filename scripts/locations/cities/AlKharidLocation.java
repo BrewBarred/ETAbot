@@ -3,23 +3,20 @@ package locations.cities;
 import locations.TravelMan;
 import org.osbot.rs07.api.map.Area;
 
-import java.util.Arrays;
-import java.util.stream.Stream;
-
-public enum AlKharid implements TravelMan {
+public enum AlKharidLocation implements TravelMan {
     SHOP_PLATESKIRT(new Area(3205, 3225, 3220, 3205), "Ranaels Super Skirts", "Al'kharid plateskirt store, common clue location.");
 
     public final Area area;
     public final String name;
     public final String description;
 
-    AlKharid(Area area, String name) {
+    AlKharidLocation(Area area, String name) {
         this.area = area;
         this.name = name;
         this.description = null;
     }
 
-    AlKharid(Area area, String name, String description) {
+    AlKharidLocation(Area area, String name, String description) {
         this.area = area;
         this.name = name;
         this.description = description;

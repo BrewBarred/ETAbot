@@ -17,8 +17,8 @@ package locations.clues.beginner;
 //TAUNT ROOF	Fortunato	Draynor Village Market
 
 import locations.TravelMan;
-import locations.cities.AlKharid;
-import locations.cities.PortSarim;
+import locations.cities.AlKharidLocation;
+import locations.cities.PortSarimLocation;
 import locations.clues.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 
@@ -26,8 +26,8 @@ public enum Anagram implements ClueLocation {
     ///
     ///     ~ ANAGRAM CLUE LOCATIONS ~
     ///
-    AN_EARL(AlKharid.SHOP_PLATESKIRT, "The anagram reveals<br> who to speak to next:<br>AN EARL", "Ranael"),
-    IN_BAR(PortSarim.SHOP_BATTLEAXES, null, "Brian"),
+    AN_EARL(AlKharidLocation.SHOP_PLATESKIRT, "The anagram reveals<br> who to speak to next:<br>AN EARL", "Ranael"),
+    IN_BAR(PortSarimLocation.SHOP_BATTLEAXES, null, "Brian"),
     CHAR_GAME_DISORDER(new Area(3101, 3158, 3106, 3155).setPlane(-1), "Wizards' tower basement",
             "The basement of the Wizards' tower. Useful for teleporting to the rune/pure essence mines, completing clue-steps or quest-steps via the Archmage.",
             "The anagram reveals<br> who to speak to next:<br>CHAR GAME DISORDER", "Archmage Sedridor");

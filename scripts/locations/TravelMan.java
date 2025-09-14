@@ -1,5 +1,6 @@
 package locations;
 
+import locations.cities.AlKharidLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.ui.MagicSpell;
@@ -49,7 +50,7 @@ public interface TravelMan {
      * @param values Implicitly converts the collection of enum values and returns it as a stream object when values()
      *               is called for easier manipulation.
      * @return A stream containing the enums collection of values.
-     * @param <E> A generic type which allows enum items to be displayed as a {@link locations.cities.AlKharid} for
+     * @param <E> A generic type which allows enum items to be displayed as a {@link AlKharidLocation} for
      *           example, as opposed to everything being a {@link TravelMan} and requiring explicit conversion.
      */
     default <E extends Enum<E> & TravelMan> Stream<E> stream(E[] values) {

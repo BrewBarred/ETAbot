@@ -11,7 +11,7 @@ import org.osbot.rs07.api.map.Area;
 //Clue scroll (beginner) - South of Draynor Village bank	South of Draynor Village bank, by the fishing spot.
 //Clue scroll (beginner) - South-east Varrock mine	South-east Varrock mine. Dig one square west of the small fern.
 //Clue scroll (beginner) - West of the Champions' Guild	Locate the single tree that is west of the Champions' Guild, outside Varrock. Dig two squares to the east of it.
-public enum Map implements ClueLocation {
+public enum MapClueLocation implements ClueLocation {
     ///
     ///     ~ BEGINNER MAP CLUE SCROLL LOCATIONS ~
     ///
@@ -34,7 +34,7 @@ public enum Map implements ClueLocation {
      * @param name The name of this clue-map object, used for display purposes.
      */
     // map clue constructors
-    Map(Area area, int mapId, String name) {
+    MapClueLocation(Area area, int mapId, String name) {
         this.area = area;
         this.mapId = mapId;
         this.name = name;

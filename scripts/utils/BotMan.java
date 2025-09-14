@@ -4,7 +4,9 @@ import locations.banks.Bank;
 import locations.clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
 import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.*;
+import org.osbot.rs07.api.ui.EquipmentSlot;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.ScriptExecutor;
@@ -14,8 +16,11 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
+
+import static java.time.LocalTime.now;
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -98,7 +103,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected abstract T getBotMenu();
     protected Tracker tracker;
-    protected Instant botClock;
+    protected Instant timer;
     protected Instant trackedTime;
 
     /**
@@ -113,7 +118,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         //TODO: implement a stopwatch for this
         // start a run time timer which can also be used as a stopwatch later for tasks
         Instant startTime = Instant.now();
-        botClock = startTime;
+        this.timer = startTime;
         this.setStatus("Initializing bot script @ " + startTime.toString(), true);
         // initialize overlay manager to draw on-screen graphics
         this.overlayMan = new OverlayMan(this);
@@ -131,25 +136,25 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         this.onSetup();
         this.setStatus("Initializing bot script...", true);
         Duration launchTime = Duration.between(startTime, Instant.now());
-        setStatus("Successfully initailized " + getName() + " in " + launchTime.toMillis() + "ms.");
+        setStatus("Successfully initialized " + getName() + " in " + launchTime.toMillis() + "ms.");
         // don't include launch time in global time counter
-        botClock = Instant.now();
+        this.timer = Instant.now();
     }
 
     private ScriptExecutor getExecutor() {
         return getBot().getScriptExecutor();
     }
 
-    public Instant getBotClock() { return botClock; }
-    public Instant setTimer() {
+    public Instant getTimer() { return timer; }
+    public Instant setTimer(String name) {
         trackedTime = Instant.now();
         // return the current time to show when this bot started
-        setStatus("Set timer at: " + this.botClock.now(), true);
-        return botClock.now();
+        setStatus("Set timer for " + name + " at: " + now(), true);
+        return timer.now();
     }
     public Duration stopTimer() {
         Duration time = Duration.between(trackedTime, Instant.now());
-        setStatus("Stopped timer at: " + Instant.now() + " after executing for " + time + "ms.", true);
+        setStatus("Stopped timer after " + time.toNanos() + "ms.", true);
         return time;
     }
 
@@ -302,7 +307,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     @Override
     public final void onExit() throws InterruptedException {
-
         closeBotMenu();
         stop(false);
         super.onExit();
@@ -353,20 +357,24 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return setStatus(status, false);
     }
 
+    protected boolean walkTo(@NotNull CommonNPC npc) {
+        return walkTo(npc.getArea(), npc.getName());
+    }
+
     /**
      //     * Walks the player to the passed area using the web-walk function in conjunction with a random position function
      //     * which for more human-like behaviour.
      //     *
      //     * @param area The area in which the player should walk toward.
      //     */
-    public boolean walkTo(Area area, String status) {
+    public boolean walkTo(Area area, String name) {
         // return early if the player is already at the destination
         if (area.contains(myPlayer()))
             return false;
 
         // update the status if any status message was passed
-        if (!status.isEmpty())
-            setStatus(String.format("Travelling to %s...", status), false);
+        if (!name.isEmpty())
+            setStatus(String.format("Travelling to %s...", name), false);
 
         // walk to the passed area
         if (getWalking().webWalk(area)) {
@@ -374,7 +382,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
                 @Override
                 public boolean condition() {
-                    // walk until player reaches Edgeville bank
+                    // walk until player reaches destination
                     return !area.contains(myPlayer());
                 }
             }.sleep();
@@ -511,15 +519,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     }
 
     /**
-     * Helper function which fetches the passed item from the players bank if it's not already in their inventory.
-     * If the item is not in the players bank, this function will return false.
+     * Helper function which fetches the passed items from the players bank if it's not already in their inventory.
+     * <p>
+     * If the items are not found in the players bank, this function will return false.
      *
-     * @param item The item to fetch from the players bank.
+     * @param items The items to fetch from the players bank.
      * @return True if the passed item is contained in the players inventory after execution, else returns false.
      */
-    protected boolean fetchFromBank(String item) throws InterruptedException {
-        // pass this item to the helper function for further processing
-        return fetchFromBank(item, 1);
+    protected boolean fetchFromBank(@NotNull String... items) throws InterruptedException {
+        HashMap<String, Integer> itemList = new HashMap<String, Integer>();
+
+        // create a has map of each item passed
+        for (String name : items)
+            itemList.put(name, 1);
+
+        // return the result of this task
+        return fetchFromBank(itemList);
     }
 
     /**
@@ -530,7 +545,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @return True if the passed item is contained in the players inventory after execution, else returns false.
      */
     protected boolean fetchFromBank(String item, int amount) throws InterruptedException {
-        // create a new hashmap the passed number of the passed item name to easily fetch any quantity of a single item.
         HashMap<String, Integer> map = new HashMap<String, Integer>();
                 map.put(item, amount);
 
@@ -799,5 +813,154 @@ public abstract class BotMan<T extends BotMenu> extends Script {
 
         sleep(Rand.getRandReallyShortDelayInt());
         return true;
+    }
+
+    public boolean isNearby(String name) {
+        setStatus("Searching for " + name + "...");
+        NPC closest = getNpcs().closest(name);
+
+        // if unsuccessful...
+        if (closest == null) {// wait a little bit...
+            sleep(Rand.getRandShortDelayInt());
+        }
+
+        // if you cant see the npc
+        if (!closest.isVisible())
+            // try tilt camera to see him
+            lookAt(closest);
+
+        // TODO: add clause to check an alternative location if any exists
+        // TODO: add move around function that searches nearby radius for the npc
+
+        // attempt to find again and return the result
+        return !(getNpcs().closest(name) == null);
+    }
+
+    protected boolean talkTo(@NotNull CommonNPC npc, String... options) throws InterruptedException {
+        setStatus("Attempting to talk to " + npc.getName() + "...", true);
+
+        // if the npc is not nearby
+        if (!isNearby(npc.getName()))
+            // try to locate the npc, and return if unsuccessful
+            if (!walkTo(npc))
+                return false;
+
+        // try talk to the passed npc
+        npc.talkTo(this, npc);
+
+        // wait for chat dialogue box to appear then use options to skip dialogue
+        sleep(Rand.getRand(1241));
+        return handleDialogue(options);
+    }
+
+    /**
+     * Pretends to read chat dialogue, using chat options where possible.
+     * <p>
+     * This function loops until a select an option item isn't available, no chat options are left, or a chat option fails.
+     *
+     * @param options A {@link String[]} of options to select in the dialogue box when talking to the npc.
+     * @return True if the chat loop is not broken.
+     */
+    public boolean handleDialogue(String... options) throws InterruptedException {
+        // skip over dialogue using passed chat options // TODO: test this function cos im not sure how the options work
+        setStatus("Pretending to read dialogue...", true);
+        if (options != null && options.length == 0)
+            // this should complete the dialogue with continue
+            dialogues.completeDialogue();
+        else
+            // this should complete the dialogue with a custom set of options
+            dialogues.completeDialogue(options);
+
+        // random delay
+        sleep(Rand.getRand(1241));
+        return true;
+    }
+
+    /**
+     * Equips a list of required items if they exist in the player's inventory.
+     *
+     * @param reqItems A {@link String[]> of item names that need to be equipped in order to proceed.
+     *
+     * @return true if all items were found and equipped, false otherwise
+     */
+    public boolean equipItems(@NotNull String... reqItems) throws InterruptedException {
+        for (String name : reqItems) {
+            Item item = getInventory().getItem(name);
+            if (item == null)
+                return !setStatus("Missing required item: " + name, true);
+
+            // Try to equip
+            if (item.interact("Wear") || item.interact("Wield") || item.interact("Equip")) {
+                setStatus("Equipping required items...");
+                if (isWearingItem(reqItems)) {
+                    setStatus("Successfully equipped " + name + "!", true);
+                    continue;
+                }
+
+                return !setStatus("Failed to equip " + name, true);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isWearingItem(@NotNull String... items) {
+        setStatus("Checking worn items...");
+        // sleep for a second incase item is still being equipped
+        sleep(Rand.getRandReallyShortDelayInt());
+
+        // for each worn item slot there is e.g., cape, boots, legs, etc.
+        for (EquipmentSlot e : EquipmentSlot.values()) {
+            // check if any of the passed items are equipped in that slot
+            for (String s : items) {
+                if (getEquipment().isWearingItem(e, s))
+                    continue;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Calculates the Euclidean distance between the central tiles of two OSBot Area objects.
+     *
+     * @param a1 First area
+     * @param a2 Second area
+     * @return Distance (double) between the two areas
+     */
+    public static double distanceBetweenAreas(Area a1, Area a2) {
+        if (a1 == null || a2 == null) {
+            throw new IllegalArgumentException("Areas cannot be null");
+        }
+
+        Position p1 = a1.getCentralPosition();
+        Position p2 = a2.getCentralPosition();
+
+        return p1.distance(p2); // uses OSBot's Position#distance()
+    }
+
+    /**
+     * Calculates the shortest distance from any tile in one area to any tile in another area.
+     *
+     * @param a1 First area
+     * @param a2 Second area
+     * @return Minimum distance (double) between the two areas
+     */
+    public static double minDistanceBetweenAreas(Area a1, Area a2) {
+        if (a1 == null || a2 == null) {
+            throw new IllegalArgumentException("Areas cannot be null");
+        }
+
+        double minDist = Double.MAX_VALUE;
+        for (Position p1 : a1.getPositions()) {
+            for (Position p2 : a2.getPositions()) {
+                double dist = p1.distance(p2);
+                if (dist < minDist) {
+                    minDist = dist;
+                }
+            }
+        }
+        return minDist;
     }
 }

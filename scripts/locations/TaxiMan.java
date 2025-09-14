@@ -1,6 +1,6 @@
 package locations;
 
-import locations.cities.CityMan;
+import locations.cities.Cities;
 import mining.MiningMan;
 import mining.MiningMenu;
 import org.osbot.rs07.script.ScriptManifest;
@@ -12,10 +12,10 @@ import java.util.List;
 
 @ScriptManifest(name = "F2P TaxiMan", version = 1.0, author = "E.T.A", logo = "", info = "No description provided")
 public class TaxiMan extends MiningMan {
-    List<TravelMan> cities = CityMan.getAll();
+    List<TravelMan> cities = Cities.getAll();
     @Override
     protected void onSetup() throws InterruptedException {
-        List<TravelMan> cities = CityMan.getAll();
+        List<TravelMan> cities = Cities.getAll();
 
     }
 

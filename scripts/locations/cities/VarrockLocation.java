@@ -4,7 +4,7 @@ import locations.TravelMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.constants.Banks;
 
-public enum Varrock implements TravelMan {
+public enum VarrockLocation implements TravelMan {
     ARIS(new Area(3201, 3425, 3204, 3423), "Aris Maye (Fortuneteller)"),
     CHARLIE_THE_TRAMP(new Area(3207, 3393, 3210, 3390), "Charlie the Tramp"),
     EAST_BANK(Banks.VARROCK_EAST, "Varrock east-bank"),
@@ -22,13 +22,13 @@ public enum Varrock implements TravelMan {
     public final String name;
     public final String description;
 
-    Varrock(Area area, String name) {
+    VarrockLocation(Area area, String name) {
         this.area = area;
         this.name = name;
         this.description = null;
     }
 
-    Varrock(Area area, String name, String description) {
+    VarrockLocation(Area area, String name, String description) {
         this.area = area;
         this.name = name;
         this.description = description;

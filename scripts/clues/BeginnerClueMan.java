@@ -1,12 +1,13 @@
 package clues;
 
-import locations.cities.CityMan;
+import locations.TravelMan;
+import locations.cities.Cities;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.script.ScriptManifest;
-import utils.BotMan;
+import utils.Rand;
 
 import java.awt.*;
-import java.time.Instant;
+import java.util.List;
 
 @ScriptManifest(
         name = "F2P Beginner clue-man by ETA (Beta)",
@@ -29,7 +30,7 @@ public class BeginnerClueMan extends ClueMan {
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
     private static final String BEGINNER_SCROLL = "Clue scroll (beginner)";
     private static final String DIFFICULTY = "beginner";
-    public static final Item[] requiredItems = null;
+    public static final Item[] requiredItems = null; //TODO: implement
 
     // declare class variables
     private int attempts;
@@ -37,20 +38,6 @@ public class BeginnerClueMan extends ClueMan {
     @Override
     protected void onSetup() throws InterruptedException {
         setStatus("Initializing beginner clue-man...", true);
-
-        setTimer();
-        sleep(1200);
-        setStatus("Sleepin", true);
-        stopTimer();
-        onExit();
-
-        setStatus("Running testicles...", true);
-
-        setStatus("Trying first method... start: " + setTimer(), true);
-        CityMan.getAll();
-        CityMan.getAll();
-        CityMan.getAll2();
-        CityMan.getAll3();
     }
 
     @Override
@@ -61,10 +48,12 @@ public class BeginnerClueMan extends ClueMan {
                 // if clue
                 // open clue scroll
             // else
-                openScrollBox(DIFFICULTY);
+
+                openClue(DIFFICULTY);
 
             // if clue in inventory
                 // isSolving =
+            return Rand.getRandShortDelayInt();
         } catch (Exception e) {
             setStatus("Error! Shutting down...");
             onExit();

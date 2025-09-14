@@ -1,6 +1,5 @@
 package locations;
 
-import locations.cities.CityMan;
 import org.osbot.rs07.api.map.Area;
 
 /**
@@ -61,7 +60,7 @@ public abstract class Locations implements TravelMan {
      * @return The location if it is found in the {@link Locations locations} class. // check I'm not lying.
      */
     public static TravelMan find(String name) {
-        for (TravelMan city : CityMan.getAll()) {
+        for (TravelMan city : locations.cities.Cities.getAll()) {
             if (city.getName().equalsIgnoreCase(name)) {
                 return city;
             }
