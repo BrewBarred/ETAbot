@@ -8,7 +8,7 @@ public enum Emote {
     THINK("Think", 4),
     WAVE("Wave", 5),
     SHRUG("Shrug", 6),
-    Cheer("Cheer", 7),
+    CHEER("Cheer", 7),
     Beckon("Cheer", 8),
     Laugh("Cheer", 9),
     JUMP_FOR_JOY("Jump for Joy", 10),

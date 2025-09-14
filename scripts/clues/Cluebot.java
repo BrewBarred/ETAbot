@@ -2,14 +2,11 @@ package clues;
 
 import locations.Location;
 import org.osbot.rs07.api.model.Item;
-import org.osbot.rs07.api.ui.RS2Widget;
 import utils.BotMan;
-import utils.Rand;
 
 import java.awt.*;
-import java.util.List;
 
-public abstract class ClueMan extends BotMan<ClueMenu> {
+public abstract class Cluebot extends BotMan<ClueMenu> {
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
     private static final String BEGINNER_SCROLL = "Clue scroll (beginner)";
 

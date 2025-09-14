@@ -1,19 +1,16 @@
 package clues;
 
-import mining.MiningArea;
-import mining.MiningMan;
-import mining.MiningTool;
 import utils.BotMenu;
 
 import javax.swing.*;
 import java.awt.*;
 
 public class ClueMenu extends BotMenu {
-    private final ClueMan bot;
+    private final Cluebot bot;
 
     protected JCheckBox cbAutoDig;
 
-    public ClueMenu(ClueMan bot) {
+    public ClueMenu(Cluebot bot) {
         super(bot);
         // convert base bot type to FishingMan
         this.bot = bot;

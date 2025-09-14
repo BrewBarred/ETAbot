@@ -1,0 +1,39 @@
+package locations.cities;
+
+import locations.TravelMan;
+import org.osbot.rs07.api.map.Area;
+
+public enum AlKharid implements TravelMan {
+    SKIRT_SHOP(new Area(3205, 3225, 3220, 3205), "Ranaels Super Skirts", "Al'kharid plateskirt store, common clue location.");
+
+    public final Area area;
+    public final String name;
+    public final String description;
+
+    AlKharid(Area area, String name) {
+        this.area = area;
+        this.name = name;
+        this.description = null;
+    }
+
+    AlKharid(Area area, String name, String description) {
+        this.area = area;
+        this.name = name;
+        this.description = description;
+    }
+
+    @Override
+    public Area getArea() {
+        return area;
+    }
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+}

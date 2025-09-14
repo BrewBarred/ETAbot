@@ -1,0 +1,227 @@
+//import locations.clues.ClueLocation;
+//import org.osbot.rs07.api.model.RS2Object;
+//import utils.Emote;
+//import utils.Rand;
+//
+//protected boolean decipherClueText(String clueScrollText) throws InterruptedException {
+//    // return early if invalid text is passed
+//    if (clueScrollText == null)
+//        return false;
+//
+//    // check if a solution exists for this scroll
+//    switch (clueScrollText) {
+//        ///
+//        /// CLUE SCROLL TYPE: HOT AND COLD
+//        ///
+//        case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
+//            return solveClue(); // to be completed
+//
+////                // temporarily drop clues to ensure functionality while this gets implemented
+////                Item clue = inventory.getItem("Clue scroll (beginner)");
+////                clue.interact("Drop");
+////                sleep(Rand.getRandReallyShortDelayInt());
+////                return true;
+//
+//        ///
+//        /// CLUE SCROLL TYPE: CHARLIE THE TRAMP
+//        ///
+//        case "Talk to Charlie the Tramp in Varrock.":
+//            return completeCharlieTask(getCharlieTask());
+//
+//        ///
+//        /// CLUE SCROLL TYPE: RIDDLE
+//        ///
+//        case "Always walking around the castle grounds and somehow knows everyone's age.":
+//            // find and talk to hans
+//            return solveClue(ClueNPC.HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
+//
+//        case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
+//            // find and talk to Duke Horacio
+//            return solveClue(ClueNPC.COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
+//
+//        ///
+//        /// CLUE SCROLL TYPE: ANAGRAM
+//        ///
+//        case "The anagram reveals<br> who to speak to next:<br>IN BAR":
+//            // find and talk to brian
+//            return solveClue(ClueNPC.BRIAN, ClueLocation.PORT_SARIM_BATTLEAXE_SHOP);
+//
+//        case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
+//            // find and talk to fortunato
+//            return solveClue(ClueNPC.FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
+//
+//        case "The anagram reveals<br> who to speak to next:<br>AN EARL":
+//            // find and talk to ranael
+//            return solveClue(ClueNPC.RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
+//
+//        case "The anagram reveals<br> who to speak to next:<br>CHAR GAME DISORDER":
+//            // since im not sure how to get into the basement, I had to manually guide the character there
+//            walkTo(ClueLocation.WIZARDS_TOWER_LADDER.area, ClueLocation.WIZARDS_TOWER_LADDER.name);
+//            RS2Object ladder = objects.closest("Ladder");
+//            sleep(Rand.getRandReallyShortDelayInt());
+//            ladder.interact("Climb-down");
+//            sleep(Rand.getRandReallyShortDelayInt());
+//            talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName);
+//            return true;
+//
+//        ///
+//        /// CLUE SCROLL TYPE: EMOTE
+//        ///
+//        case "Bow to Brugsen Bursen at the Grand Exchange.":
+//            return solveClue(Emote.BOW, ClueLocation.VARROCK_GRAND_EXCHANGE);
+//
+//        case "Panic at Al Kharid mine.":
+//            return solveClue(Emote.PANIC, ClueLocation.AL_KHARID_MINE);
+//
+//        case "Spin at Flynn's Mace Shop.":
+//            return solveClue(Emote.SPIN, ClueLocation.FALADOR_MACE_SHOP);
+//
+//        default:
+//            // if unable to solve clue, check if it's an incomplete charlie clue
+//            if (completeCharlieTask(clueScrollText))
+//                return true;
+//
+//            log("Unable to complete this clue scroll! Scroll text: " + clueScrollText);
+//            return false;
+//    }
+//}
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+////import locations.clues.ClueLocation;
+////import clues.ClueNPC;
+////import org.osbot.rs07.api.map.Area;
+////import org.osbot.rs07.api.model.RS2Object;
+////import utils.Emote;
+////import utils.Rand;
+////
+////import java.util.HashMap;
+////import java.util.Map;
+////
+////switch (clueScrollText) {
+////        ///
+////        /// CLUE SCROLL TYPE: HOT AND COLD
+////        ///
+////        case "Buried beneath the ground, who knows where it's found.<br><br>Lucky for you, a man called Reldo may have a clue.":
+////        return solveClue(); // to be completed
+////
+//////                // temporarily drop clues to ensure functionality while this gets implemented
+//////                Item clue = inventory.getItem("Clue scroll (beginner)");
+//////                clue.interact("Drop");
+//////                sleep(Rand.getRandReallyShortDelayInt());
+//////                return true;
+////
+///////
+/////// CLUE SCROLL TYPE: CHARLIE THE TRAMP
+///////
+////            case "Talk to Charlie the Tramp in Varrock.":
+////                    return completeCharlieTask(getCharlieTask());
+////
+////        ///
+////        /// CLUE SCROLL TYPE: RIDDLE
+////        ///
+////        case "Always walking around the castle grounds and somehow knows everyone's age.":
+////        // find and talk to hans
+////        return solveClue(ClueNPC.HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
+////
+////            case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
+////                    // find and talk to Duke Horacio
+////                    return solveClue(ClueNPC.COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
+////
+///////
+/////// CLUE SCROLL TYPE: ANAGRAM
+///////
+////            case "The anagram reveals<br> who to speak to next:<br>IN BAR":
+////                    // find and talk to brian
+////                    return solveClue(ClueNPC.BRIAN, ClueLocation.PORT_SARIM_BATTLEAXE_SHOP);
+////
+////            case "The anagram reveals<br> who to speak to next:<br>TAUNT ROOF":
+////                    // find and talk to fortunato
+////                    return solveClue(ClueNPC.FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
+////
+////            case "The anagram reveals<br> who to speak to next:<br>AN EARL":
+////                    // find and talk to ranael
+////                    return solveClue(ClueNPC.RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
+////
+////            case "The anagram reveals<br> who to speak to next:<br>CHAR GAME DISORDER":
+////// since im not sure how to get into the basement, I had to manually guide the character there
+////walkTo(ClueLocation.WIZARDS_TOWER_LADDER.area, ClueLocation.WIZARDS_TOWER_LADDER.name);
+////RS2Object ladder = objects.closest("Ladder");
+////sleep(Rand.getRandReallyShortDelayInt());
+////        ladder.interact("Climb-down");
+////sleep(Rand.getRandReallyShortDelayInt());
+////talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName);
+////                return true;
+////
+////                        ///
+////                        /// CLUE SCROLL TYPE: EMOTE
+////                        ///
+////                        case "Bow to Brugsen Bursen at the Grand Exchange.":
+////                        return solveClue(Emote.BOW, ClueLocation.VARROCK_GRAND_EXCHANGE);
+////
+////
+////
+////
+////
+////
+////    // F2P and P2P locations
+////    private final Map<String, Area> cities = new HashMap<String, Area>() {{
+////        put("Varrock", new Area(3210, 3424, 3220, 3434));
+////        put("Lumbridge", new Area(3222, 3218, 3232, 3228));
+////        put("Falador", new Area(2964, 3377, 2974, 3387));
+////        put("Ardougne", new Area(2661, 3305, 2671, 3315)); // P2P
+////        put("Camelot", new Area(2757, 3477, 2767, 3487)); // P2P
+////        put("Edgeville", new Area(3085, 3492, 3095, 3502));
+////    }};
+////
+////    private final Map<String, Area> f2pCities = new HashMap<String, Area>() {{
+////        put("Varrock", new Area(3210, 3424, 3220, 3434));
+////        put("Lumbridge", new Area(3222, 3218, 3232, 3228));
+////        put("Falador", new Area(2964, 3377, 2974, 3387));
+////        put("Edgeville", new Area(3085, 3492, 3095, 3502));
+////    }};
+////
+////    private final Map<String, Area> banks = new HashMap<String, Area>() {{
+////        put("Grand Exchange", new Area(3161, 3483, 3171, 3493));
+////        put("Draynor Bank", new Area(3089, 3240, 3099, 3250));
+////        put("East Varrock Bank", new Area(3250, 3419, 3260, 3429));
+////        put("Falador Bank", new Area(2945, 3367, 2955, 3377));
+////        put("Seers' Village Bank", new Area(2720, 3485, 2730, 3495)); // P2P
+////    }};
+////
+////    private final Map<String, Area> f2pBanks = new HashMap<>(banks);
+////    {
+////        f2pBanks.remove("Seers' Village Bank");
+////    }
+////
+////    private final Map<String, Area> trainingAreas = new HashMap<String, Area>() {{
+////        put("Rock Crabs", new Area(2670, 3700, 2680, 3710)); // P2P
+////        put("Sand Crabs", new Area(1720, 3465, 1730, 3475)); // P2P
+////        put("Al Kharid Warriors", new Area(3290, 3170, 3300, 3180));
+////    }};
+////
+////    private final Map<String, Area> f2pTrainingAreas = new HashMap<>(trainingAreas);
+////    {
+////        f2pTrainingAreas.remove("Rock Crabs");
+////        f2pTrainingAreas.remove("Sand Crabs");
+////    }
+////
+////    private final Map<String, Area> minigames = new HashMap<String, Area>() {{
+////        put("Wintertodt", new Area(1628, 3940, 1638, 3950)); // P2P
+////        put("Barbarian Assault", new Area(2520, 3570, 2530, 3580)); // P2P
+////        put("Pest Control", new Area(2656, 2635, 2666, 2645)); // P2P
+////    }};
+////
+////    private final Map<String, Area> f2pMinigames = new HashMap<>();
+////}

@@ -1,6 +1,7 @@
 package utils;
 
-import clues.ClueLocation;
+import locations.banks.Bank;
+import locations.clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.*;
@@ -15,8 +16,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
-
-import locations.Location;
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -281,8 +280,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     @Override
     public final void onExit() throws InterruptedException {
 
-        Location location = new Location();
-        location.allLocations
         closeBotMenu();
         stop(false);
         super.onExit();
@@ -732,7 +729,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected boolean openNearestBank() throws InterruptedException {
         setStatus("Finding nearest bank...", true);
-        Location.BankLocation nearestBank = Location.BankLocation.getNearest(myPosition());
+        Bank nearestBank = Bank.getNearest(myPosition());
         setStatus("Found bank: " + nearestBank.name);
 
         if (nearestBank != null) {
@@ -759,7 +756,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * Checks if the players inventory contains all the passed items or not.
      *
      * @param requiredItems The items that should be currently contained in the players inventory.
-     * @return True if the player has all of the passed items, else false if
+     * @return True if the player has all the passed items, else false if
      * at least one of the passed items are not found in the players inventory.
      */
     public boolean hasItems(@NotNull  String... requiredItems) {
