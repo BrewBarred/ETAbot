@@ -1,42 +1,4 @@
-///
-///  drop trick mechanic!!
-///
-// DROP A CLUE YOU CAN'T SOLVE
-// JOT DOWN THE TIME
-// COMPLETE A CLUE STEP THEN CHECK TIME PASSED
-// IF TIME PASSED IS LESS THAN 40 MINUTES (61MIN DESPAWN TIMER GIVES BOT 21 MINUTES TO FINISH CURRENT TASK AND GET THERE)
-// OF YOUR OTHER CLUE, GO BACK AND PICK UP YOUR CLUE, THEN DROP IT AGAIN
 
-//package clues;
-//
-//import locations.Location;
-//import org.osbot.rs07.api.Bank;
-//import org.osbot.rs07.api.Chatbox;
-//import org.osbot.rs07.api.map.Area;
-//import org.osbot.rs07.api.model.NPC;
-//import org.osbot.rs07.api.model.RS2Object;
-//import org.osbot.rs07.api.ui.RS2Widget;
-//import org.osbot.rs07.api.ui.Tab;
-//import org.osbot.rs07.script.ScriptManifest;
-//import org.osbot.rs07.utility.ConditionalSleep;
-//import utils.Emote;
-//import utils.Rand;
-//
-//import java.awt.*;
-//import java.util.HashMap;
-//
-//@ScriptManifest(
-//        name = "F2P Clue Solver",
-//        author = "E.T.A.",
-//        version = 1.0,
-//        info = "Automatically solves beginner clue scrolls in F2P. Still in Beta testing phase. Probably always will be." +
-//                "WARNING! This script has a maximum ban rate of 100%. USE AT YOUR OWN RISK!! -xo ETA",
-//        logo = ""
-//)
-//public class F2P_CLUE_SOLVER extends ClueMan {
-//    @Override
-//    public int onLoop() throws InterruptedException {
-//        setStatus("Attempting to solve clue...", true);
 //
 //        // try to open a clue scroll for completion
 //        if (!openClue()) {

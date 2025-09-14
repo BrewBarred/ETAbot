@@ -3,8 +3,11 @@ package locations.cities;
 import locations.TravelMan;
 import org.osbot.rs07.api.map.Area;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 public enum AlKharid implements TravelMan {
-    SKIRT_SHOP(new Area(3205, 3225, 3220, 3205), "Ranaels Super Skirts", "Al'kharid plateskirt store, common clue location.");
+    SHOP_PLATESKIRT(new Area(3205, 3225, 3220, 3205), "Ranaels Super Skirts", "Al'kharid plateskirt store, common clue location.");
 
     public final Area area;
     public final String name;
@@ -36,4 +39,5 @@ public enum AlKharid implements TravelMan {
     public String getDescription() {
         return description;
     }
+
 }

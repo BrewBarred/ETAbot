@@ -5,6 +5,9 @@ import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.map.constants.Banks;
 
+import java.util.Arrays;
+import java.util.stream.Stream;
+
 /**
  * Enum representing various bank locations with their corresponding areas.
  * Each bank location has three defined areas: exactArea, clickArea, and extendedArea.
@@ -14,7 +17,9 @@ public enum Bank implements TravelMan {
     /////     ~ F2P BANK LOCATIONS ~
     /////
 
-    // extend existing locations to add properties to them ;) Just for the OCD, yano?
+    ///
+    /// Add properties to existing locations provided by osbot api
+    ///
     AL_KHARID(Banks.AL_KHARID, "Al'kharid Bank"),
     DRAYNOR_VILLAGE(Banks.DRAYNOR, "Draynor: Bank"),
     FALADOR_EAST(Banks.FALADOR_EAST, "Falador: Bank (east)"),
@@ -23,12 +28,19 @@ public enum Bank implements TravelMan {
     LUMBRIDGE_CASTLE(Banks.LUMBRIDGE_UPPER, "Lumbridge: Castle (Top floor)"),
     VARROCK_EAST(Banks.VARROCK_EAST, "Varrock: Bank (east)"),
     VARROCK_WEST(Banks.VARROCK_WEST, "Varrock: Bank (west)"),
-
-    // and also, add some new ones that the os-bot api didn't consider!
+    ///
+    /// Add locations that osbot api doesn't provide
+    ///
     EDGEVILLE_NORTH(new Area(3092, 3498, 3097, 3494), "Edgeville: Bank (north)"),
     EDGEVILLE_SOUTH(new Area(3092, 3492, 3094, 3488), "Edgeville: Bank (south)");
 
+    /**
+     * The {@link Area area} associated with this bank space.
+     */
     public final Area area;
+    /**
+     * The {@link Bank bank} name of this bank, for display purposes. E.g., "Varrock west-bank"
+     */
     public final String name;
 
     /**
@@ -40,6 +52,7 @@ public enum Bank implements TravelMan {
         this.area = area;
     }
 
+    public Area getArea() { return area; }
     public String getName() {
         return name;
     }
@@ -57,9 +70,6 @@ public enum Bank implements TravelMan {
                 "They are also a common place to do bank-standing skills, such as Crafting or Fletching.";
     }
 
-    public Area getArea() { return area; }
-    public Position getRandom() { return area.getRandomPosition(); }
-
     //TODO: assess this function and see how I can use it elsewhere or maybe in Locations
     /**
      * Return the BankLocation closest to the passed target Position.
@@ -67,7 +77,7 @@ public enum Bank implements TravelMan {
      * @param target The {@link Area area} used for the distance calculation.
      * @return The {@link Bank bank} closest to the target Position, else returns null.
      */
-    public static Bank getNearest(Position target) {
+    public static Bank getNearestTo(Position target) {
         Bank closest = null;
         int bestDistance = Integer.MAX_VALUE;
 

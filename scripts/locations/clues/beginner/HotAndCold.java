@@ -19,51 +19,36 @@ public enum HotAndCold implements ClueLocation {
 
     //TODO: create final variables to easily adjust the radius
     //    Visibly shaking → ≤ 4 tiles
-//    Incredibly hot → ≤ 8 tiles
-//    Very hot → ≤ 12 tiles
-//    Hot → ≤ 16 tiles
-//    Warm → ≤ 32 tiles
-//    Cold → ≤ 64 tiles
-//    Very cold → ≤ 128 tiles
-//    Freezing → anything larger
+
+    //    Incredibly hot → ≤ 8 tiles
+    //    Very hot → ≤ 12 tiles
+    //    Hot → ≤ 16 tiles
+    //    Warm → ≤ 32 tiles
+    //    Cold → ≤ 64 tiles
+    //    Very cold → ≤ 128 tiles
+    //    Freezing → anything larger
 
     final Area area;
-    final String hint;
     final String name;
-    HotAndCold nextLocation;
+    final String description;
 
-    HotAndCold(Area area, String hint, String name){
+    /**
+     * Construct a beginner {@link HotAndCold hot and cold} object which has extra properties and functions useful for
+     * solving the clue.
+     *
+     * @param area The {@link Area area} associated with this clue.
+     * @param description A brief description about this location, which will be used to train an AI model later.
+     * @param name The name of this {@link Area area}.
+     */
+    HotAndCold(Area area, String name, String description){
         this.area = area;
-        this.hint = hint;
+        this.description = description;
         this.name = name;
     };
 
-    /**
-     * Temporarily pass the next best location to create a circuit to ensure bot doesnt break until I figure out how to find the nearest hot and cold solution
-     *
-     * @param area
-     * @param hint
-     * @param name
-     * @param next
-     */
-    HotAndCold(Area area, String hint, String name, HotAndCold next){
-        this(area, hint, name);
-        this.nextLocation = next;
-    };
+    // hot and cold attributes
     @Override
     public Area getArea() {return area;}
-
-    public Area getVisiblyShakingArea() {return null;}
-    public Area getIncrediblyHotArea() {return null;}
-    public Area getHotArea() {return null;}
-    public Area getWarmArea() {return null;}
-    public Area getColdArea() {return null;}
-    public Area getFreezingArea() {return null;}
-    public Area getFrozenArea() {return null;}
-
-    public String getHeat() {
-        return hint;
-    }
 
     @Override public String getName() {return name;}
 
@@ -77,7 +62,7 @@ public enum HotAndCold implements ClueLocation {
 
     @Override
     public String getTask() {
-        return "";
+        return null;
     }
 
     public Position getEstimatedDigPosition() {
@@ -85,10 +70,17 @@ public enum HotAndCold implements ClueLocation {
         return null;
     }
 
+    public Area getVisiblyShakingArea() {return null;}
+    public Area getIncrediblyHotArea() {return null;}
+    public Area getHotArea() {return null;}
+    public Area getWarmArea() {return null;}
+    public Area getColdArea() {return null;}
+    public Area getFreezingArea() {return null;}
+    public Area getFrozenArea() {return null;}
 
-    // hot and cold attributes
-    // hot and cold constructor
-    // hot and cold constructor
+    public String getHeat() {
+        return description;
+    }
 };
 
 //TODO: implement smart bot function, starts at a passed location and records the number of tiles for each hot and cold step

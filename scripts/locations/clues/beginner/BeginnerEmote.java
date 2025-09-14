@@ -11,8 +11,6 @@ package locations.clues.beginner;
 //Equip a gold ring and a gold necklace.
 //
 //Aris can be found in her tent at Varrock Square.
-//Bow to Brugsen Bursen at the Grand Exchange.		Brugsen Bursen is found inside the Grand Exchange.
-//Cheer at Iffie Nitter.
 //Equip a chef's hat and a red cape.
 //
 //Iffie can be found in Thessalia's Fine Clothes store in Varrock.
@@ -24,48 +22,35 @@ package locations.clues.beginner;
 //Spin at Flynn's Mace Shop.		Flynn's Mace Market is located near the north entrance of Falador.
 
 import locations.Location;
+import locations.TravelMan;
+import locations.banks.Bank;
+import org.osbot.rs07.api.ai.domain.requirement.ItemRequirement;
+import org.osbot.rs07.api.ai.domain.requirement.Requirement;
 import org.osbot.rs07.api.map.Area;
+import utils.Emote;
 
 import java.util.HashMap;
 
-public enum Emote {
+public enum BeginnerEmote {
     ///
-    ///     ~ BEGINNER EMOTE CLUE SCROLL LOCATIONS~
+    ///     ~ BEGINNER EMOTE CLUE LOCATIONS ~
     ///
-    SPIN_FALADOR_MACE_SHOP(new Area(2948, 3387, 2951, 3385), "", utils.Emote.SPIN, "Flynn's Mace Market"),
+    BOW_TO_BRUGSEN_BURSEN(Bank.GRAND_EXCHANGE, "Bow to Brugsen Bursen near the Grand-exchange entrance", Emote.BOW),
+    SPIN_FALADOR_MACE_SHOP(new Area(2948, 3387, 2951, 3385), "Flynn's Mace Market", "Source of maces for iron-men (rarely used, but useful for crush-attack bonus). This shops' keeper, Flynn, is also a solution-master for a beginner clue-step.", "", utils.Emote.SPIN),
     //SPIN_FALADOR_MACE_SHOP2(new Area(2948, 3387, 2951, 3385), "", Emote.SPIN, "Flynn's Mace Market", utils.NPC.CHARLIE_THE_TRAMP.getName(), null),
-    VARROCK_CLOTHES_SHOP(new Area(3204, 3417, 3207, 3414), "Cheer at Iffie Nitter. Equip a chef hat and a red cape",
-            utils.Emote.CHEER);
+    VARROCK_CLOTHES_SHOP(new Area(3204, 3417, 3207, 3414), "Thessalia's Fine Clothes", "Varrock clothes store, useful for completing clue-steps, trading frog tokens for xp/cosmetics or buying clothing items.", "Find and equip a chef hat and a red cape, then Cheer at Iffie Nitter.", Emote.CHEER, "Chef's hat", "Red cape");
 
     final Area area;
+    final String name;
+    final String description;
     final String hint;
-    final utils.Emote emote;
-    String name;
-    /**
-     * An optional common npc to interact with in this location (helps to daisy-chain tasks)
-     */
-    String npc;
+    final Emote emote;
     String[] requiredItems;
     /**
      * This isn't intended for mapping yet, but will eventually use this to track/feed data into a script
      * to help it make informed decisions without my guidance eventually.
      */
-    HashMap<Area, String[]> nearbyResources; // consider using this one day to get AI data and start AI bots
-
-
-    /**
-     * Create a MAP location enum object which provides slightly more functionality than a typical
-     * {@link Location} object to help with solving map-type clues.
-     *
-     * @param area  The {@link Area} associated with this {@link Location}.
-     * @param hint  The hint received by the clue scroll {@link Location}.
-     * @param emote The {@link Area} associated with this {@link Location}.
-     */
-    Emote(Area area, String hint, utils.Emote emote) {
-        this.area = area;
-        this.hint = hint;
-        this.emote = emote;
-    };
+    HashMap<Area, String[]> nearbyResources = null; // consider using this one day to get AI data and start AI bots
 
     /**
      * Create a MAP location enum object which provides slightly more functionality than a typical
@@ -75,17 +60,21 @@ public enum Emote {
      * @param hint  The hint received by the clue scroll {@link Location}.
      * @param emote The {@link Area} associated with this {@link Location}.
      */
-    Emote(Area area, String hint, utils.Emote emote, String name) {
-        this(area, hint, emote);
-        this.name = name;
-    };
-
-    Emote(Area area, String hint, utils.Emote emote, String name, String npc, String[] requiredItems) {
+    BeginnerEmote(Area area, String name, String description, String hint, Emote emote, String... requiredItems) {
         this.area = area;
+        this.name = name;
+        this.description = description;
         this.hint = hint;
         this.emote = emote;
-        this.name = name;
-        this.npc = npc;
         this.requiredItems = requiredItems;
-    };
+    }
+
+    BeginnerEmote(TravelMan location, String hint, Emote emote, String... requiredItems) {
+        this.area = location.getArea();
+        this.name = location.getName();
+        this.description = location.getDescription();
+        this.hint = hint;
+        this.emote = emote;
+        this.requiredItems = requiredItems;
+    }
 };

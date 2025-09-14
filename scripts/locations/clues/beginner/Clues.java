@@ -28,11 +28,9 @@
 
 // REQUIRED EMOTE ITEMS
 //Bronze axe
-//Chef's hat
 //Gold necklace
 //Gold ring
 //Leather boots
-//Red cape
 
 // EMOTE MIN LEVEL
 // GOLD RING CRAFTING 5

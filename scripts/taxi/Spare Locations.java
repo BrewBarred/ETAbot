@@ -150,19 +150,7 @@
 ////                    // find and talk to fortunato
 ////                    return solveClue(ClueNPC.FORTUNATO, ClueLocation.DRAYNOR_VILLAGE_MARKET);
 ////
-////            case "The anagram reveals<br> who to speak to next:<br>AN EARL":
-////                    // find and talk to ranael
-////                    return solveClue(ClueNPC.RANAEL, ClueLocation.AL_KHARID_PLATESKIRT_SHOP);
-////
-////            case "The anagram reveals<br> who to speak to next:<br>CHAR GAME DISORDER":
-////// since im not sure how to get into the basement, I had to manually guide the character there
-////walkTo(ClueLocation.WIZARDS_TOWER_LADDER.area, ClueLocation.WIZARDS_TOWER_LADDER.name);
-////RS2Object ladder = objects.closest("Ladder");
-////sleep(Rand.getRandReallyShortDelayInt());
-////        ladder.interact("Climb-down");
-////sleep(Rand.getRandReallyShortDelayInt());
-////talkTo(ClueNPC.ARCHMAGE_SEDRIDOR.npcName);
-////                return true;
+
 ////
 ////                        ///
 ////                        /// CLUE SCROLL TYPE: EMOTE

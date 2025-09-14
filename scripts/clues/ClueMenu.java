@@ -6,11 +6,9 @@ import javax.swing.*;
 import java.awt.*;
 
 public class ClueMenu extends BotMenu {
-    private final Cluebot bot;
-
     protected JCheckBox cbAutoDig;
 
-    public ClueMenu(Cluebot bot) {
+    public ClueMenu(ClueMan bot) {
         super(bot);
         // convert base bot type to FishingMan
         this.bot = bot;

@@ -252,7 +252,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         if (botMenu == newMenu)
             return;
 
-        // close existing botmenu before opening a new one
+        // close exist
+        // ing botmenu before opening a new one
         if (botMenu != null)
             botMenu.close();
 
@@ -729,7 +730,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected boolean openNearestBank() throws InterruptedException {
         setStatus("Finding nearest bank...", true);
-        Bank nearestBank = Bank.getNearest(myPosition());
+        Bank nearestBank = Bank.getNearestTo(myPosition());
         setStatus("Found bank: " + nearestBank.name);
 
         if (nearestBank != null) {
