@@ -1,6 +1,6 @@
 package locations;
 
-import locations.cities.Cities;
+import locations.cityLocations.Cities;
 import mining.MiningMan;
 import mining.MiningMenu;
 import org.osbot.rs07.script.ScriptManifest;

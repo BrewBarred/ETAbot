@@ -1,4 +1,4 @@
-package locations.clues.beginner;
+package locations.clueLocations.beginner;
 
 // CHARLIE NOTES:
 

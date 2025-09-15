@@ -1,14 +1,15 @@
-package locations.clues;
 
-import locations.Locations;
+import locations.Spot;
+import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.ai.domain.requirement.Requirement;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import utils.Toon;
 
 /**
  * Represents a clue step that the bot can solve.
  * <p>
- * A {@code Clue} is a specialized type of {@link Locations} that has all the standard location properties
+ * A {@code Clue} is a specialized type of {@link Spot} that has all the standard location properties
  * (name, {@link Area}, and travel methods), but also includes additional attributes that are unique to clue steps,
  * such as a textual hint and an associated map ID.
  * <p>
@@ -32,7 +33,7 @@ import org.osbot.rs07.api.map.Position;
  * generate an unknown clue scroll on completion, or creates a new potential task to do based on the players current
  * location and status after receiving something the bot perceives as a "reward", such as a casket, money, or xp.
  */
-public abstract class ClueSpot extends Locations implements ClueLocation {
+public abstract class ClueSpot extends Spot implements ClueLocation {
     ///
     ///     ~ Clue interface ~
     ///
@@ -53,11 +54,10 @@ public abstract class ClueSpot extends Locations implements ClueLocation {
      *
      */
     Position digPosition;
-//    /**
-//     * The NPC you would usually speak with to complete a clue step
-//     */
-//    //TODO: add npc here once class is implemented.
-//    NPC npc;
+    /**
+     * The NPC you would usually speak with to complete a clue step
+     */
+    Toon npc;
     /**
      * An optional list of basic requirements for this clue location.
      * <p>

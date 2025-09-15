@@ -1,60 +1,66 @@
 package clues;
 
 import com.sun.istack.internal.NotNull;
-import locations.Locations;
-import locations.clues.ClueLocation;
-import locations.clues.beginner.CharlieTheTramp;
-import locations.clues.beginner.MapClueLocation;
+import locations.TravelMan;
+import locations.clueLocations.ClueLocation;
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Tab;
 import utils.BotMan;
-import utils.CommonNPC;
-import utils.Emote;
+import utils.EmoteMan;
 import utils.Rand;
+import utils.Toon;
 
-import javax.tools.DocumentationTool;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
-import static utils.CommonNPC.CHARLIE_THE_TRAMP;
+import static java.util.Arrays.stream;
+import static utils.Toon.CHARLIE_THE_TRAMP;
+
 
 /**
  * Base class for all clue-solving scripts which allows scripts to share functions common between numerous clue types.
  */
 public abstract class ClueMan extends BotMan<ClueMenu> {
-
-    // no logic necessarily needed - place functions here as you find yourself duplicating code in subclasses
+    ///
+    ///     ~ ClueMan ~
+    ///
 
     @Override
     protected ClueMenu getBotMenu() {
         return new ClueMenu(this);
     }
 
+    // no additional logic necessarily needed - place functions here as you find yourself duplicating code in subclasses
+
     public boolean openScrollBox(String difficulty) throws InterruptedException {
-        setStatus("Attempting open (" + difficulty + ") scroll-box...", true);
+    setStatus("Attempting open (" + difficulty + ") scroll-box...", true);
 
-        // open inventory tab if its not already open
-        if (!getTabs().isOpen(Tab.INVENTORY))
-            getTabs().open(org.osbot.rs07.api.ui.Tab.INVENTORY);
+    // open inventory tab if it's not already open
+    if (!getTabs().isOpen(Tab.INVENTORY))
+        getTabs().open(org.osbot.rs07.api.ui.Tab.INVENTORY);
 
-        // if there is a scroll-box in the players inventory
-        if (getInventory().contains("Scroll box (" + difficulty + ")")) {
-            // try open the scroll-box
-            if (getInventory().interact("Open", "Scroll box (" + difficulty + ")")) {
-                // wait for animation/interface
-                sleep(random(1200, 1800));
-                setStatus("You pull a clue-scroll from the scroll-box!", true);
-                // attempt to open the newly pulled clue
-                return openClue(difficulty);
-            }
+    // if there is a scroll-box in the players inventory
+    if (getInventory().contains("Scroll box (" + difficulty + ")")) {
+        // try open the scroll-box
+        if (getInventory().interact("Open", "Scroll box (" + difficulty + ")")) {
+            // wait for animation/interface
+            sleep(random(1200, 1800));
+            setStatus("You pull a clue-scroll from the scroll-box!", true);
+            // attempt to open the newly pulled clue
+            return openClue(difficulty);
         }
+    }
 
-        // exit here because we can't solve any clues if we have none.
-        setStatus("Error, unable to locate or open scroll-box! Script will now exit...", true);
-        onExit();
+    // exit here because we can't solve any clues if we have none.
+    setStatus("Error, unable to locate or open scroll-box! Script will now exit...", true);
+    onExit();
 
-        log("Error opening clue box!");
-        return false;
+    log("Error opening clue box!");
+    return false;
     }
 
     protected boolean openClue(String difficulty) throws InterruptedException {
@@ -66,29 +72,18 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
 
         // if the player has a beginner clue-scroll in their inventory
         if (clue != null) {
-            setStatus("Attempting to open " + difficulty, true);
+            setStatus("Attempting to open " + clue.getName() + "...", true);
+            clue.interact("Read");
+            sleep(234);
 
-            if (clue.interact("Read")) {
-                setStatus("Investigating clue...", true);
-                // small wait for widget to appear
-                sleep(Rand.getRandReallyShortDelayInt());
-                // attempt to solve clue
-                decipher();
-                return true;
-            }
         }
 
         // if no clue could be opened, try open a scroll-box instead
         return openScrollBox(difficulty);
     }
 
-    protected boolean decipher() {
-        // map is always open at this point, so might as well check map clues first
-        return setStatus("Attempting to decipher clue...", true);
-    }
-
     /**
-     * Read and return the contents of a clue by using the widget id
+     * Read and return the text content of a clue or its widget id.
      *
      * @return The text contained within the clue scroll in a players inventory
      */
@@ -150,7 +145,7 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
     /**
      * Automatically solves the passed "talk-to-npc" clue.
      */
-    protected boolean solveClue(CommonNPC npc) throws InterruptedException {
+    protected boolean solveClue(Toon npc) throws InterruptedException {
         // return false if unable to find the npc
         if (npc.walkTo(this))
             return false;
@@ -165,11 +160,11 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
      * @param emote The emote to perform on arrival.
      * @return True if the emote was successfully perform at the passed location, else returns false.
      */
-    protected boolean solveClue(@NotNull BotMan<?> bot, @NotNull Emote emote, @NotNull CommonNPC npc, @NotNull String... reqItems) throws InterruptedException {
+    protected boolean solveClue(@NotNull BotMan<?> bot, @NotNull EmoteMan emote, @NotNull Toon npc, @NotNull String... reqItems) throws InterruptedException {
         setStatus("Attempting to solve emote clue...", true);
         //TODO: upgrade this to bag manager and add a function to check the players worn items too
 
-        // if the player doesnt already have the required items in their inventory
+        // if the player doesn't already have the required items in their inventory
         if (!inventory.contains(reqItems)) {
             // try find them in the players bank
             if (!fetchFromBank(reqItems))
@@ -185,7 +180,7 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
             return !setStatus("Error finding npc!", true);
 
         // open the emote tab, perform the emote and wait some time
-        return (!Emote.performEmote(this, emote));
+        return (!EmoteMan.performEmote(this, emote));
     }
 
     protected String getCharlieTask() throws InterruptedException {
@@ -204,11 +199,12 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
             return false;
 
         // try to perform the passed emote
-        if (!Emote.performEmote(this, clue.emote))
+        if (!EmoteMan.performEmote(this, clue.emoteMan))
             return false;
 
         // try talk to uri
-        return talkTo(CommonNPC.URI);
+        return talkTo(Toon.URI);
     }
-}
 
+
+}

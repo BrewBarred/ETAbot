@@ -1,12 +1,9 @@
-package locations.banks;
+package locations.bankLocations;
 
 import locations.TravelMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.map.constants.Banks;
-
-import java.util.Arrays;
-import java.util.stream.Stream;
 
 /**
  * Enum representing various bank locations with their corresponding areas.

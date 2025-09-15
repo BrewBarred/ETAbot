@@ -1,4 +1,4 @@
-package locations.clues.beginner;
+package locations.clueLocations.beginner;
 
 //TODO: MAKE NPC ENUM ALWAYS HAVE AN AREA AND POSITION, THEREFORE NO NEED FOR AREA HERE EVER, ALWAYS PASS NPC FOR AREA
 //clue, area
@@ -17,10 +17,11 @@ package locations.clues.beginner;
 //TAUNT ROOF	Fortunato	Draynor Village Market
 
 import locations.TravelMan;
-import locations.cities.AlKharidLocation;
-import locations.cities.PortSarimLocation;
-import locations.clues.ClueLocation;
+import locations.cityLocations.AlKharidLocation;
+import locations.cityLocations.PortSarimLocation;
+import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
+import utils.Toon;
 
 public enum Anagram implements ClueLocation {
     ///
@@ -90,6 +91,11 @@ public enum Anagram implements ClueLocation {
 
     @Override
     public String getTask() {
+        return null;
+    }
+
+    @Override
+    public Toon getClueNPC() {
         return null;
     }
 

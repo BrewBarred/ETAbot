@@ -2,11 +2,13 @@ package locations;
 
 import clues.MapClueLocation;
 import com.sun.istack.internal.NotNull;
-import locations.clues.ClueLocation;
+import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 
+import java.util.List;
+
 /**
- * Constructs a {@link Locations location} object which can be used to add or extract information about a listed
+ * Constructs a {@link Spot location} object which can be used to add or extract information about a listed
  * location, such as the locations area or name, while providing methods to travel there, etc.
  * <p>
  * Later, this script will be extended to store a collection of data as scripts are running, listing the
@@ -19,7 +21,7 @@ import org.osbot.rs07.api.map.Area;
  * values for a given task in a given player state (empty inventory, full energy, required skills satisfied etc.) and
  * used to produce real AI bots.
  */
-public abstract class Locations implements TravelMan {
+public abstract class Spot implements TravelMan {
     ///
     ///     ~ LOCATIONS CLASS ~
     ///
@@ -41,7 +43,7 @@ public abstract class Locations implements TravelMan {
     ////    public final boolean isMems; // quick filter if this location is accessible or not
 
     // TODO: Assess whether we can remove this constructor or not by checking classes like "Cities" and reworki
-    public Locations() {  // allow the empty constructor for easier subclass grouping
+    public Spot() {  // allow the empty constructor for easier subclass grouping
         this.area = null;
         this.name = null;
         this.description = null;
@@ -49,33 +51,33 @@ public abstract class Locations implements TravelMan {
 
     }
 
-    public Locations(Area area, String name, String description, boolean isMems) {
+    public Spot(Area area, String name, String description, boolean isMems) {
         this.area = area;
         this.name = name;
         this.description = description;
         this.isMems = isMems;
     }
 
-    /**
-     * Find and return a {@link Cities city} by name (case-insensitive)
-     *
-     * @param name The name of the city to attempt to find
-     * @return The location if it is found in the {@link Locations locations} class. // check I'm not lying.
-     */
-    public static TravelMan find(String name) {
-        for (TravelMan city : locations.cities.Cities.getAll()) {
-            if (city.getName().equalsIgnoreCase(name)) {
-                return city;
-            }
-        }
-        return null;
-    }
+//    /**
+//     * Find and return a {@link Cities city} by name (case-insensitive)
+//     *
+//     * @param name The name of the city to attempt to find
+//     * @return The location if it is found in the {@link Spot locations} class. // check I'm not lying.
+//     */
+//    public TravelMan statfind(String name) {
+//        for (TravelMan city : locations.cityLocations.Cities.getAll()) {
+//            if (city.getName().equalsIgnoreCase(name)) {
+//                return city;
+//            }
+//        }
+//        return null;
+//    }
 
     /**
      * Search any given location enum by name (case-insensitive), returning any objects matching the passed name.
      *
      * @param name The name of the city to attempt to find
-     * @return The location if it is found in the {@link Locations locations} class. // check I'm not lying.
+     * @return The location if it is found in the {@link Spot locations} class. // check I'm not lying.
      */
     public static TravelMan find(String name, @NotNull TravelMan... locationEnumValues) {
         for (TravelMan city : locationEnumValues) {
@@ -88,15 +90,11 @@ public abstract class Locations implements TravelMan {
 
 
     public static ClueLocation find(int mapId) {
-        for (TravelMan location : locations.clues.ClueLocation.getBeginnerMaps()) {
-            try {
+        for (TravelMan location : locations.clueLocations.ClueLocation.getBeginnerMaps()) {
                 MapClueLocation map = (MapClueLocation) location;
                 if (map.getMapId() == mapId) {
                     return map;
                 }
-            } catch (Exception e) {
-
-            }
         }
         return null;
     }

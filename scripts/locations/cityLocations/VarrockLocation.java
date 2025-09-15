@@ -1,4 +1,4 @@
-package locations.cities;
+package locations.cityLocations;
 
 import locations.TravelMan;
 import org.osbot.rs07.api.map.Area;

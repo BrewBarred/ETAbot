@@ -60,4 +60,6 @@ public class TaskQueue {
     public int getIndex() {
         return index;
     }
+
+    public boolean hasTasks() { return !tasks.isEmpty(); }
 }

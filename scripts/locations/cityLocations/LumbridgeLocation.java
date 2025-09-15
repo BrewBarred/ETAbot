@@ -1,7 +1,13 @@
-package locations.cities;
+package locations.cityLocations;
 
 import locations.TravelMan;
+import org.jetbrains.annotations.NotNull;
 import org.osbot.rs07.api.map.Area;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public enum LumbridgeLocation implements TravelMan {
     CASTLE( new Area(3205, 3225, 3220, 3205), "Castle"),

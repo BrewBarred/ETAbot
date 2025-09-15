@@ -1,21 +1,24 @@
 package locations;
 
 import com.sun.istack.internal.NotNull;
-import locations.cities.AlKharidLocation;
+import locations.cityLocations.AlKharidLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.ui.MagicSpell;
 import utils.BotMan;
 import utils.Rand;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Stream;
 
 /**
  * The travel manager which forces all locations to implement a travel function (because why have a location listed if
  * we can't go there? right?)
  * <p>
- * This also ensures consistency between {@link Locations locations}. For example, this interface will encourage
+ * This also ensures consistency between {@link Spot locations}. For example, this interface will encourage
  * inheritors to always have an {@link Area area} and {@link String description} of the listed location for easier
  * script management when walking to various location and outputting task descriptions.
  */
@@ -44,7 +47,7 @@ public interface TravelMan {
     //TODO: Consider adding features here to collect data while a bot walks
 
     /**
-     * Enables the simple retrieval and grouping of different {@link Locations location} types.
+     * Enables the simple retrieval and grouping of different {@link Spot location} types.
      * <p>
      * Usage: City[] allCities = City.values()
      *
@@ -112,16 +115,16 @@ public interface TravelMan {
         return false;
     }
 
-//    /**
-//     * Calculate and return the approximate distance from the passed {@link Position position} as an
-//     * {@link Integer integer} value
-//     *
-//     * @param pos The {@link Position position} used to calculate the distance from this city (current position recommended)
-//     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Locations location}.
-//     */
-//    default int distanceTo(Position pos) {
-//        return pos.distance(getArea().getCentralPosition());
-//    }
+    /**
+     * Calculate and return the approximate distance from the passed {@link Position position} as an
+     * {@link Integer integer} value
+     *
+     * @param pos The {@link Position position} used to calculate the distance from this city (current position recommended)
+     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Spot location}.
+     */
+    default int distanceTo(Position pos) {
+        return pos.distance(getArea().getCentralPosition());
+    }
 
     /**
      * Return the distance from the passed position to this location.
@@ -140,11 +143,76 @@ public interface TravelMan {
     /**
      * Check if the passed Position is inside any of the passed {@link TravelMan} areas.
      */
-    static boolean validatePosition(@NotNull BotMan<?> bot, @NotNull TravelMan... locations) {
+    default boolean validatePosition(@NotNull BotMan<?> bot, @NotNull TravelMan... locations) {
         // iterate through each of the passed locations and check if your player is contained in any of them ;)
         for (TravelMan location : locations)
             if (location.getArea().contains(bot.myPlayer()))
                 return true;
         return false;
+    }
+
+    default Position getRandomPosition(Area area) {
+        Position pos = area.getRandomPosition();
+        int randX = getRandomOffset();
+        int randY = getRandomOffset();
+        return new Position(pos.getX() + randX, pos.getY() + randY, pos.getZ());
+    }
+
+    default int getRandomOffset() {
+        return (int) (Math.random() * 3) - 1; // -1, 0, or +1
+    }
+
+    /**
+     * Order a list of TravelMan locations by walking distance,
+     * recalculating from the most recently chosen point each time.
+     *
+     * @param startPos  the player's starting position
+     * @param locations the locations to sort
+     */
+    default List<TravelMan> orderByGreedyPath(Position startPos, TravelMan[] locations) {
+        List<TravelMan> ordered = new ArrayList<>();
+        List<TravelMan> remaining = new ArrayList<>(Arrays.asList(locations));
+
+        Position current = startPos;
+
+        while (!remaining.isEmpty()) {
+            Position finalCurrent = current;
+            TravelMan closest = remaining.stream()
+                    .min(Comparator.comparingDouble(l ->
+                            (l.getArea() != null && l.getArea().getCentralPosition() != null)
+                                    ? l.getArea().getCentralPosition().distance(finalCurrent)
+                                    : Double.MAX_VALUE))
+                    .orElse(null);
+
+            ordered.add(closest);
+            remaining.remove(closest);
+
+            // update current position to the last chosen location
+            if (closest.getArea() != null && closest.getArea().getCentralPosition() != null) {
+                current = closest.getArea().getCentralPosition();
+            }
+        }
+
+        return ordered;
+    }
+
+    /**
+     * Provides a method of obtaining a centre valid of the passed area without having null exception errors thrown.
+     *
+     * @return The centre {@link Position position} of the passed {@link Area area}.
+     */
+    default Position getCenter() {
+        if (getArea() == null)
+            return null;
+
+        Position[] pos = getArea().getPositions().toArray(new Position[0]);
+        if (pos.length == 0) return null;
+
+        int minX = Arrays.stream(pos).mapToInt(Position::getX).min().orElse(0);
+        int maxX = Arrays.stream(pos).mapToInt(Position::getX).max().orElse(0);
+        int minY = Arrays.stream(pos).mapToInt(Position::getY).min().orElse(0);
+        int maxY = Arrays.stream(pos).mapToInt(Position::getY).max().orElse(0);
+
+        return new Position((minX + maxX) / 2, (minY + maxY) / 2, pos[0].getZ());
     }
 }

@@ -1,12 +1,14 @@
 package utils;
 
 import locations.TravelMan;
-import locations.cities.VarrockLocation;
+import locations.cityLocations.VarrockLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 
-public enum CommonNPC implements TravelMan {
+public enum Toon implements TravelMan {
     CHARLIE_THE_TRAMP(VarrockLocation.BLACK_ARMS_GANG_ALLEY.getArea(), "Charlie the Tramp"),
+    HANS("Hans"),
+    GERTRUDE("Gertrude"),
     URI("Uri");
 
     Area area;
@@ -14,15 +16,15 @@ public enum CommonNPC implements TravelMan {
     String description;
     String[] fastDialogueOptions;
 
-    CommonNPC(String name, String... fastDialogueOptions) {
+    Toon(String name, String... fastDialogueOptions) {
 
     }
 
-    CommonNPC(Area area, String name, String... fastDialogueOptions) {
+    Toon(Area area, String name, String... fastDialogueOptions) {
 
     }
 
-    CommonNPC(Area area, String name, String description, String... fastDialogueOptions) {
+    Toon(Area area, String name, String description, String... fastDialogueOptions) {
 
     }
 

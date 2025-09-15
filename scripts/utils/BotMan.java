@@ -1,8 +1,8 @@
 package utils;
 
 import clues.EmoteClueLocation;
-import locations.banks.Bank;
-import locations.clues.ClueLocation;
+import locations.bankLocations.Bank;
+import locations.clueLocations.ClueLocation;
 import com.sun.istack.internal.NotNull;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
@@ -357,7 +357,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return setStatus(status, false);
     }
 
-    protected boolean walkTo(@NotNull CommonNPC npc) {
+    protected boolean walkTo(@NotNull Toon npc) {
         return walkTo(npc.getArea(), npc.getName());
     }
 
@@ -842,7 +842,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return !(getNpcs().closest(name) == null);
     }
 
-    protected boolean talkTo(@NotNull CommonNPC npc, String... options) throws InterruptedException {
+    protected boolean talkTo(@NotNull Toon npc, String... options) throws InterruptedException {
         setStatus("Attempting to talk to " + npc.getName() + "...", true);
 
         // if the npc is not nearby

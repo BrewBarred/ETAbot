@@ -1,10 +1,11 @@
 package clues;
 // MAP NOTES:
 
-import locations.Locations;
-import locations.clues.ClueLocation;
+import locations.Spot;
+import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import utils.Toon;
 
 import java.util.Arrays;
 
@@ -60,9 +61,9 @@ public enum MapClueLocation implements ClueLocation {
 
     /**
      * Create a MAP location enum object which provides slightly more functionality than a typical
-     * {@link Locations location} object to help with solving map-type clues.
+     * {@link Spot location} object to help with solving map-type clues.
      *
-     * @param area The {@link Area area} associated with this {@link Locations location}.
+     * @param area The {@link Area area} associated with this {@link Spot location}.
      * @param mapId The {@link Integer mapId} associated with this clue map object.
      * @param name The name of this clue-map object, used for display purposes.
      */
@@ -83,29 +84,14 @@ public enum MapClueLocation implements ClueLocation {
         return this.mapId;
     }
 
-    /**
-     * Provides a method of obtaining a centre valid of the passed area without having null exception errors thrown.
-     *
-     * @return The centre {@link Position position} of the passed {@link Area area}.
-     */
-    public Position getCenter() {
-        if (area == null)
-            return null;
-
-        Position[] pos = getArea().getPositions().toArray(new Position[0]);
-        if (pos.length == 0) return null;
-
-        int minX = Arrays.stream(pos).mapToInt(Position::getX).min().orElse(0);
-        int maxX = Arrays.stream(pos).mapToInt(Position::getX).max().orElse(0);
-        int minY = Arrays.stream(pos).mapToInt(Position::getY).min().orElse(0);
-        int maxY = Arrays.stream(pos).mapToInt(Position::getY).max().orElse(0);
-
-        return new Position((minX + maxX) / 2, (minY + maxY) / 2, pos[0].getZ());
-    }
-
     @Override
     public String getTask() {
         return "Dig at the specified map location (check widget id of open map)";
+    }
+
+    @Override
+    public Toon getClueNPC() {
+        return null;
     }
 
     @Override

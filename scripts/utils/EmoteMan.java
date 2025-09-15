@@ -5,7 +5,7 @@ import org.osbot.rs07.api.ui.Tab;
 
 import static utils.BotMan.sleep;
 
-public enum Emote {
+public enum EmoteMan {
     YES("Yes", 0),
     NO("No", 1),
     BOW("Bow", 2),
@@ -66,7 +66,7 @@ public enum Emote {
     final String description;
     final int subChildId;
 
-    Emote(String name, int subChildId) {
+    EmoteMan(String name, int subChildId) {
         this.name = name;
         this.description = null;
         this.subChildId = subChildId;
@@ -115,12 +115,12 @@ public enum Emote {
      * @param bot        Bot instance
      * @return true if the emote was clicked
      */
-    public static boolean performEmote(BotMan<?> bot, Emote emote) {
+    public static boolean performEmote(BotMan<?> bot, EmoteMan emoteMan) {
         try {
             bot.setStatus("Opening emotes tab...");
             if (bot.getTabs().open(Tab.EMOTES)) {
-                bot.setStatus("Performing \"" + emote + "\"...");
-                if (bot.getWidgets().interact(emote.getRoot(), emote.getChild(), "Perform")) {
+                bot.setStatus("Performing \"" + emoteMan + "\"...");
+                if (bot.getWidgets().interact(emoteMan.getRoot(), emoteMan.getChild(), "Perform")) {
                     // wait some time for emote
                     sleep(Rand.getRandShortDelayInt());
                     return true;

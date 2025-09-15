@@ -1,12 +1,15 @@
 package clues;
 
+import locations.Spot;
 import locations.TravelMan;
-import locations.cities.Cities;
+import locations.clueLocations.ClueLocation;
+import locations.clueLocations.beginner.HotAndCold;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.script.ScriptManifest;
 import utils.Rand;
 
 import java.awt.*;
+import java.util.Arrays;
 import java.util.List;
 
 @ScriptManifest(
@@ -30,7 +33,7 @@ public class BeginnerClueMan extends ClueMan {
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
     private static final String BEGINNER_SCROLL = "Clue scroll (beginner)";
     private static final String DIFFICULTY = "beginner";
-    public static final Item[] requiredItems = null; //TODO: implement
+    public static final String[] requiredItems = new String[]{"Spade", "Gold necklace", "Gold ring", "Chef's hat", "Red cape"};
 
     // declare class variables
     private int attempts;
@@ -43,17 +46,24 @@ public class BeginnerClueMan extends ClueMan {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            setStatus("Attempting to open a clue...", true);
-            // check if a player has a clue scroll in their inventory
-                // if clue
-                // open clue scroll
-            // else
+            setStatus("Testing sort function...");
 
-                openClue(DIFFICULTY);
+            List<HotAndCold> list = Arrays.asList(HotAndCold.values());
+            ClueLocation.sort(list);
 
-            // if clue in inventory
-                // isSolving =
-            return Rand.getRandShortDelayInt();
+//            setStatus("Calculating path...");
+//            TravelMan.orderByGreedyPath(myPosition(), locations.clueLocations.beginner.HotAndCold.values());
+////            setStatus("Attempting to open a clue...", true);
+////            // check if a player has a clue scroll in their inventory
+////                // if clue
+////                // open clue scroll
+////            // else
+////
+////                openClue(DIFFICULTY);
+////
+////            // if clue in inventory
+////                // isSolving =
+//            return Rand.getRandShortDelayInt();
         } catch (Exception e) {
             setStatus("Error! Shutting down...");
             onExit();

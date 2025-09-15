@@ -1,8 +1,16 @@
-package locations.clues.beginner;
+package locations.clueLocations.beginner;
 
-import locations.clues.ClueLocation;
+import com.sun.istack.internal.NotNull;
+import locations.TravelMan;
+import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import utils.BotMan;
+import utils.Toon;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public enum HotAndCold implements ClueLocation {
     //TODO: WRITE FUNCTION THAT RECORDS THE PLAYERS CURRENT POSITION TO A TEXT FILE AS AN AREA OBJECT (X1, Y1, X2, Y2) AS WELL AS THE ZONE
@@ -65,6 +73,11 @@ public enum HotAndCold implements ClueLocation {
         return null;
     }
 
+    @Override
+    public Toon getClueNPC() {
+        return null;
+    }
+
     public Position getEstimatedDigPosition() {
         // todo: think of a way to estimate a dig position based on the players current position, last position, and current heat level on the mysterious orb
         return null;
@@ -80,6 +93,15 @@ public enum HotAndCold implements ClueLocation {
 
     public String getHeat() {
         return description;
+    }
+
+    /**
+     * Returns all beginner level hot-and-cold clue scroll locations as a {@link List list} of {@link HotAndCold} objects.
+     *
+     * @return All beginner hot and cold locations in a {@link HotAndCold} link.
+     */
+    public List<HotAndCold> getAllBeginnerHotAndCold() {
+        return Arrays.asList(values());
     }
 };
 
