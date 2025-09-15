@@ -1,3 +1,46 @@
+//// Gypsy Aris – Blow Raspberry
+//new BeginnerEmote(
+//    () -> new Area(3201, 3425, 3204, 3423),
+//    "Blow a raspberry at Gypsy Aris",
+//Emote.RASPBERRY
+//),
+//
+//// Brugsen Bursen – Bow
+//        new BeginnerEmote(
+//    () -> new Area(3163, 3477, 3166, 3475),
+//    "Bow to Brugsen Bursen",
+//Emote.BOW
+//),
+//
+//// Iffie Nitter – Cheer
+//        new BeginnerEmote(
+//    () -> new Area(3203, 3417, 3205, 3415),
+//    "Cheer at Iffie Nitter",
+//Emote.CHEER
+//),
+//
+//// Al'Kharid Mine – Panic
+//        new BeginnerEmote(
+//    () -> new Area(3296, 3275, 3300, 3279),
+//    "Panic at Al'Kharid mine",
+//Emote.PANIC
+//),
+//
+//// Flynn’s Mace Shop – Spin
+//        new BeginnerEmote(
+//    () -> new Area(2949, 3386, 2951, 3387),
+//    "Spin at Flynn's mace shop",
+//Emote.SPIN
+//)
+
+
+
+
+
+
+
+
+
 //package clues;
 //
 //import task.ClueTask;

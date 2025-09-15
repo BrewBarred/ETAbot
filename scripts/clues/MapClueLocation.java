@@ -1,4 +1,4 @@
-package locations.clues.beginner;
+package clues;
 // MAP NOTES:
 
 import locations.Locations;
@@ -7,7 +7,6 @@ import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public enum MapClueLocation implements ClueLocation {
     ///
@@ -124,3 +123,4 @@ public enum MapClueLocation implements ClueLocation {
         return description;
     }
 }
+

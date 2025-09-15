@@ -6,7 +6,7 @@ import org.osbot.rs07.api.map.constants.Banks;
 
 public enum VarrockLocation implements TravelMan {
     ARIS(new Area(3201, 3425, 3204, 3423), "Aris Maye (Fortuneteller)"),
-    CHARLIE_THE_TRAMP(new Area(3207, 3393, 3210, 3390), "Charlie the Tramp"),
+    BLACK_ARMS_GANG_ALLEY(new Area(3207, 3393, 3210, 3390), "Charlie the Tramp"),
     EAST_BANK(Banks.VARROCK_EAST, "Varrock east-bank"),
     GRAND_EXCHANGE(Banks.GRAND_EXCHANGE, "The Grand-Exchange", "The economy hub of old-school runescape! This is where non-restricted players (non-ironmen) can buy/sell items through a shared market. This place is also required to complete some clue-steps."),
     SHOP_ARROWS(new Area(3230, 3425, 3233, 3421), "Lowe's Archery Emporium"),

@@ -1,15 +1,12 @@
 package locations.cities;
 
 import locations.TravelMan;
-import org.osbot.rs07.api.model.NPC;
-import utils.BotMan;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.lang.String.join;
 
 /**
  * City Manager: enables the quick travel and reference of various cities around gielnor.

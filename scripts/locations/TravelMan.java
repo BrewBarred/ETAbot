@@ -1,5 +1,6 @@
 package locations;
 
+import com.sun.istack.internal.NotNull;
 import locations.cities.AlKharidLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
@@ -111,18 +112,39 @@ public interface TravelMan {
         return false;
     }
 
+//    /**
+//     * Calculate and return the approximate distance from the passed {@link Position position} as an
+//     * {@link Integer integer} value
+//     *
+//     * @param pos The {@link Position position} used to calculate the distance from this city (current position recommended)
+//     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Locations location}.
+//     */
+//    default int distanceTo(Position pos) {
+//        return pos.distance(getArea().getCentralPosition());
+//    }
+
     /**
-     * Calculate and return the approximate distance from the passed {@link Position position} as an
-     * {@link Integer integer} value
+     * Return the distance from the passed position to this location.
      *
-     * @param pos The {@link Position position} used to calculate the distance from this city (current position recommended)
-     * @return An {@link Integer integer} value equal to the distance between the passed {@link Position} 'pos' and this {@link Locations location}.
+     * @param pos The {@link Position position} to calculate the distance from.
+     * @return An {@link Integer} value representing the distance from this location to the passed {@link Position}.
      */
-    default int distanceTo(Position pos) {
-        return pos.distance(getArea().getCentralPosition());
+    default int distanceFrom(Position pos) {
+        return getArea().getCentralPosition().distance(pos);
     }
 
     default TravelMan asTravelMan() {
         return this;
+    }
+
+    /**
+     * Check if the passed Position is inside any of the passed {@link TravelMan} areas.
+     */
+    static boolean validatePosition(@NotNull BotMan<?> bot, @NotNull TravelMan... locations) {
+        // iterate through each of the passed locations and check if your player is contained in any of them ;)
+        for (TravelMan location : locations)
+            if (location.getArea().contains(bot.myPlayer()))
+                return true;
+        return false;
     }
 }

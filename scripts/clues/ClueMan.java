@@ -1,7 +1,9 @@
 package clues;
 
 import com.sun.istack.internal.NotNull;
+import locations.Locations;
 import locations.clues.ClueLocation;
+import locations.clues.beginner.CharlieTheTramp;
 import locations.clues.beginner.MapClueLocation;
 import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.ui.RS2Widget;
@@ -10,6 +12,11 @@ import utils.BotMan;
 import utils.CommonNPC;
 import utils.Emote;
 import utils.Rand;
+
+import javax.tools.DocumentationTool;
+import java.util.Arrays;
+
+import static utils.CommonNPC.CHARLIE_THE_TRAMP;
 
 /**
  * Base class for all clue-solving scripts which allows scripts to share functions common between numerous clue types.
@@ -76,8 +83,8 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
     }
 
     protected boolean decipher() {
-        log("sd");
-        return false;
+        // map is always open at this point, so might as well check map clues first
+        return setStatus("Attempting to decipher clue...", true);
     }
 
     /**
@@ -107,6 +114,19 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
 
         setStatus("Failed to read clue...", true);
         return null;
+    }
+
+    /**
+     * Filter all ClueMaps by the passed mapId.
+     *
+     * @param mapId The mapId used to quickly filter the Clue Map enum.
+     * @return The {@link ClueLocation} associated if the map id is validated, else returns null.
+     */
+    public ClueLocation getMap(int mapId) {
+        return Arrays.stream(MapClueLocation.values())
+                .filter(m -> m.getMapId() == mapId)
+                .findFirst()
+                .orElse(null);
     }
 
     protected boolean solveClue(MapClueLocation map) throws InterruptedException {
@@ -153,45 +173,42 @@ public abstract class ClueMan extends BotMan<ClueMenu> {
         if (!inventory.contains(reqItems)) {
             // try find them in the players bank
             if (!fetchFromBank(reqItems))
-                return false;
+                return !setStatus("Error banking!", true);
         }
 
-        // attempt to equip the items
-
+        // attempt to equip the items required for this step
+        if (!equipItems(reqItems))
+            return !setStatus("Error equipping items!", true);
 
         // attempt to walk to the npc
         if (!npc.walkTo(bot))
+            return !setStatus("Error finding npc!", true);
+
+        // open the emote tab, perform the emote and wait some time
+        return (!Emote.performEmote(this, emote));
+    }
+
+    protected String getCharlieTask() throws InterruptedException {
+        setStatus("Attempting to find charlie...", true);
+        CHARLIE_THE_TRAMP.walkTo(this);
+        sleep(random(400, 600));
+        // TODO: Test that this actually completes dialogue
+        dialogues.completeDialogue();
+        //CHARLIE_THE_TRAMP.walkAndTalk(this);
+        return readClue();
+    }
+
+    protected boolean solveClue(EmoteClueLocation clue) throws InterruptedException {
+        // try walk to the passed location
+        if (!walkTo(clue))
             return false;
 
-        // atte
+        // try to perform the passed emote
+        if (!Emote.performEmote(this, clue.emote))
+            return false;
 
-        return true;
+        // try talk to uri
+        return talkTo(CommonNPC.URI);
     }
 }
-
-    //    protected String getCharlieTask() throws InterruptedException {
-//        setStatus("Attempting to find charlie...", true);
-//        findNPC("Charlie the Tramp", ClueLocation.VARROCK_SOUTH_GATE);
-//        sleep(random(400, 600));
-//        dialogues.completeDialogue("Click here to continue",
-//                "Click here to continue",
-//                "Click here to continue",
-//                "Click here to continue");
-//        return readClue();
-//    }
-
-
-
-//    protected boolean solveClue(Emote emote, ClueLocation location) throws InterruptedException {
-//        // try walk to the passed location
-//        if (!walkTo(location.area, location.name))
-//            return false;
-//
-//        // try to perform the passed emote
-//        if (!doEmote(emote))
-//            return false;
-//
-//        // try talk to uri
-//        return talkTo("Uri");
-//    }
 

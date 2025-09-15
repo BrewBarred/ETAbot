@@ -91,4 +91,8 @@ public enum Bank implements TravelMan {
         return closest;
     }
 
+    public Bank[] getAll() {
+        return values();
+    }
+
 }

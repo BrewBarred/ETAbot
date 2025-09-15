@@ -1,5 +1,6 @@
 package utils;
 
+import clues.EmoteClueLocation;
 import locations.banks.Bank;
 import locations.clues.ClueLocation;
 import com.sun.istack.internal.NotNull;
@@ -16,7 +17,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import java.awt.*;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.function.BooleanSupplier;
 
@@ -361,6 +361,11 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return walkTo(npc.getArea(), npc.getName());
     }
 
+    protected boolean walkTo(@NotNull EmoteClueLocation location) {
+        return walkTo(location.getArea(), location.getName());
+    }
+
+
     /**
      //     * Walks the player to the passed area using the web-walk function in conjunction with a random position function
      //     * which for more human-like behaviour.
@@ -527,6 +532,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * @return True if the passed item is contained in the players inventory after execution, else returns false.
      */
     protected boolean fetchFromBank(@NotNull String... items) throws InterruptedException {
+        setStatus("Fetching items from bank...", true);
         HashMap<String, Integer> itemList = new HashMap<String, Integer>();
 
         // create a has map of each item passed
@@ -846,7 +852,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
                 return false;
 
         // try talk to the passed npc
-        npc.talkTo(this, npc);
+        npc.talkTo(this);
 
         // wait for chat dialogue box to appear then use options to skip dialogue
         sleep(Rand.getRand(1241));
@@ -892,19 +898,19 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             // Try to equip
             if (item.interact("Wear") || item.interact("Wield") || item.interact("Equip")) {
                 setStatus("Equipping required items...");
-                if (isWearingItem(reqItems)) {
+                if (isWearing(reqItems)) {
                     setStatus("Successfully equipped " + name + "!", true);
                     continue;
                 }
 
                 return !setStatus("Failed to equip " + name, true);
             }
-            return true;
+            return isWearing(reqItems);
         }
         return false;
     }
 
-    public boolean isWearingItem(@NotNull String... items) {
+    public boolean isWearing(@NotNull String... items) {
         setStatus("Checking worn items...");
         // sleep for a second incase item is still being equipped
         sleep(Rand.getRandReallyShortDelayInt());

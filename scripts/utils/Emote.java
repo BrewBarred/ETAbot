@@ -1,5 +1,10 @@
 package utils;
 
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.ui.Tab;
+
+import static utils.BotMan.sleep;
+
 public enum Emote {
     YES("Yes", 0),
     NO("No", 1),
@@ -55,16 +60,27 @@ public enum Emote {
     FORTIS_SALUTE("Fortis Salute", 53),
     SIT_DOWN("Sit down", 54);
 
+    final Area clueArea;
+    final String clueHint;
     final String name;
-    final int id;
+    final String description;
+    final int subChildId;
 
     Emote(String name, int subChildId) {
         this.name = name;
-        this.id = subChildId;
+        this.description = null;
+        this.subChildId = subChildId;
+        this.clueArea = null;
+        this.clueHint = null;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 
     public int getRoot() {
-        // all emotes have root widget id 216
+        // all beginner emotes have root widget id 216 // may need to check mems later
         return 216;
     }
 
@@ -73,12 +89,46 @@ public enum Emote {
         return 2;
     }
 
-    public int getSubChild() {
-        return id;
+    public String getInteraction() {
+        return "perform";
     }
 
-    @Override
-    public String toString() {
-        return this.name;
+    /**
+     * Opens the players emotes tab, ready to perform an emote.
+     *
+     * @param bot The {@link BotMan bot} instance.
+     * @return True if the tab is opened successfully, else return false.
+     */
+    public boolean openEmoteTab(BotMan<?> bot) {
+        // ensure emotes tab is open
+        if (!bot.getTabs().isOpen(Tab.EMOTES)) {
+            bot.getTabs().open(Tab.EMOTES);
+            sleep(Rand.getRandReallyShortDelayInt());
+        }
+
+        return (bot.getTabs().isOpen(Tab.EMOTES));
+    }
+
+    /**
+     * Performs an emote by widget ID.
+     *
+     * @param bot        Bot instance
+     * @return true if the emote was clicked
+     */
+    public static boolean performEmote(BotMan<?> bot, Emote emote) {
+        try {
+            bot.setStatus("Opening emotes tab...");
+            if (bot.getTabs().open(Tab.EMOTES)) {
+                bot.setStatus("Performing \"" + emote + "\"...");
+                if (bot.getWidgets().interact(emote.getRoot(), emote.getChild(), "Perform")) {
+                    // wait some time for emote
+                    sleep(Rand.getRandShortDelayInt());
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            bot.log("Failed to perform emote: " + e.getMessage());
+        }
+        return false;
     }
 }

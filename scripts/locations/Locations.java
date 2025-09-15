@@ -1,5 +1,8 @@
 package locations;
 
+import clues.MapClueLocation;
+import com.sun.istack.internal.NotNull;
+import locations.clues.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 
 /**
@@ -68,6 +71,36 @@ public abstract class Locations implements TravelMan {
         return null;
     }
 
+    /**
+     * Search any given location enum by name (case-insensitive), returning any objects matching the passed name.
+     *
+     * @param name The name of the city to attempt to find
+     * @return The location if it is found in the {@link Locations locations} class. // check I'm not lying.
+     */
+    public static TravelMan find(String name, @NotNull TravelMan... locationEnumValues) {
+        for (TravelMan city : locationEnumValues) {
+            if (city.getName().equalsIgnoreCase(name)) {
+                return city;
+            }
+        }
+        return null;
+    }
+
+
+    public static ClueLocation find(int mapId) {
+        for (TravelMan location : locations.clues.ClueLocation.getBeginnerMaps()) {
+            try {
+                MapClueLocation map = (MapClueLocation) location;
+                if (map.getMapId() == mapId) {
+                    return map;
+                }
+            } catch (Exception e) {
+
+            }
+        }
+        return null;
+    }
+
     @Override
     public Area getArea() {
         return area;
@@ -86,16 +119,6 @@ public abstract class Locations implements TravelMan {
     /// Nested classes (this enables the daisy-chaining of sub-classes without having it inside here)
     ///
 
-    /**
-     * Constructs a {@link Location location} object with extra properties which can be used to easily reference various
-     * locations within cities.
-     * <p>
-     * This  parent class on construction.
-     *
-     * @param area An {@link Area area} of interest within the city.
-     * @param name The (probably arbitrary) name of this {@link Area area}.
-     * @param description A brief description of this {@link Area area}.
-     */
     public static abstract class Cities {
 
     }

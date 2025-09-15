@@ -2,22 +2,17 @@ package utils;
 
 import locations.TravelMan;
 import locations.cities.VarrockLocation;
-import org.osbot.rs07.api.NPCS;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 
-import java.util.Arrays;
-
-import static clues.ClueType.NPC;
-import static utils.BotMan.sleep;
-
 public enum CommonNPC implements TravelMan {
-    CHARLIE_THE_TRAMP(VarrockLocation.CHARLIE_THE_TRAMP.getArea(), "Charlie the Tramp");
+    CHARLIE_THE_TRAMP(VarrockLocation.BLACK_ARMS_GANG_ALLEY.getArea(), "Charlie the Tramp"),
+    URI("Uri");
 
-    protected Area area;
-    protected String name;
-    protected String description;
-    protected String[] fastDialogueOptions;
+    Area area;
+    String name;
+    String description;
+    String[] fastDialogueOptions;
 
     CommonNPC(String name, String... fastDialogueOptions) {
 
@@ -44,8 +39,8 @@ public enum CommonNPC implements TravelMan {
         return description;
     }
 
-    public String getFastDialogueOptions() {
-        return Arrays.asList(fastDialogueOptions).toString();
+    public String[] getFastDialogueOptions() {
+        return fastDialogueOptions;
     }
 
     public NPC getNearest(BotMan<?> bot) {
@@ -53,27 +48,30 @@ public enum CommonNPC implements TravelMan {
                     && n.getName() != null);
     }
 
-    public boolean isVisible(BotMan<?> bot, CommonNPC npc) {
+    public boolean isVisible(BotMan<?> bot) {
         return bot.getNpcs().closest(n -> n != null
                 && n.getName() != null
-                && n.getName().equalsIgnoreCase(npc.getName())
+                && n.getName().equalsIgnoreCase(getName())
                 && n.isVisible()) != null;
     }
 
-    public boolean talkTo(BotMan<?> bot, CommonNPC npc, String... options) throws InterruptedException {
-        return bot.talkTo(npc, options);
+    public boolean talkTo(BotMan<?> bot, String... options) throws InterruptedException {
+        return bot.talkTo(this, options);
     }
 
+
     /**
-     * Walk to this npc then talk to them.
+     * Walk to this NPC then talk to them using the passed chat options where possible.
      *
-     * @param bot
-     * @return
-     * @throws InterruptedException
+     * @param bot The {@link BotMan bot} instance for script api.
+     * @param options A {@link String[]} of chat dialogue options that will be used when conversing with this NPC.
+     * @return {@link Boolean True} if the travelling or conversation loop is not prematurely broken.
      */
-    public boolean walkAndTalk(BotMan<?> bot, CommonNPC npc) throws InterruptedException {
-        walkTo(bot);
-        return talkTo(bot, npc);
+    public boolean walkAndTalk(BotMan<?> bot, String... options) throws InterruptedException {
+        // self reference to walk and talk to npcs using this object
+        if (!bot.walkTo(this))
+            return !bot.setStatus("Unable to travel to \"" + getName() + "\"");
+        return talkTo(bot, options);
     }
 
 }
