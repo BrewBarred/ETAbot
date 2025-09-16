@@ -16,14 +16,14 @@ package locations.clueLocations.beginner;
 //SIR SHARE RED	Hairdresser	Western Falador
 //TAUNT ROOF	Fortunato	Draynor Village Market
 
+import clues.ClueScroll;
 import locations.TravelMan;
 import locations.cityLocations.AlKharidLocation;
 import locations.cityLocations.PortSarimLocation;
-import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
-import utils.Toon;
+import utils.BotMan;
 
-public enum Anagram implements ClueLocation {
+public enum Anagram implements ClueScroll {
     ///
     ///     ~ ANAGRAM CLUE LOCATIONS ~
     ///
@@ -85,18 +85,24 @@ public enum Anagram implements ClueLocation {
         return "";
     }
 
+    @Override
+    public String[] getRequiredItems() {
+        return new String[0];
+    }
+
+    @Override
+    public int getMapId() {
+        return 0;
+    }
+
+    @Override
+    public boolean solve(BotMan<?> bot) throws InterruptedException {
+        bot.setStatus("Anagram clue-solving feature is P2P only!");
+        return false;
+    }
+
     public String getHint() {
         return hint;
-    }
-
-    @Override
-    public String getTask() {
-        return null;
-    }
-
-    @Override
-    public Toon getClueNPC() {
-        return null;
     }
 
     /**

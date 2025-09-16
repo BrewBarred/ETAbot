@@ -2,14 +2,20 @@ package clues;
 // MAP NOTES:
 
 import locations.Spot;
-import locations.clueLocations.ClueLocation;
+import locations.TravelMan;
+import locations.clueLocations.beginner.HotAndCold;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.model.Item;
+import task.Task;
+import task.TaskType;
+import utils.BotMan;
 import utils.Toon;
 
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public enum MapClueLocation implements ClueLocation {
+public enum MapClue implements ClueScroll {
     ///
     ///     ~ BEGINNER MAP CLUE SCROLL LOCATIONS ~
     ///
@@ -68,7 +74,7 @@ public enum MapClueLocation implements ClueLocation {
      * @param name The name of this clue-map object, used for display purposes.
      */
     // map clue constructors
-    MapClueLocation(Area area, String name, String description, String task, int mapId) {
+    MapClue(Area area, String name, String description, String task, int mapId) {
         this.area = area;
         this.name = name;
         this.description = description;
@@ -79,24 +85,14 @@ public enum MapClueLocation implements ClueLocation {
     //TODO: implement the following constructor eventually including a Task class which somehow completes an predefined or dynamic action (still looking into this)
     // ClueLocation(Area area, Position digPosition || NPC npc, String name, String description, int mapId || String hint, String task
 
-
-    public int getMapId() {
-        return this.mapId;
-    }
-
-    @Override
-    public String getTask() {
-        return "Dig at the specified map location (check widget id of open map)";
-    }
-
-    @Override
-    public Toon getClueNPC() {
-        return null;
-    }
-
     @Override
     public Area getArea() {
         return area;
+    }
+
+    @Override
+    public int getMapId() {
+        return 0;
     }
 
     @Override
@@ -105,8 +101,59 @@ public enum MapClueLocation implements ClueLocation {
     }
 
     @Override
+    public String getHint() {
+        return "X marks the spot! Fetch a spade and dig at the marked map location.";
+    }
+
+    @Override
     public String getDescription() {
         return description;
+    }
+
+    @Override
+    public String[] getRequiredItems() {
+        return null; // add spade?
+    }
+
+    @Override
+    public boolean solve(BotMan<?> bot) throws InterruptedException {
+        return false;
+    }
+
+    public static MapClue from(String hint) {
+        return (MapClue) ClueHandbook.findByHint(hint);
+    }
+
+
+    public static MapClue fromActiveWidgets(List<Integer> widgets) {
+        if (widgets == null)
+            return null;
+
+        HashMap<Integer, Integer> beginnerClues = new HashMap<>();
+        beginnerClues.put(203, 2);
+
+        return null; // no match
+    }
+
+    /**
+     * Return the map clue associated with the passed widget root id (used to obtain map clues, since they have no text)
+     *
+     * @param root The root widget ID used to search this enum.
+     * @return A {@link MapClue} object that can be used to easily solve clues in clue-solving scripts.
+     */
+    public static MapClue fromRoot(int root) {
+        // stream the map clue values to return a result
+        return Arrays.stream(values()) // declare the stream and target
+                .filter(clue -> clue.getMapId() == root) // filter the target by matching root ids
+                .findFirst() // return the first result
+                .orElse(null); // else return null
+    }
+
+    public static List<MapClue> sortByDistance(Position playerPos) {
+        return Arrays.stream(values())
+                .sorted(Comparator.comparingDouble(hc ->
+                        Objects.requireNonNull(hc.getCentre()).distance(playerPos)))
+                .collect(Collectors.toList());
     }
 }
 

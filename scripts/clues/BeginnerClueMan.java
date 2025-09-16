@@ -1,16 +1,10 @@
 package clues;
 
-import locations.Spot;
-import locations.TravelMan;
-import locations.clueLocations.ClueLocation;
-import locations.clueLocations.beginner.HotAndCold;
-import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.script.ScriptManifest;
+import utils.BotMan;
 import utils.Rand;
 
 import java.awt.*;
-import java.util.Arrays;
-import java.util.List;
 
 @ScriptManifest(
         name = "F2P Beginner clue-man by ETA (Beta)",
@@ -30,47 +24,81 @@ import java.util.List;
 /// OF YOUR OTHER CLUE, GO BACK AND PICK UP YOUR CLUE, THEN DROP IT AGAIN
 public class BeginnerClueMan extends ClueMan {
     // define static attributes
+    private static final int MAX_ATTEMPTS = 3;
     private static final String BEGINNER_SCROLL_BOX = "Scroll box (beginner)";
     private static final String BEGINNER_SCROLL = "Clue scroll (beginner)";
     private static final String DIFFICULTY = "beginner";
     public static final String[] requiredItems = new String[]{"Spade", "Gold necklace", "Gold ring", "Chef's hat", "Red cape"};
+
+    /**
+     * The default wait-time at the end of each loop.
+     * <p>
+     * This value should be relatively low, not only to allow for a smooth flow, but because the wait time is heavily
+     * increased on failed attempts - too large a value may cause the player to intermittently log out for short periods
+     * of time, increasing detection rates.
+     */
+    private static int DEFAULT_DELAY_MS;
 
     // declare class variables
     private int attempts;
 
     @Override
     protected void onSetup() throws InterruptedException {
-        setStatus("Initializing beginner clue-man...", true);
+        setStatus("Initializing beginner clue-man...");
+        DEFAULT_DELAY_MS = Rand.getRandShortDelayInt();
     }
 
     @Override
-    public int onLoop() throws InterruptedException {
+    protected boolean runBot() throws InterruptedException {
         try {
-            setStatus("Testing sort function...");
+            setStatus("Attempting to open a clue...");
 
-            List<HotAndCold> list = Arrays.asList(HotAndCold.values());
-            ClueLocation.sort(list);
+            // check if the player has a clue-scroll in their inventory, if not, exit for now to test attempts
+            if (!hasItemContaining("beginner"))
+                throw new NoClueException().exit(this);
 
-//            setStatus("Calculating path...");
-//            TravelMan.orderByGreedyPath(myPosition(), locations.clueLocations.beginner.HotAndCold.values());
-////            setStatus("Attempting to open a clue...", true);
-////            // check if a player has a clue scroll in their inventory
-////                // if clue
-////                // open clue scroll
-////            // else
-////
-////                openClue(DIFFICULTY);
-////
-////            // if clue in inventory
-////                // isSolving =
-//            return Rand.getRandShortDelayInt();
-        } catch (Exception e) {
-            setStatus("Error! Shutting down...");
-            onExit();
+            return false;
+
+
+            //openClue(DIFFICULTY);
+
+            // check if a player has a clue scroll in their inventory
+            // if clue
+            // open clue scroll
+            // else
+
+            // if clue in inventory
+            // isSolving =
+
+            //reset attempts
+            //attempts = 0;
+
+        } catch (Throwable e) {
+            //TODO: make attempts object to handle this logic
+            attempts++;
+            // exit when attempt count exceeds max attempts
+            if (attempts > MAX_ATTEMPTS) {
+                setStatus("Error, Maximum attempts of " + MAX_ATTEMPTS + " has been exceeded! Shutting down...");
+                onExit();
+            }
+
+            // wait a bit longer than usual before trying again //TODO: attempts * MAX_ATTEMPTS implement this timer in botMan
         }
 
-        return 0;
+        return false;
     }
+
+    public static class NoClueException extends RuntimeException {
+        public NoClueException() {
+            super();
+        }
+
+        public Throwable exit(BotMan<?> b) throws InterruptedException {
+            b.onExit();
+            return new Throwable("Somehow still talking after bot is dead?");
+        }
+    }
+
 
     @Override
     protected void paintScriptOverlay(Graphics2D g) {

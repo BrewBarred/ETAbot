@@ -1,16 +1,9 @@
 package mining;
 
-import fishing.FishingArea;
 import org.osbot.rs07.script.ScriptManifest;
-import utils.BotMan;
-import utils.BotMenu;
 import utils.Rand;
-import utils.Utils;
 
-import static utils.Rand.getRandLongDelayInt;
 import static utils.Rand.getRandShortDelayInt;
-
-import java.awt.*;
 
 @ScriptManifest(
         name = "F2P Iron Banker",
@@ -21,18 +14,15 @@ import java.awt.*;
 )
 public class F2PIronBanker extends MiningMan {
     @Override
-    protected void onSetup() throws InterruptedException {
+    public void onSetup() {
         log("Setting up mining ETA bot...");
     }
 
     @Override
-    public int onLoop() throws InterruptedException {
-        if (this.isPaused()) {
-            setStatus("Settings mode enabled!");
-            return 100;
-        } else {
-            setStatus("Thinking...");
-        }
+    protected boolean runBot() throws InterruptedException {
+        if (this.isPaused())
+            return setStatus("Settings mode enabled!");
+        else setStatus("Thinking...");
 
         // check if players inventory is full
         if (isFullInv()) {
@@ -40,22 +30,21 @@ public class F2PIronBanker extends MiningMan {
             if (botMenu != null && botMenu.isDropping())
                 this.dropOre("Iron ore");
             else depositOre();
-
-            // return now to prevent the script looking for iron ore inside the bank
-            return getRandShortDelayInt();
         }
-        else if (!MiningArea.ALKHARID_MINE.contains(myPlayer()))
-                walkTo(MiningArea.ALKHARID_MINE.getArea(), "Al'Kharid mining area");
+
+        if (!MiningArea.ALKHARID_MINE.contains(myPlayer()))
+            walkTo(MiningArea.ALKHARID_MINE.getArea(), "Al'Kharid mining area");
 
         if (hasPickaxe()) {
             // mine the nearest mine-able iron ore
             this.mineOre("Iron rocks");
-            return Rand.getRand(423, 1832);
+            return true;
         } else {
-            log("Unable to find pickaxe!");
+            // TODO: consider pairing these functions together?
+            setStatus("Unable to find pickaxe!");
             onExit();
         }
 
-        return 0;
+        return false;
     }
 }

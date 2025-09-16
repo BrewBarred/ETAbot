@@ -1,18 +1,23 @@
 package locations.clueLocations.beginner;
 
-import com.sun.istack.internal.NotNull;
+import clues.ClueScroll;
 import locations.TravelMan;
-import locations.clueLocations.ClueLocation;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.model.Item;
+import org.osbot.rs07.api.model.Player;
 import utils.BotMan;
 import utils.Toon;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
-public enum HotAndCold implements ClueLocation {
+public enum HotAndCold implements ClueScroll {
+    // TODO: ALLow for lost strange device, find reldo to recover one.
+
     //TODO: WRITE FUNCTION THAT RECORDS THE PLAYERS CURRENT POSITION TO A TEXT FILE AS AN AREA OBJECT (X1, Y1, X2, Y2) AS WELL AS THE ZONE
     // THIS DATA CAN LATER BE ENTERED INTO EXPLV'S MAP AND USED TO DRAW ROUGH BOXES THAT MARK "INCREDIBLY HOT".
     // I MAY EVEN BE ABLE TO USE THIS DATA TO ESTIMATE THE NEAREST LOCATION USING MACHINE LEARNING OR MANUAL ALGORITHMS
@@ -61,26 +66,42 @@ public enum HotAndCold implements ClueLocation {
     @Override public String getName() {return name;}
 
     @Override
+    public String getHint() {
+        return "Buried beneath the ground, who knows where it's found. Lucky for you, A man called Reldo may have a clue.";
+    }
+
+    @Override
     public String getDescription() {
         return null;
+    }
+
+    @Override
+    public String[] getRequiredItems() {
+        return null;//TODO: Strange device, clue scroll, spade
+    }
+
+    @Override
+    public int getMapId() {
+        return 0;
+    }
+
+    @Override
+    public boolean solve(BotMan<?> bot) throws InterruptedException {
+
+                return false;
     }
 
     //TODO: implement the following constructor eventually including a Task class which somehow completes an predefined or dynamic action (still looking into this)
     // ClueLocation(Area area, Position digPosition || NPC npc, String name, String description, int mapId || String hint, String task)
 
-    @Override
-    public String getTask() {
-        return null;
-    }
+    public Position getEstimatedDigPosition(Player p) {
+        List<HotAndCold> ordered = HotAndCold.sortByDistance(p.getPosition());
+        if (ordered == null)
+            return null;
 
-    @Override
-    public Toon getClueNPC() {
-        return null;
-    }
-
-    public Position getEstimatedDigPosition() {
-        // todo: think of a way to estimate a dig position based on the players current position, last position, and current heat level on the mysterious orb
-        return null;
+        Position element = (Position) ordered.get(0).getArea().getPositions();
+        ordered.remove(element);
+        return (Position) ordered.get(0).getArea().getPositions();
     }
 
     public Area getVisiblyShakingArea() {return null;}
@@ -100,9 +121,25 @@ public enum HotAndCold implements ClueLocation {
      *
      * @return All beginner hot and cold locations in a {@link HotAndCold} link.
      */
-    public List<HotAndCold> getAllBeginnerHotAndCold() {
+    public static List<HotAndCold> getAllBeginnerHotAndCold() {
         return Arrays.asList(values());
     }
+
+    /**
+     * Return all HotAndCold locations sorted by distance (closest -> furthest)
+     * from the given player position.
+     *
+     * @param playerPos the player's current position
+     * @return a list of HotAndCold locations sorted by distance
+     */
+    public static List<HotAndCold> sortByDistance(Position playerPos) {
+        return Arrays.stream(HotAndCold.values())
+                .sorted(Comparator.comparingDouble(hc ->
+                        Objects.requireNonNull(hc.getCentre()).distance(playerPos)))
+                .collect(Collectors.toList());
+    }
+
+
 };
 
 //TODO: implement smart bot function, starts at a passed location and records the number of tiles for each hot and cold step

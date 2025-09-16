@@ -81,7 +81,8 @@ public abstract class MiningMan extends BotMan<MiningMenu> {
     }
 
     @Override
-    public void onStart() throws InterruptedException {
+    public void onSetup() throws InterruptedException {
+        setStatus("Setting up mining man...");
         // locate and open the nearest bank
         if (!getBank().open())
             // ensure bank is open
@@ -199,7 +200,7 @@ public abstract class MiningMan extends BotMan<MiningMenu> {
     }
 
     protected void depositOre() throws InterruptedException {
-        setStatus("Depositing ore", true);
+        setStatus("Depositing ore");
         if (MiningArea.ALKHARID_BANK.contains(myPlayer())) {
             Bank bankBooth = getBank();
             if (bankBooth == null) {

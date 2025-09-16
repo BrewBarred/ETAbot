@@ -1,11 +1,9 @@
 package locations;
 
-import clues.MapClueLocation;
+import clues.MapClue;
 import com.sun.istack.internal.NotNull;
-import locations.clueLocations.ClueLocation;
+import locations.LocationFinder;
 import org.osbot.rs07.api.map.Area;
-
-import java.util.List;
 
 /**
  * Constructs a {@link Spot location} object which can be used to add or extract information about a listed
@@ -73,31 +71,6 @@ public abstract class Spot implements TravelMan {
 //        return null;
 //    }
 
-    /**
-     * Search any given location enum by name (case-insensitive), returning any objects matching the passed name.
-     *
-     * @param name The name of the city to attempt to find
-     * @return The location if it is found in the {@link Spot locations} class. // check I'm not lying.
-     */
-    public static TravelMan find(String name, @NotNull TravelMan... locationEnumValues) {
-        for (TravelMan city : locationEnumValues) {
-            if (city.getName().equalsIgnoreCase(name)) {
-                return city;
-            }
-        }
-        return null;
-    }
-
-
-    public static ClueLocation find(int mapId) {
-        for (TravelMan location : locations.clueLocations.ClueLocation.getBeginnerMaps()) {
-                MapClueLocation map = (MapClueLocation) location;
-                if (map.getMapId() == mapId) {
-                    return map;
-                }
-        }
-        return null;
-    }
 
     @Override
     public Area getArea() {

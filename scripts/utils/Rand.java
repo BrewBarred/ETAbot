@@ -39,6 +39,18 @@ public final class Rand {
     }
 
     /**
+     * Return a random integer value between two random 'really low' values, ideal for miniscule pauses between quick
+     * actions.
+     * <p>
+     * This number also happens to be super random which helps with realism ;)
+     *
+     * @return A really really short random integer value designed for delay purposes.
+     */
+    public static int getRandReallyReallyShortDelayInt() {
+        return Rand.getRand(getRandReallyShortDelayInt() - 2000, getRandReallyShortDelayInt() - 8000);
+    }
+
+    /**
      * Return a random integer value between two preset 'low' values, intended for minimum delay times.
      *
      * @return A random integer value between two preset 'low' values as defined in Rand.java.

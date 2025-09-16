@@ -6,6 +6,9 @@ import org.osbot.rs07.api.ui.Tab;
 import static utils.BotMan.sleep;
 
 public enum EmoteMan {
+    ///
+    ///     EMOTE ENTRIES
+    ///
     YES("Yes", 0),
     NO("No", 1),
     BOW("Bow", 2),
@@ -60,12 +63,18 @@ public enum EmoteMan {
     FORTIS_SALUTE("Fortis Salute", 53),
     SIT_DOWN("Sit down", 54);
 
+    ///
+    ///     FIELDS
+    ///
     final Area clueArea;
     final String clueHint;
     final String name;
     final String description;
     final int subChildId;
 
+    ///
+    ///     CONSTRUCTOR(S)
+    ///
     EmoteMan(String name, int subChildId) {
         this.name = name;
         this.description = null;
@@ -74,6 +83,9 @@ public enum EmoteMan {
         this.clueHint = null;
     }
 
+    ///
+    ///     GETTERS/SETTERS
+    ///
     @Override
     public String toString() {
         return this.name;
@@ -93,6 +105,41 @@ public enum EmoteMan {
         return "perform";
     }
 
+    private static boolean perform(BotMan<?> bot, EmoteMan emote) {
+        if (bot.getWidgets().interact(emote.getRoot(), emote.getChild(), "Perform")) {
+            // wait some time for emote
+            sleep(Rand.getRandReallyShortDelayInt());
+            return true;
+        }
+        return false;
+    }
+
+    ///
+    ///     HELPER FUNCTIONS
+    ///
+    public boolean perform(BotMan<?> bot) {
+        try {
+            if (!openEmoteTab(bot)) return false;
+
+            bot.setStatus("Performing \"" + this + "\"...");
+            if (bot.getWidgets().interact(getRoot(), getChild(), getInteraction())) {
+                sleep(Rand.getRandReallyShortDelayInt());
+                return true;
+            }
+        } catch (Exception e) {
+            bot.setStatus("Failed to perform emote: " + e.getMessage());
+        }
+        return false;
+    }
+
+
+    /**
+     * Static helper: convenience call.
+     */
+    public static boolean performEmote(BotMan<?> bot, EmoteMan emote) {
+        return emote.perform(bot);
+    }
+
     /**
      * Opens the players emotes tab, ready to perform an emote.
      *
@@ -107,28 +154,5 @@ public enum EmoteMan {
         }
 
         return (bot.getTabs().isOpen(Tab.EMOTES));
-    }
-
-    /**
-     * Performs an emote by widget ID.
-     *
-     * @param bot        Bot instance
-     * @return true if the emote was clicked
-     */
-    public static boolean performEmote(BotMan<?> bot, EmoteMan emoteMan) {
-        try {
-            bot.setStatus("Opening emotes tab...");
-            if (bot.getTabs().open(Tab.EMOTES)) {
-                bot.setStatus("Performing \"" + emoteMan + "\"...");
-                if (bot.getWidgets().interact(emoteMan.getRoot(), emoteMan.getChild(), "Perform")) {
-                    // wait some time for emote
-                    sleep(Rand.getRandShortDelayInt());
-                    return true;
-                }
-            }
-        } catch (Exception e) {
-            bot.log("Failed to perform emote: " + e.getMessage());
-        }
-        return false;
     }
 }

@@ -11,24 +11,9 @@
 //////                clue.interact("Drop");
 //////                sleep(Rand.getRandReallyShortDelayInt());
 //////                return true;
-////
-///////
-/////// CLUE SCROLL TYPE: CHARLIE THE TRAMP
-///////
-////            case "Talk to Charlie the Tramp in Varrock.":
-////                    return completeCharlieTask(getCharlieTask());
-////
-////        ///
-////        /// CLUE SCROLL TYPE: RIDDLE
-////        ///
-////        case "Always walking around the castle grounds and somehow knows everyone's age.":
-////        // find and talk to hans
-////        return solveClue(ClueNPC.HANS, ClueLocation.LUMBRIDGE_CASTLE_COURTYARD);
-////
-////            case "In the place Duke Horacio calls home, talk to a man with a hat dropped by goblins.":
-////                    // find and talk to Duke Horacio
-////                    return solveClue(ClueNPC.COOK, ClueLocation.LUMBRIDGE_CASTLE_KITCHEN);
-////
+
+
+
 ///////
 /////// CLUE SCROLL TYPE: ANAGRAM
 ///////

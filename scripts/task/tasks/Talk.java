@@ -1,7 +1,8 @@
-package task;
+package task.tasks;
 
 import com.sun.istack.internal.NotNull;
-import org.osbot.rs07.api.model.NPC;
+import task.Task;
+import task.TaskType;
 import utils.BotMan;
 import utils.Toon;
 
@@ -10,6 +11,7 @@ public class Talk extends Task {
     String name;
 
     public Talk(@NotNull Toon npc, String... options) {
+        super(TaskType.TALK_TO);
         target = npc;
         name = npc.getName();
     }

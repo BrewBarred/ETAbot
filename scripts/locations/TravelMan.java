@@ -8,10 +8,8 @@ import org.osbot.rs07.api.ui.MagicSpell;
 import utils.BotMan;
 import utils.Rand;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -72,14 +70,11 @@ public interface TravelMan {
      * @param bot The {@link BotMan bot} being controlled.
      * @return {@link Boolean True} if the bot successfully walks to this location, else returns false.
      */
-    default boolean walkTo(BotMan<?> bot) throws InterruptedException {
-        // cant run if you got no legs!
-        if (bot == null)
-            return false;
-
+    default boolean walkTo(@NotNull BotMan<?> bot) throws InterruptedException {
+        bot.setStatus("Travellingingingginginginign                            saoidjfgiodasjfiojdasiofs");
         // no point in trying to walk somewhere if you're already there!
         if (getArea().contains(bot.myPlayer()))
-                return true;
+            return true;
 
         //TODO: consider implementing attempt counter here or setting up task manager and feeding all tasks through task man for the attempt count
 
@@ -91,15 +86,17 @@ public interface TravelMan {
             //TODO: change this logic to use alternative locations where possible? Just not sure on the best way to
             // decide which alternative location to use or when. Consider using the Task attempts perhaps?
             // Make task return the attempt count!! Then use that attempt count as the alternative option.
+            bot.setStatus("Walking failed! Relocating to " + getArea() + "...");
             bot.getWalking().webWalk(getArea().getCentralPosition());
             return getArea().contains(bot.myPlayer());
         }
+        bot.setStatus("Final walking attempt: " + getArea() + "...");
         return bot.getWalking().webWalk(getArea().getRandomPosition());
     }
 
     default boolean TeleTo(BotMan<?> bot, MagicSpell teleport) throws InterruptedException {
         // write me a script here to teleport to getArea();
-        bot.setStatus("Attempting to teleport to " + getArea() + "...", true);
+        bot.setStatus("Attempting to teleport to " + getArea() + "...");
 
         //TODO: Consider moving this logic to bot man since it can be used for any spells, and referencing it here
 
@@ -201,7 +198,7 @@ public interface TravelMan {
      *
      * @return The centre {@link Position position} of the passed {@link Area area}.
      */
-    default Position getCenter() {
+    default Position getCentre() {
         if (getArea() == null)
             return null;
 

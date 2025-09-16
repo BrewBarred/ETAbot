@@ -49,7 +49,7 @@ public class F2PKaramja extends FishingMan {
 
     @Override
     protected void onSetup() {
-        setStatus("Starting " + this.getName() + " script...", true);
+        setStatus("Starting " + this.getName() + " script...");
         // sets bot to harpoon fish at karamja docks (musa point)
         this.setFishingStyle((FishingStyle) botMenu.selectionFishingStyle.getSelectedItem());
         this.setFishingArea((FishingArea) botMenu.selectionFishingArea.getSelectedItem());
@@ -60,12 +60,12 @@ public class F2PKaramja extends FishingMan {
     //TODO: Fix bug with being in mems world on f2p and logged out cancelling script
 
     @Override
-    public int onLoop() throws InterruptedException {
+    protected boolean runBot() throws InterruptedException {
         if (this.isAFK) {
             setStatus("Thinking...", false);
         } else {
             setStatus("Settings mode has been enabled! Pausing script...");
-            return 0;
+            return true;
         }
 
         //TODO: Fix/implement inventory tracker
@@ -99,7 +99,7 @@ public class F2PKaramja extends FishingMan {
                         // else walk to port sarim cooking range
                         walkTo(PORT_SARIM_COOKING_RANGE, "Port Sarim cooking range");
                         // return short delay to prevent player getting stuck in random afk at each door
-                        return Rand.getRand(231, 925);
+                        return true;
                     }
                     // else if player does not wish to cook their catch
                 } else {
@@ -119,26 +119,11 @@ public class F2PKaramja extends FishingMan {
                     fishCage();
             } else {
                 FishingArea spot = FishingArea.MUSA_POINT;
-                walkTo(spot.getArea(), spot.toString());
-                // set a max afk time of 5 seconds
-                return(Rand.getRand(5));
+                return walkTo(spot.getArea(), spot.toString());
             }
         }
 
-        // 50% chance to start fake AFK
-        if (Rand.getRand(1) == 1) {
-            // set a random fake AFK time
-            int delay = Rand.getRand(22673);
-            // set AFK timer
-            endAFK = Instant.now().plusMillis(delay);
-            // afk until the delay timer expires
-            isAFK = true;
-            return delay;
-        }
-
-        // else skip fakeAFK this iteration
-        isAFK = false;
-        return Rand.getRandShortDelayInt();
+        return false;
     }
 
 }

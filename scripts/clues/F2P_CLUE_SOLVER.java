@@ -29,7 +29,7 @@
 //     * @return
 //     */
 //    protected boolean solveClue() throws InterruptedException {
-//        setStatus("Attempting to solve hot and cold clue...", true);
+//        setStatus("Attempting to solve hot and cold clue...");
 //        // define required items to solve a hot n cold clue, item/quantity (set quantity -1 to withdraw all)
 //        HashMap<String, Integer> REQUIRED_ITEMS = new HashMap<String, Integer>() {{
 //            put("Spade", 1); // cant dig without a spade
@@ -43,13 +43,13 @@
 //
 //        // fetch the required items from the bank if needed
 //        if (!fetchFromBank(REQUIRED_ITEMS))
-//            return setStatus("Error fetching required hot and cold items from the bank!", true);
+//            return setStatus("Error fetching required hot and cold items from the bank!");
 //
-//        setStatus("Attempting to read device...", true);
+//        setStatus("Attempting to read device...");
 //        // feel device and read hint
 //        String hint = feelStrangeDevice();
 //        if (hint == null) {
-//            return !setStatus("Error operating strange device...", true);
+//            return !setStatus("Error operating strange device...");
 //        }
 //
 //        log("Hot and cold hint: " + hint);
@@ -89,7 +89,7 @@
 //    }
 //
 //    public String feelStrangeDevice() {
-//        setStatus("Feeling strange device...", true);
+//        setStatus("Feeling strange device...");
 //        // Try to click the Strange device
 //        final String STRANGE_DEVICE = "Strange device";
 //        if (getInventory().interact("Feel", STRANGE_DEVICE)) {
@@ -111,10 +111,10 @@
 //
 //
 //    protected boolean completeCharlieTask(String scrollText) throws InterruptedException {
-//        setStatus("Attempting to complete charlie task...", true);
+//        setStatus("Attempting to complete charlie task...");
 //        String item = getCharlieItem(scrollText);
 //
-//        setStatus("Attempting to fetch " + item + "...", true);
+//        setStatus("Attempting to fetch " + item + "...");
 //        sleep(random(400, 600));
 //        // return false if no task item could be found
 //        if (item == null)
