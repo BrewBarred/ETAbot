@@ -1,4 +1,6 @@
-/// FILTER THIS CLASS AND STEAL USEFUL ATTRIBUTES AND COMMENTS
+//package main.unsorted;
+//
+//// FILTER THIS CLASS AND STEAL USEFUL ATTRIBUTES AND COMMENTS
 //
 //import locations.Spot;
 //import locations.clueLocations.LocationFinder;

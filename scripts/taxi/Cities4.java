@@ -1,6 +1,5 @@
 package taxi;
 
-import utils.Rand;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
@@ -10,6 +9,9 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.*;
 import java.util.List;
+
+import static main.utils.ETARandom.getRandLongDelayInt;
+import static main.utils.ETARandom.getRandShortDelayInt;
 
 @ScriptManifest(
         author = "E.T.A.",
@@ -64,7 +66,7 @@ public class Cities4 extends Script {
             //  ConditionalSleep(java.lang.Runnable sleepTask, int timeout)
             //  Creates a ConditionalSleep instance that will sleep until its
             //  condition is true or if the timeout has expired.
-            new ConditionalSleep(Rand.getRandLongDelayInt(), Rand.getRandShortDelayInt()) {  // 10 seconds to wait for the player to stop moving
+            new ConditionalSleep(getRandLongDelayInt(), getRandShortDelayInt()) {  // 10 seconds to wait for the player to stop moving
                 @Override
                 public boolean condition() {
                     return !myPlayer().isMoving();  // Ensure the player stops moving

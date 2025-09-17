@@ -1,15 +1,28 @@
-package task;
+package main.task;
 
-import utils.BotMan;
+import main.BotMan;
+import org.osbot.rs07.api.map.Area;
+import org.osbot.rs07.api.map.Position;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
 public abstract class Task {
+    // minimum attribute, calls the default execution function for the matched class
     private final TaskType type;
+    /**
+     * The function to perform. This function should return a boolean on completion to track execution results.
+     */
     private final Function<BotMan<?>, Boolean> function;
-    private boolean completed = false;
+    protected Area targetArea;
+    /**
+     *
+     */
+    private boolean isCompleted = false;
     private BooleanSupplier condition;
+
+    // optional attributes adjusted by children
+    protected Position targetPosition;
 
     // menu items
     private int loopCount = 0;
@@ -17,6 +30,11 @@ public abstract class Task {
     protected Task(TaskType type) {
         this.type = type;
         this.function = null;
+    }
+
+    protected Task(TaskType type, Position position) {
+        this(type);
+        this.targetPosition = position;
     }
 
     protected Task(TaskType type, Function<BotMan<?>, Boolean> function) {
@@ -51,16 +69,38 @@ public abstract class Task {
     }
 
     public boolean isCompleted() {
-        return completed;
+        return isCompleted;
     }
 
     protected boolean setCompleted(boolean completed) {
-        this.completed = completed;
+        this.isCompleted = completed;
         return completed;
     }
 
-    // forces children to
-    public abstract boolean run(BotMan<?> bot) throws InterruptedException;
+    /** Repeat the task X times */
+    public Task loop(int times) {
+        this.loopCount = times;
+        return this;
+    }
+
+//    /** Run until a custom condition has been met */
+//    public Task until(BooleanSupplier condition) {
+//        this.condition = condition;
+//        return this;
+//    }
+//
+//    /** Run until a set of skills have all reached a specified target */
+//    public Task until(int goal, Skill... skills) {
+//        this.goal = goal;
+//        this.skills = skills;
+//        return this;
+//    }
+
+
+    /**
+     * Forces children to define how this task should be completed when called to run.
+     */
+    public abstract boolean execute(BotMan<?> bot) throws InterruptedException;
 }
 
 

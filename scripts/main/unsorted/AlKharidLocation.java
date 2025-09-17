@@ -1,16 +1,22 @@
-//package locations.cityLocations;
+//package main.unsorted;
 //
 //import locations.TravelMan;
 //import org.osbot.rs07.api.map.Area;
 //
-//public enum PortSarimLocation implements TravelMan {
-//    SHOP_BATTLEAXES(new Area(3025, 3251, 3028, 3248), "Brian's Battleaxe Bazaar", "The starting, and sometimes ending location for players. This is where the \"Home Teleport\" teleports you to in the normal spell-book.");
+//public enum AlKharidLocation implements TravelMan {
+//    SHOP_PLATESKIRT(new Area(3205, 3225, 3220, 3205), "Ranaels Super Skirts", "Al'kharid plateskirt store, common clue location.");
 //
 //    public final Area area;
 //    public final String name;
 //    public final String description;
 //
-//    PortSarimLocation(Area area, String name, String description) {
+//    AlKharidLocation(Area area, String name) {
+//        this.area = area;
+//        this.name = name;
+//        this.description = null;
+//    }
+//
+//    AlKharidLocation(Area area, String name, String description) {
 //        this.area = area;
 //        this.name = name;
 //        this.description = description;
@@ -30,5 +36,5 @@
 //    public String getDescription() {
 //        return description;
 //    }
-//}
 //
+//}

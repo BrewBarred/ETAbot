@@ -1,4 +1,4 @@
-package utils;
+package main;
 
 import com.sun.istack.internal.NotNull;
 
@@ -6,7 +6,7 @@ import javax.swing.*;
 import java.awt.*;
 
 public abstract class BotMenu {
-    public BotMan bot;
+    public BotMan<?> bot;
 
     protected JFrame window = new JFrame();
     protected JPanel[] layout;
@@ -27,15 +27,22 @@ public abstract class BotMenu {
     protected JButton btnRunning = new JButton();
 
     protected boolean isHidingOnExit;
-    protected boolean isHidingOnPlay;
+    private boolean taskMode;
 
-    public BotMenu(BotMan bot) {
-        // provides a reference to the base BotMan class incase child classes choose not to abstract
+    /**
+     * Launches a bot menu for the associated bot instance (os bot script).
+     *
+     * @param bot The {@link BotMan} instance that this menu communicates with.
+     */
+    public BotMenu(@NotNull BotMan<?> bot) {
+        // enable menus to communicate with bots e.g., schedule tasks, change their settings via menu
         this.bot = bot;
-        this.log("Attempting to launch BotMenu...");
 
         // set defaults TODO: create a function to handle setting defaults later?
         this.isHidingOnExit = true;
+        // digOnArrival
+        // emoteOnArrival
+        // kill, dance, talkto, etc. access to full task list?
     }
 
     /**
@@ -108,7 +115,7 @@ public abstract class BotMenu {
             window.add(masterTabs, BorderLayout.CENTER);
 
             window.pack();
-            this.show();
+            this.open();
 
         } catch (Exception ex) {
             log("Invalid layout passed! Attempting to revert to existing layout...");
@@ -119,64 +126,65 @@ public abstract class BotMenu {
     }
 
     /**
-     * Opens a bot menu, displaying it to the user enabling user-bot interaction. If a menu already exists, this
+     * Opens the bot menu associated with the calling bot instance.
+     * <p>
+     * Bot menus enable user-bot interaction by providing direct access to the bots main loop and allowing the user to
+     * adjust settings or create their own tasks and add them after each existing script loop, or better yet, they can
+     * just make their own scripts by pressing buttons!
+     * <p>
+     * If a menu already exists, this function
      * function will call its {@link BotMenu#show()} function, else {@link BotMenu#open()} will be called.
      *
-     * @param force Forces this {@link BotMenu} to be opened.
      * @see BotMenu
      */
-    public void open(boolean force) {
-        if (!force) {
-            if (this.isVisible()) {
-                log("You can only have one BotMenu open at a time!");
-                return;
-            }
-
-            if (bot.botMenu != null) {
-                log("Reopening BotMenu...");
-                bot.botMenu.show();
-                return;
-            }
+    //TODO: document code with more of these later @see ^^
+    protected final boolean open() {
+        // can't open nothing!
+        if (bot == null || bot.botMenu == null || isVisible()) {
+            log("Unable to find a bot menu to open...");
+            return false;
         }
 
-        log("Opening a new BotMenu...");
+        // try open the bot menu using swing utilies to delay premature loading before BotMan is instantiated.
+        bot.setStatus("Opening BotMenu...");
         SwingUtilities.invokeLater(() -> {
             this.setLayout(getLayout());
             this.show();
-            if (bot.botMenu == null)
-                bot.botMenu = this;
         });
-    }
 
-    protected final void open() {
-        this.open(false);
+        // return true if the botmenu successfully opened, otherwise return false
+        return bot.botMenu == null;
     }
 
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
-    public final void close(boolean force) {
-        bot.log("Closing bot menu...");
-        if (this.isHidingOnExit) {
-            this.hide();
-        } else {
-            bot.botMenu = null;
-            window.dispose();
+    protected final boolean close() {
+        // no need to close nothing!
+        if (bot == null || bot.botMenu == null || !isVisible()) {
+            log("Unable to find a bot menu to open...");
+            return false;
         }
+
+//      //TODO: delete these two lines if not needed
+//        this.botMenu = null;
+//        window.dispose();
+        bot.log("Closing bot menu...");
+        this.hide();
+
+        // return whether or not this function return true
+        return this.isVisible();
     }
 
-    public final void close() {
-        close(false);
-    }
-
-    public final void show() {
+    private boolean show() {
         if (this.isVisible())
-            return;
+            return !bot.setStatus("You can only have one BotMenu open at a time!");
 
         this.window.setVisible(true);
+        return this.window.isVisible();
     }
 
-    public final void hide() {
+    private void hide() {
         if (!this.isVisible())
             return;
 
@@ -195,6 +203,7 @@ public abstract class BotMenu {
     public void log(String string) {
         bot.log("[BOTMENU] " + string);
     }
+
 //
 //    protected void addTaskTab(String taskName, JPanel panel) {
 //        taskPanel.add(panel, taskName);

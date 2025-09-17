@@ -7,16 +7,18 @@
 //TaskType type = TaskType.valueOf("ATTACK"); // load from string (config, JSON, UI)
 //        Task attack = type.create(bot.getNpcs().closest("Goblin"));
 //
-package task;
+package main.task;
 
-import clues.ClueMan;
+import main.task.tasks.basic.Dig;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.model.RS2Object;
-import task.tasks.*; // e.g., Attack, Mine, WalkTo, TalkTo, Dig
-import utils.BotMan;
 
 import java.util.function.Function;
+
+
+import main.task.TaskType.*;
+import main.BotMan;
 
 /**
  * Defines all the preset task types available to the bot.
@@ -29,15 +31,16 @@ import java.util.function.Function;
  */
 @SuppressWarnings("unchecked") // can't check a dynamic function in Action(), not possible.
 public enum TaskType {
-    ACTION(Function.class, target -> new Action((Function<BotMan<?>, Boolean>) target)), // placeholder
-    MINE(RS2Object.class, target -> new Mine((RS2Object) target)),
-    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
-    ATTACK(NPC.class, target -> new Attack((NPC) target)),
-    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
-    DIG(Void.class, target -> new Dig()), // doesn’t need a
-    SOLVE(String.class, target -> new Solve((String) target));
+//    ACTION(Function.class, target -> new Action((Function<BotMan<?>, Boolean>) target)), // placeholder
+//    MINE(RS2Object.class, target -> new Mine((RS2Object) target)),
+//    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
+//    ATTACK(NPC.class, target -> new Attack((NPC) target)),
+//    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
+    DIG(Void.class, target -> new Dig()),
+    Fetch(Void.class, target -> new Fetch(TargetType.Bank)); // doesn’t need a
+    //SOLVE(String.class, target -> new Solve((String) target));
 
-    ////        //    MINE(), FISH(), SOLVE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),
+    ////        //    MINE(), FISH(), SOL1VE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),
     ////    //    TALK_TO(), SAY(), PUNISH(), REWARD(), INTERACT(), PICKPOCKET(), BUY(), SELL(), TRADE(), CUT(), FLETCH(), SOW(),
     ////    //    HIGH_ALCH(), PICKUP(), DROP(), LOOK_AT(), RUN(), RUN_FROM(), RUN_TO(), DANCE(), SPIN(), RASPBERRY(), GOBLIN_SALUTE(),
     ////    //    BURN(), USE(), SELECT(), OPEN(), CLOSE(), CHANGE_TAB(), SET(), PUSH(), PULL(), SLASH(), CHOP(), INSPECT(), PROSPECT(),
@@ -68,23 +71,23 @@ public enum TaskType {
         return task.apply(target);
     }
 
-    // --- Sugar methods live here ---
-    public Task anyNearby(BotMan<?> bot, Object... params) {
-        switch (this) {
-            case MINE:
-                RS2Object rock = bot.getObjects().closest(o -> o.hasAction("Mine"));
-                //if (rock != null) return create(rock, params);
-                throw new IllegalStateException("No minable rocks nearby.");
-
-            case ATTACK:
-                NPC npc = bot.getNpcs().closest(n -> n.hasAction("Attack"));
-                //if (npc != null) return create(npc, params);
-                throw new IllegalStateException("No attackable NPCs nearby.");
-
-            default:
-                throw new UnsupportedOperationException(this + " doesn’t support anyNearby()");
-        }
-    }
+//    // --- Sugar methods live here ---
+//    public Task anyNearby(BotMan<?> bot, Object... params) {
+//        switch (this) {
+//            case MINE:
+//                RS2Object rock = bot.getObjects().closest(o -> o.hasAction("Mine"));
+//                //if (rock != null) return create(rock, params);
+//                throw new IllegalStateException("No minable rocks nearby.");
+//
+//            case ATTACK:
+//                NPC npc = bot.getNpcs().closest(n -> n.hasAction("Attack"));
+//                //if (npc != null) return create(npc, params);
+//                throw new IllegalStateException("No attackable NPCs nearby.");
+//
+//            default:
+//                throw new UnsupportedOperationException(this + " doesn’t support anyNearby()");
+//        }
+//    }
 
     //TODO: implement until function: struggling to get player level with this weird setup.
 //    public Task until(BotMan<?> bot, Object target, int level) {
@@ -126,6 +129,7 @@ public enum TaskType {
 //        }
 //    }
 //
+//    public boolean perform(BotMan<?> bot, Area area) {
 //    public boolean perform(BotMan<?> bot, Area area) {
 //        switch (this) {
 //            case WALK:

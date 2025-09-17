@@ -1,8 +1,13 @@
-package utils;
+package main.utils;
 
 import java.util.concurrent.ThreadLocalRandom;
 
-public final class Rand {
+/**
+ * Random class re-skinned to fetch common values within fixed ranges for easy script development. Here, a new delay can
+ * be defined every time one of these delays become inappropriate for a task. This centralizes all delays and allows for
+ * fast script-wide adjustments. (So be careful changing these values!! You might break a script that relays on the timing!!).
+ */
+public final class ETARandom {
     private static final int MIN_LOW = 4738;
     private static final int MIN_HIGH = 12288;
     private static final int MAX_LOW = 62234;
@@ -35,7 +40,7 @@ public final class Rand {
      * @return A random integer value between two preset 'low' values as defined in Rand.java.
      */
     public static int getRandReallyShortDelayInt() {
-        return Rand.getRand(MIN_LOW - 2000, MIN_HIGH - 8000);
+        return ETARandom.getRand(MIN_LOW - 2000, MIN_HIGH - 8000);
     }
 
     /**
@@ -47,7 +52,7 @@ public final class Rand {
      * @return A really really short random integer value designed for delay purposes.
      */
     public static int getRandReallyReallyShortDelayInt() {
-        return Rand.getRand(getRandReallyShortDelayInt() - 2000, getRandReallyShortDelayInt() - 8000);
+        return ETARandom.getRand(getRandReallyShortDelayInt() - 2000, getRandReallyShortDelayInt() - 8000);
     }
 
     /**
@@ -56,7 +61,7 @@ public final class Rand {
      * @return A random integer value between two preset 'low' values as defined in Rand.java.
      */
     public static int getRandShortDelayInt() {
-        return Rand.getRand(MIN_LOW, MIN_HIGH);
+        return ETARandom.getRand(MIN_LOW, MIN_HIGH);
     }
 
     /**
@@ -65,7 +70,7 @@ public final class Rand {
      * @return A random integer value between two preset 'high' values as defined in Rand.java.
      */
     public static int getRandLongDelayInt() {
-        return Rand.getRand(MAX_LOW, MAX_HIGH);
+        return ETARandom.getRand(MAX_LOW, MAX_HIGH);
     }
 
     /**
