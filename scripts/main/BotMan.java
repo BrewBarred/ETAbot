@@ -3,7 +3,6 @@ package main;
 import com.sun.istack.internal.NotNull;
 import main.task.Task;
 //import main.task.TaskType;
-import main.TaskMan;
 import main.task.TaskType;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
@@ -91,7 +90,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * The type of task currently being performed (if any).
      */
     protected TaskType taskType;
-    protected String taskDescription;
+    protected String currentTaskDescription;
 
     ///
     ///     CONSTRUCTORS
@@ -136,8 +135,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            // note attempts to prevent infinite loops on bugs getting us banned
-            attempts++;
+            // TODO: change to display attempts/max_attempts
+            setStatus("Starting attempt: " + (++attempts));
+            setStatus("Tasks queued: " + taskMan.getTaskList().toString());
+            setStatus("Total: " + taskMan.getTaskList().size());
+            // for each task in the queue
+            for (Task task : taskMan.queue) {
+                // can't complete a completed task...
+                if (task.isCompleted())
+                    continue;
+
+                // try do one unit of work
+                if (task.execute(this))
+                    setStatus("Completed: " + currentTaskDescription + task.tick() + "/" + task.getInitialLoops());
+                else
+                    throw new TaskFailedException(this, "Failed to execute task!");
+            }
 
             if (taskMode && taskMan.isLooping()) {
                 setStatus("Running queued task.../t/t432532453253425342534253425");
@@ -154,15 +167,30 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             return delay;
 
         } catch (RuntimeException i) {
+            setStatus("Error detected while: " + currentTaskDescription);
             // exit if attempt limit has been exceeded
             if (attempts > MAX_ATTEMPTS)
                 onExit();
 
+            setStatus("Attempts left: " + (MAX_ATTEMPTS - attempts));
+
             int sleep = attempts * LOOP_DELAY.get();
-            setStatus("Execution error! Status = " + status  + ", trying again " + attempts + " more time" + (attempts > 1 ? "s" : "") );
+            setStatus("Trying again after " + sleep / 1000 + "s", sleep);
         }
 
         return LOOP_DELAY.get();
+    }
+
+    /**
+     * Creates a custom exception to handle errors for better debugging. This will also allow me to create some
+     * functions later which create new tasks to prevent failure, which I can then plugin to machine learning models to
+     * self-train based on mistakes (with this being treated as the punishment/failure zone).
+     */
+    public static class TaskFailedException extends RuntimeException {
+        public TaskFailedException(BotMan<?> bot, String message) {
+            super(message);
+            bot.setStatus(message);
+        }
     }
 
     /**
@@ -285,7 +313,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     public boolean setStatus(@NotNull TaskType task, @NotNull String description) {
         this.taskType = task;
-        this.taskDescription = description;
+        this.currentTaskDescription = description;
         return true;
     }
 

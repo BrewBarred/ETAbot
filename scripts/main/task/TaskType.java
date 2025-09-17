@@ -36,8 +36,8 @@ public enum TaskType {
 //    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
 //    ATTACK(NPC.class, target -> new Attack((NPC) target)),
 //    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
-    DIG(Void.class, target -> new Dig()),
-    Fetch(Void.class, target -> new Fetch(TargetType.Bank)); // doesn’t need a
+    DIG(Void.class, target -> new Dig());
+    //Fetch(Bank., target -> new Fetch(TargetType.Bank)); // doesn’t need a
     //SOLVE(String.class, target -> new Solve((String) target));
 
     ////        //    MINE(), FISH(), SOL1VE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),

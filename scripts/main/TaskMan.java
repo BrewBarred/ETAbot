@@ -2,10 +2,9 @@ package main;
 
 import com.sun.istack.internal.NotNull;
 import main.task.Task;
+import org.osbot.T;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -24,8 +23,9 @@ import java.util.List;
  *}</pre>
  */
 final class TaskMan {
-    private static final List<Task> queue = new ArrayList<>();
+    final List<Task> queue = new ArrayList<>();
     private final List<Task> ghostQueue = new ArrayList<>();
+    private final Map<Task, Integer> loopTracker = new HashMap<>();
     private int currentIndex = 0;
     private int loops = 0;
 
@@ -68,6 +68,10 @@ final class TaskMan {
      * completed.
      */
     synchronized List<Task> getTaskList() {
+        // return if the queue is empty
+        if (queue.isEmpty())
+            return queue;
+        //
         return new ArrayList<>(queue).subList(currentIndex, queue.size() - 1);
     }
 

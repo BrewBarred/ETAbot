@@ -12,6 +12,7 @@ import org.osbot.rs07.api.model.Item;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Supplier;
 
 import static main.utils.ETARandom.getRandReallyReallyShortDelayInt;
 
@@ -46,23 +47,23 @@ public class Dig extends Task {
      * Dig at the current location.
      */
     public Dig() {
-        super(TaskType.DIG);
+        super(TaskType.DIG, "digging at current location");
     }
     /**
-     * Dig at the passed position {@link Position}.
+     * Travels to the passed {@link Position} and digs.
      * @param targetPosition The {@link Position} to dig.
      */
     public Dig(@NotNull Position targetPosition) {
-        super(TaskType.DIG);
+        super(TaskType.DIG, "digging at " + targetPosition);
         this.targetPosition = targetPosition;
         this.targetArea = targetPosition.getArea(1);
     }
     /**
-     * Digs near {@link Position} and tries to dig there.
+     * Travels near to the passed {@link Position} and tries to dig there.
      * @param targetPosition The {@link Position} to dig.
      */
     public Dig(@NotNull Position targetPosition, @NotNull int radius) {
-        super(TaskType.DIG, targetPosition);
+        super(TaskType.DIG, "digging near " + targetPosition.getArea(radius), targetPosition);
         this.targetArea = targetPosition.getArea(radius);
     }
     /**
@@ -70,7 +71,7 @@ public class Dig extends Task {
      * @param area The area in which to dig.
      */
     public Dig(@NotNull Area area) {
-        super(TaskType.DIG);
+        super(TaskType.DIG, "digging around " + area);
         this.targetPosition = area.getRandomPosition();
         this.targetArea = area;
     }
@@ -94,7 +95,8 @@ public class Dig extends Task {
     @Override
     public boolean execute(BotMan<?> bot) {
         if (!bot.inventory.contains(REQUIRED_ITEM))
-            bot.setStatus(TaskType.Fetch, "Fetching: " + REQUIRED_ITEM);
+            bot.setStatus("Unable to find " + REQUIRED_ITEM);
+            //bot.setStatus(TaskType.Fetch, "Fetching: " + REQUIRED_ITEM);
 
         Item spade = bot.getInventory().getItem("Spade");
         if (spade == null)
@@ -109,6 +111,18 @@ public class Dig extends Task {
             return bot.sleep(getRandReallyReallyShortDelayInt(), () -> bot.myPlayer().isAnimating());
 
         throw new DiggingException(bot, "Fatal error occurred while digging... Please be careful when digging next time.");
+    }
+
+    @Override
+    public boolean execute(BotMan<?> bot, Supplier<Boolean> condition) throws InterruptedException {
+        bot.setStatus("Digging until: " + condition, 1000);
+
+        // if condition is already met, mark complete and exit
+        if (condition.get())
+            return true;
+
+        // otherwise, do one unit of work and let bot man decide when to requeue
+        return this.execute(bot);
     }
 
     /**

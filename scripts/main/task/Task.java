@@ -6,41 +6,62 @@ import org.osbot.rs07.api.map.Position;
 
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class Task {
-    // minimum attribute, calls the default execution function for the matched class
-    private final TaskType type;
     /**
-     * The function to perform. This function should return a boolean on completion to track execution results.
+     * The default target area radius (measured in tiles in every direction of the player). This is static so it could be
+     * used in the constructor on instantiation for more creation flexibility.
      */
-    private final Function<BotMan<?>, Boolean> function;
+    private static final int DEFAULT_RADIUS = 20;
+    /**
+     * The type of task currently being performed.
+     */
+    private final TaskType type;
+    //TODO: consider removing
+//    /**
+//     * The function to perform. This function should return a boolean on completion to track execution results.
+//     */
+//    private Function<BotMan<?>, Boolean> function;
+    /**
+     * A short description describing the current task at hand (unlike the lengthy ones provided for AI training in some classes)
+     */
+    private final String description;
+    /**
+     * The target {@link Area} in which this {@link Task} should be performed.
+     */
     protected Area targetArea;
     /**
-     *
+     * The condition attached to this task, if this condition become true, the loop will be broken.
      */
-    private boolean isCompleted = false;
     private BooleanSupplier condition;
 
     // optional attributes adjusted by children
     protected Position targetPosition;
 
     // menu items
-    private int loopCount = 0;
+    private int numLoops = 0;
+    private int currentLoop = 0;
 
-    protected Task(TaskType type) {
+    protected Task(TaskType type, String description) {
         this.type = type;
-        this.function = null;
+        this.description = description;
     }
 
-    protected Task(TaskType type, Position position) {
-        this(type);
+    protected Task(TaskType type, String description, Position position, int radius) {
+        this(type, description);
         this.targetPosition = position;
+        this.targetArea = position.getArea(radius);
     }
 
-    protected Task(TaskType type, Function<BotMan<?>, Boolean> function) {
-        this.type = type;
-        this.function = function;
+    protected Task(TaskType type, String description, Position position) {
+        this(type, description, position, DEFAULT_RADIUS);
     }
+
+    protected Task(String name, TaskType type, String description, Area area) {
+        this(type, description, area.getRandomPosition());
+    }
+
 
 // TODO: implement loops once one cycle runs nicely.
 //    protected Task(TaskType type, int loops) {
@@ -52,7 +73,7 @@ public abstract class Task {
         return type;
     }
 
-    protected BooleanSupplier getCondition() {
+    public BooleanSupplier getCondition() {
         return this.condition;
     }
 
@@ -60,34 +81,66 @@ public abstract class Task {
         this.condition = condition;
     }
 
-    protected int getLoopCount() {
-        return loopCount;
+    public int getInitialLoops() {
+        return numLoops;
+    }
+
+    public int getCurrentLoop() {
+        return currentLoop;
+    }
+
+    /**
+     * Returns the number of loops left for this task until it will be flagged as complete.
+     *
+     * @return The loop count as an int.
+     */
+    public int getLoopsLeft() {
+        // TODO: double-check quick maf
+        return numLoops - currentLoop;
     }
 
     public void setLoopCount(int numLoops) {
-        loopCount = numLoops;
+        this.numLoops = numLoops;
     }
 
+    /**
+     * @return True if this task has completed all loops or if its passed end condition
+     */
     public boolean isCompleted() {
-        return isCompleted;
+        // automatically flag as completed if the finish conditions are met, no need for manual flagging
+        return currentLoop > numLoops || condition.getAsBoolean();
     }
 
-    protected boolean setCompleted(boolean completed) {
-        this.isCompleted = completed;
-        return completed;
+    /**
+     * @return A short description of this task, mainly for menu display purposes.
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * Increment the loop counter +1 and return the number of loops remaining until task completion.
+     *
+     * @return An int value representing the number of loops remaining for this task.
+     */
+    public int tick() {
+        // increment loop count
+        currentLoop++;
+        return getLoopsLeft();
     }
 
     /** Repeat the task X times */
     public Task loop(int times) {
-        this.loopCount = times;
+        this.numLoops = times;
         return this;
     }
 
-//    /** Run until a custom condition has been met */
-//    public Task until(BooleanSupplier condition) {
-//        this.condition = condition;
-//        return this;
-//    }
+    /** Run until a custom condition has been met */
+    public Task until(BooleanSupplier condition) {
+        this.condition = condition;
+        return this;
+    }
+
 //
 //    /** Run until a set of skills have all reached a specified target */
 //    public Task until(int goal, Skill... skills) {
@@ -98,9 +151,14 @@ public abstract class Task {
 
 
     /**
-     * Forces children to define how this task should be completed when called to run.
+     * Forces children to define how this task should be completed when called to run no parameters.
      */
     public abstract boolean execute(BotMan<?> bot) throws InterruptedException;
+    /**
+     * Forces children to define how this task should be completed until a condition is met.
+     */
+    public abstract boolean execute(BotMan<?> bot, Supplier<Boolean> condition) throws InterruptedException;
+
 }
 
 
@@ -159,10 +217,6 @@ public abstract class Task {
 //        this.type = null;
 //        this.target = null;
 //        this.required = null;
-//    }
-//
-//    protected void setCompleted(boolean completed) {
-//        this.completed = completed;
 //    }
 ////    public boolean run() throws InterruptedException {
 ////        // ensure the bot and target is not null before trying to decide on a task
@@ -395,18 +449,12 @@ public abstract class Task {
 ////    public BotMan<?> getBot() {
 ////        return bot;
 ////    }
-////
-////    public String getName() {
-////        return name;
-////    }
+///
 ////
 ////    public String getStatus() {
 ////        return status;
 ////    }
 ////
-////    public String getDescription() {
-////        return description;
-////    }
 ////
 ////    public BooleanSupplier getStoppingCondition() {
 ////        return stoppingCondition;

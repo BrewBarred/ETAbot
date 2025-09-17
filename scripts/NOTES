@@ -31,6 +31,8 @@ widget(149, 0, 27) = 28th inventory item?
 
 
 
+TEST compeltely test task class
+TEST whole Fetch class
 TEST DIGGING ON INVALID TILES
 TEST if pauseMenu() can be used to safe your bot from danger before pausing script
 TEST getTaskList() function, should return a list of tasks in the queue
