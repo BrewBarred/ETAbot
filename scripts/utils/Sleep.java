@@ -1,4 +1,4 @@
-//package main.utils;
+//package utils;
 //
 //import org.osbot.rs07.script.MethodProvider;
 //
@@ -29,7 +29,7 @@
 //        final MethodProvider methodProvider = Utils.getMethodProvider();
 //        final boolean isHighIntensity = Utils.getIntensity();
 //        final double fatigue = Utils.getFatigue();
-//        final double hash = Utils.getHash();
+//        final double hash = Utils.getHash(); E
 //
 //        // Check if in combat
 //        final boolean inCombat = methodProvider.myPlayer().isUnderAttack() || methodProvider.myPlayer().isHitBarVisible();

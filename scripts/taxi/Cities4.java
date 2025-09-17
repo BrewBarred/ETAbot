@@ -10,8 +10,8 @@ import java.awt.*;
 import java.util.*;
 import java.util.List;
 
-import static main.utils.ETARandom.getRandLongDelayInt;
-import static main.utils.ETARandom.getRandShortDelayInt;
+import static main.tools.ETARandom.getRandLongDelayInt;
+import static main.tools.ETARandom.getRandShortDelayInt;
 
 @ScriptManifest(
         author = "E.T.A.",

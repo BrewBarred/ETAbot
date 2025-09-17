@@ -75,14 +75,14 @@ public class TestyMan extends BotMan<BotMenu> {
         ///               for a good script, not only for general functionality, but also for the safety of your account!
         ///
 
-        setStatus("sleeping... (2s)");
+        setStatus("sleeping... (1s)");
         // there are many ways to sleep, this will sleep for 2 seconds unconditionally
-        sleep(2000);
+        sleep(1000);
         // this won't wake you up, lol, but... if you want to return an error message to the overlay manager and the logger,
         // followed by a sleep and returning true or false, this simple function can do all of that in one hit, see below for
         // a:
         // updated status followed by a 3 second sleep and returning true
-        boolean notFalse = setStatus("zzzz.....", 3000);
+        boolean notFalse = setStatus("zzzz.....", 2000);
         setStatus("notFalse is the same as " + notFalse);
         // returns notFalse is the same as true - because setStatus()
         // always returns true, remember! Be careful with it, its the only downside to this sex bomb of a function

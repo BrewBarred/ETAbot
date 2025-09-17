@@ -9,12 +9,11 @@ import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
 
-import static main.utils.ETARandom.getRandReallyReallyShortDelayInt;
+import static main.tools.ETARandom.getRandReallyReallyShortDelayInt;
 
 /**
  *

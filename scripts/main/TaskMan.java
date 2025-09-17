@@ -107,7 +107,7 @@ final class TaskMan {
                 queue.addAll(ghostQueue);
                 currentIndex = 0;
                 loops--;
-                bot.setStatus("[Task] Loops remaining: " + loops + "x " + bot.status);
+                bot.setStatus("[Task] Loops remaining: " + loops + "x " + bot.getStatus());
             } else {
                 bot.setStatus("[Task] All tasks complete!");
                 // clear the queue

@@ -4,14 +4,15 @@ import com.sun.istack.internal.NotNull;
 import main.task.Task;
 //import main.task.TaskType;
 import main.task.TaskType;
+import main.tools.ETARandom;
+import main.tools.GraphicsMan;
 import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
+import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-
-import main.utils.ETARandom;
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -43,7 +44,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     /**
      * The current status of this bot instance.
      */
-    public String status = null;
+    private String status;
 
 
     ///
@@ -53,11 +54,15 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     /**
      * The bot menu associated with this bot instance - protected since it has control of players accounts.
      */
-    protected T botMenu = null;
+    protected T botMenu;
     /**
      *  The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
      */
-    protected TaskMan taskMan = null;
+    protected TaskMan taskMan;
+    /**
+     * The graphic manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
+     */
+    protected GraphicsMan graphicsMan;
 
     ///
     ///     PRIVATE FIELDS
@@ -118,12 +123,20 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     @Override
     public final void onStart() throws InterruptedException {
-        // setup child (task-specific, e.g., F2P clue solver)
+        // set startup messages for debugging
+        setStatus("Launching... ETA BotManager");
+        currentTaskDescription = status;
+
+        // ensure child loaded successfully before continuing
         if (!onLoad())
-            // exit if child script failed to launch //TODO: change to a different task here?
-            onExit();
+            throw new RuntimeException("Failed BotMan.onStart()");
 
         logoutOnExit = false; // setup checkbox in menu or constructor to change this value
+        // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
+        taskMan = new TaskMan();
+        // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
+        graphicsMan = new GraphicsMan(this);
+        setStatus("Initialization complete!");
     }
 
     /**
@@ -136,9 +149,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public int onLoop() throws InterruptedException {
         try {
             // TODO: change to display attempts/max_attempts
-            setStatus("Starting attempt: " + (++attempts));
+            setStatus("Starting attempts: " + attempts);
             setStatus("Tasks queued: " + taskMan.getTaskList().toString());
             setStatus("Total: " + taskMan.getTaskList().size());
+
             // for each task in the queue
             for (Task task : taskMan.queue) {
                 // can't complete a completed task...
@@ -167,12 +181,17 @@ public abstract class BotMan<T extends BotMenu> extends Script {
             return delay;
 
         } catch (RuntimeException i) {
-            setStatus("Error detected while: " + currentTaskDescription);
-            // exit if attempt limit has been exceeded
-            if (attempts > MAX_ATTEMPTS)
-                onExit();
+            boolean b = setStatus("Error detected while: " + currentTaskDescription);
 
-            setStatus("Attempts left: " + (MAX_ATTEMPTS - attempts));
+            // add 1 to calculate remaining attempts since we start at 1 instead of 0
+            setStatus("Attempts left: " + (MAX_ATTEMPTS- attempts++));
+
+            // exit if attempt limit has been exceeded
+            if (attempts > MAX_ATTEMPTS) {
+                setStatus("Maximum attempt limit has been reached! Exiting...");
+                onExit();
+                return 0;
+            }
 
             int sleep = attempts * LOOP_DELAY.get();
             setStatus("Trying again after " + sleep / 1000 + "s", sleep);
@@ -208,6 +227,22 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         return;
     }
 
+    /**
+     * Override the base onPaint() function to draw an informative overlay over the game screen.
+     * <p>
+     * This function utilizes the {@link GraphicsMan} class for modularity and is intended to later extend
+     * {@link GraphicsMan} class to enable easier overlay drawing and automated positioning based on what is currently painted.
+     *
+     * @param g The graphics object to paint
+     */
+    @Override
+    public final void onPaint(Graphics2D g) {
+        // pass the paint event graphic object over to the graphics man to handle on-screen stuffs
+        graphicsMan.draw(g);
+        // draw extra things here, like penises.
+        g.drawString("PENIS", 500, 500);
+    }
+
 
     ///
     ///     CHILD FUNCTIONS: FORCED OVERRIDES
@@ -230,9 +265,11 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     ///
     ///     GETTERS/SETTERS
     ///
+    public String getStatus() { return status; }
+    public String getTaskDescription() { return currentTaskDescription; }
+    public boolean isTaskMode() { return taskMode; }
     public void enableTaskMode() { taskMode = true; }
     public void disableTaskMode() { taskMode = false; }
-    public boolean isTaskMode() { return taskMode; }
 
     ///
     ///     MAIN FUNCTIONS
