@@ -2,7 +2,6 @@ package main;
 
 import com.sun.istack.internal.NotNull;
 import main.task.Task;
-import org.osbot.T;
 
 import java.util.*;
 
@@ -22,21 +21,19 @@ import java.util.*;
  *  2. Running tasks
  *}</pre>
  */
-final class TaskMan {
-    final List<Task> queue = new ArrayList<>();
+public final class TaskMan {
+    private final List<Task> queue = new ArrayList<>();
     private final List<Task> ghostQueue = new ArrayList<>();
-    private final Map<Task, Integer> loopTracker = new HashMap<>();
     private int currentIndex = 0;
-    private int loops = 0;
 
     /**
      * Add the passed task to the queue end of the queue
      *
      * @param tasks The {@link Task task(s)} to be added to the task-queue.
      */
-    synchronized boolean addTask(@NotNull Task... tasks) {
+    public boolean add(@NotNull Task... tasks) {
         ghostQueue.addAll(Arrays.asList(tasks));
-        return queue.addAll(Arrays.asList(tasks)); // optional: live update
+        return queue.addAll(Arrays.asList(tasks));
     }
 
     /**
@@ -54,25 +51,9 @@ final class TaskMan {
      *
      * @param task The task to remove from the queue.
      */
-    synchronized boolean removeTask(@NotNull Task task) {
+    boolean removeTask(@NotNull Task task) {
         ghostQueue.remove(task);
         return queue.remove(task);
-    }
-
-    /**
-     * Fetch a safe-copy of the list of tasks for display on the client.
-     *
-     * @return A list replicating the current queue.
-     * <p>
-     * Note: This list may display completed tasks due to how to queue works, moving the head across the list until
-     * completed.
-     */
-    synchronized List<Task> getTaskList() {
-        // return if the queue is empty
-        if (queue.isEmpty())
-            return queue;
-        //
-        return new ArrayList<>(queue).subList(currentIndex, queue.size() - 1);
     }
 
     /**
@@ -81,52 +62,118 @@ final class TaskMan {
      * @param index The index position in the queue to extract.
      * @return The {@link Task task} object that was previously in the queue. This allows for easier rearrangement of queues, if needed.
      */
-    synchronized Task removeTask(int index) {
+    public Task removeTask(int index) {
         return queue.remove(index);
+    }
+
+    /**
+     * Returns the {@link Task} at the head of the queue and moves the queue pointer right.
+     * <p>
+     * Note: Items are not removed from the list until a full cycle is completed to safe the hassle of creating locks.
+     *
+     * @return A {@link Task} object that can be executed by a bot instance to complete a (or a series of) actions.
+     */
+    public Task getHead() {
+        return peekAt(currentIndex);
+    }
+
+    /**
+     * Fetch a safe-copy of the list of tasks for display on the client.
+     *
+     * @return A list replicating the remaining items in the queue.
+     */
+    public List<Task> getTasks() {
+        // return if the queue is empty
+        if (queue.isEmpty())
+            return queue;
+        // returns a copy of the remaining tasks to complete in the queue
+        return new ArrayList<>(queue).subList(currentIndex, queue.size() - 1);
+    }
+
+    /**
+     * Returns a shallow copy of the item at the given index in the queue (if any exists).
+     *
+     * @param index The index of the item to view.
+     * @return The item at the passed index or null.
+     */
+    public Task peekAt(int index) {
+        // validate index boundary
+        if (index < 0 || index >= queue.size())
+            return null;
+        //
+        return queue.get(index);
     }
 
     /**
      * @return {@link Boolean true} if this task still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
-    boolean isLooping() {
-        return loops > 0;
+    public boolean isLooping() {
+        return !getHead().isCompleted();
+    }
+
+    /**
+     * @return True if the queue has some tasks loaded into it, else returns false.
+     */
+    public boolean hasTasks() {
+        return !queue.isEmpty();
+    }
+
+    /**
+     * @return The number of remaining tasks in the queue.
+     */
+    public int getTaskCount() {
+        return queue.size() - currentIndex;
+    }
+
+    public int getIndex() {
+        return currentIndex;
     }
 
     /**
      * Runs the next {@link Task task} in the queue list.
      *
      * @param bot The {@link BotMan} instance responsible for completing the task.
+     * @return true if a task returns successful or if there are no tasks to complete in the last, else returns false.
      */
-    synchronized boolean call(BotMan<?> bot) throws InterruptedException {
+    public boolean call(BotMan<?> bot) throws InterruptedException{
+        // well, we're already doing nothing!
+        if (queue.isEmpty())
+            return true;
+
         bot.setStatus("[Task Manager] Running next task...", true);
         // if the queue has run out of things to do,
-        if (queue.isEmpty() || currentIndex >= queue.size()) {
-            // but its looping, and can remember how to repeat the task...
+        if (currentIndex >= queue.size()) {
+            // clear the queue
+            queue.clear();
+            // if looping is enabled and a copy of the queue exists
             if (isLooping() && !ghostQueue.isEmpty()) {
-                // load the queue up with the task and reset the pointer
+                // load the queue up with the copy
                 queue.addAll(ghostQueue);
                 currentIndex = 0;
-                loops--;
-                bot.setStatus("[Task] Loops remaining: " + loops + "x " + bot.getStatus());
+                bot.setStatus("[Task Manager] Loops remaining: " + getHead().getLoopsLeft() + "x " + bot.getStatus());
             } else {
-                bot.setStatus("[Task] All tasks complete!");
-                // clear the queue
-                queue.clear();
-                return false;
+                return bot.setStatus("[Task Manager] All tasks complete!");
             }
         }
 
-        // take the first task from the queue and run it
-        Task current = queue.get(currentIndex);
-        boolean success = current.execute(bot);
+        // instruct the bot to start working
+        if (work(bot))
+            return bot.setStatus("[Task Manager] Task Complete!");
+        return !bot.setStatus("[Task Manager] Failed to complete task...");
+    }
 
-        // if the bot completes the task successfully
-        if (success || current.isCompleted()) {
+    private boolean work(BotMan<?> bot) throws InterruptedException {
+        // take the first task from the queue and run it
+        Task task = getHead();
+        boolean success = task.execute(bot);
+
+        // only move pointer right if completed flag is enabled by the task
+        if (task.isCompleted()) {
             // prepare next task in the queue
             currentIndex++;
-            return bot.setStatus("[Task Manager] Task completed :)");
+            return bot.setStatus("[Task Manager] Task completed!)");
         }
 
-        return !bot.setStatus("[Task Manager] Failed to complete task...");
+        return bot.setStatus("[Task Manager] Task result: " + (success ? "success" : "fail") + ", loops remaining: " + task.getLoopsLeft());
     }
 }

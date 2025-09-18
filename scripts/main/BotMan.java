@@ -14,6 +14,8 @@ import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import static main.task.TaskType.DIG;
+
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.
@@ -31,6 +33,7 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     ///     PRIVATE STATIC FIELDS
     ///
 
+
     /**
      * The maximum number of attempts allowed before this bot will call the exit function.
      */
@@ -40,7 +43,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     ///
     ///     PUBLIC FIELDS
     ///
-
     /**
      * The current status of this bot instance.
      */
@@ -50,7 +52,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     ///
     ///     PROTECTED FIELDS
     ///
-
     /**
      * The bot menu associated with this bot instance - protected since it has control of players accounts.
      */
@@ -64,10 +65,32 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      */
     protected GraphicsMan graphicsMan;
 
+
+    ///
+    ///     BotMenu options
+    ///
+    /**
+     * True if the task manager is allowed to interrupt the main loop with queued tasks, false if the task manager
+     * should be ignored (will only run the initial script logic until task manager is resumed again).
+     */
+    private boolean taskMode = true;
+    /**
+     * True if the user should logout on script exit, else return false to keep the player logged in.
+     */
+    private boolean logoutOnExit = false;
+    /**
+     * The type of task currently being performed (if any).
+     */
+    protected TaskType taskType = TaskType.WAIT;
+    /**
+     *
+     */
+    //TODO: extract this out into its own class? Or at least track what task is failing for better debugging and to provide building blocks for machine learning
+    private int attempts = 0;
+
     ///
     ///     PRIVATE FIELDS
     ///
-
     /**
      * A really short delay which is forced after every child scripts loop (sorry). This guarantees some sort of randomization
      * in every single script using this framework, lowering ban rates and enables lazy scripting since you don't need
@@ -80,27 +103,11 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * <p>  - Scripts can just implement their own delay if anything bigger is needed.</p>
      */
     private final Supplier<Integer> LOOP_DELAY = ETARandom::getRandReallyShortDelayInt;
-    /**
-     * The maximum number of attempts allowed at each task.
-     */
-    //TODO: extract this out into its own class? Or at least track what task is failing for better debugging and to provide building blocks for machine learning
-    private int attempts = 0;
-    /**
-     * True if the task manager is allowed to interrupt the main loop with queued tasks, false if the task manager
-     * should be ignored (will only run the initial script logic until task manager is resumed again).
-     */
-    private boolean taskMode;
-    private boolean logoutOnExit;
-    /**
-     * The type of task currently being performed (if any).
-     */
-    protected TaskType taskType;
-    protected String currentTaskDescription;
+
 
     ///
     ///     CONSTRUCTORS
     ///
-
     /**
      * Constructs a bot instance (without a bot menu) which can be used to write custom scripts or define new tasks for
      * task-based scripts
@@ -113,10 +120,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         this.botMenu = botMenu;
     }
 
+
     ///
     ///     PARENT FUNCTIONS: OSBOT API (SCRIPT) OVERRIDES
     ///
-
     /**
      * The starting point of all scripts, used to initialize objects that basically all scripts will need. The more
      * task-specific functions will have a script that inherits these base-functions and tailors them to their needs.
@@ -125,7 +132,6 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public final void onStart() throws InterruptedException {
         // set startup messages for debugging
         setStatus("Launching... ETA BotManager");
-        currentTaskDescription = status;
 
         // ensure child loaded successfully before continuing
         if (!onLoad())
@@ -134,6 +140,8 @@ public abstract class BotMan<T extends BotMenu> extends Script {
         logoutOnExit = false; // setup checkbox in menu or constructor to change this value
         // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
         taskMan = new TaskMan();
+        // enable task managing by default, since it can just be in the background (only needs to be disabled to save resources)
+        taskMode = true;
         // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
         graphicsMan = new GraphicsMan(this);
         setStatus("Initialization complete!");
@@ -148,40 +156,36 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            // TODO: change to display attempts/max_attempts
-            setStatus("Starting attempts: " + attempts);
-            setStatus("Tasks queued: " + taskMan.getTaskList().toString());
-            setStatus("Total: " + taskMan.getTaskList().size());
+            // if a failed attempt just occurred
+            if (attempts > 0)
+                // display remaining attempts
+                setStatus("Starting attempt: " + attempts + "/" + MAX_ATTEMPTS);
 
-            // for each task in the queue
-            for (Task task : taskMan.queue) {
-                // can't complete a completed task...
-                if (task.isCompleted())
-                    continue;
+            // run the child script
+            if (run())
+                setStatus("Task completed!");
 
-                // try do one unit of work
-                if (task.execute(this))
-                    setStatus("Completed: " + currentTaskDescription + task.tick() + "/" + task.getInitialLoops());
-                else
-                    throw new TaskFailedException(this, "Failed to execute task!");
-            }
-
-            if (taskMode && taskMan.isLooping()) {
-                setStatus("Running queued task.../t/t432532453253425342534253425");
-                // 👉 delegate to task manager
-                taskMan.call(this);
-            } else {
-                // 👉 run bot-specific logic
-                run();
-            }
+            // todo, finish off task queue once tasks are added, more important lol
+            //setStatus("Calling: " + (isControlled() && taskMan.hasTasks()));
+//            // call the task manager if task mode is enabled
+//            if (isControlled() && taskMan.hasTasks()) {
+//                setStatus("Tasks mode enabled, running task: " + taskMan.getHead());
+//                // run the task at the head of the task manager and store the execution result
+//                boolean result = taskMan.call(this);
+//                // print the execution result
+//                setStatus("Result: " + result);
+//            // else just run default script instead
+//            } else {
+//            }
 
             // TODO: change to return LOOP_DELAY.get() later. this is just a test.
             int delay = LOOP_DELAY.get();
-            setStatus("Sleeping for: " + delay);
+            setStatus("Sleeping for: " + delay / 1000 + "s");
+            attempts = 0;
             return delay;
 
         } catch (RuntimeException i) {
-            boolean b = setStatus("Error detected while: " + currentTaskDescription);
+            setStatus("\n---\n|||||||  ERROR: " + i.getMessage() + "\n---");
 
             // add 1 to calculate remaining attempts since we start at 1 instead of 0
             setStatus("Attempts left: " + (MAX_ATTEMPTS- attempts++));
@@ -262,19 +266,20 @@ public abstract class BotMan<T extends BotMenu> extends Script {
     public void pauseMenu() {}
     public void resumeMenu() {}
 
+
     ///
     ///     GETTERS/SETTERS
     ///
     public String getStatus() { return status; }
-    public String getTaskDescription() { return currentTaskDescription; }
-    public boolean isTaskMode() { return taskMode; }
+    public String getTaskDescription() { return taskMan.getHead().getDescription(); }
+    public boolean isControlled() { return taskMode; }
     public void enableTaskMode() { taskMode = true; }
     public void disableTaskMode() { taskMode = false; }
+
 
     ///
     ///     MAIN FUNCTIONS
     ///
-
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
      */
@@ -343,14 +348,10 @@ public abstract class BotMan<T extends BotMenu> extends Script {
      * trackers.
      *
      * @param task The {@link Task} current being performed by this bot instance.
-     * @param description A brief description of what this bot is doing in association to this task type. This
-     *                    is just short description for the status updates but later, longer more informative and deatiled
-     *                    descriptions shall be added to aid the training of an AI model.
      * @return True on success, else returns false.
      */
-    public boolean setStatus(@NotNull TaskType task, @NotNull String description) {
+    public boolean setStatus(@NotNull TaskType task) {
         this.taskType = task;
-        this.currentTaskDescription = description;
         return true;
     }
 

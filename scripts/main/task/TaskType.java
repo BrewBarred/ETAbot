@@ -10,15 +10,11 @@
 package main.task;
 
 import main.task.tasks.basic.Dig;
+import main.task.tasks.basic.Wait;
 import org.osbot.rs07.api.map.Area;
-import org.osbot.rs07.api.model.NPC;
-import org.osbot.rs07.api.model.RS2Object;
+import org.osbot.rs07.api.map.Position;
 
 import java.util.function.Function;
-
-
-import main.task.TaskType.*;
-import main.BotMan;
 
 /**
  * Defines all the preset task types available to the bot.
@@ -36,11 +32,13 @@ public enum TaskType {
 //    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
 //    ATTACK(NPC.class, target -> new Attack((NPC) target)),
 //    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
+    WAIT_AT(Position.class, target -> new Wait((Position) target)),
+    WAIT(Void.class, target -> new Wait()),
     DIG(Void.class, target -> new Dig());
     //Fetch(Bank., target -> new Fetch(TargetType.Bank)); // doesn’t need a
     //SOLVE(String.class, target -> new Solve((String) target));
 
-    ////        //    MINE(), FISH(), SOL1VE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),
+    ////    //    MINE(), FISH(), SOL1VE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),
     ////    //    TALK_TO(), SAY(), PUNISH(), REWARD(), INTERACT(), PICKPOCKET(), BUY(), SELL(), TRADE(), CUT(), FLETCH(), SOW(),
     ////    //    HIGH_ALCH(), PICKUP(), DROP(), LOOK_AT(), RUN(), RUN_FROM(), RUN_TO(), DANCE(), SPIN(), RASPBERRY(), GOBLIN_SALUTE(),
     ////    //    BURN(), USE(), SELECT(), OPEN(), CLOSE(), CHANGE_TAB(), SET(), PUSH(), PULL(), SLASH(), CHOP(), INSPECT(), PROSPECT(),
@@ -71,6 +69,18 @@ public enum TaskType {
         return task.apply(target);
     }
 
+    // --- sugar for Dig ---
+    public Task at(Position pos) {
+        return new Dig(pos);
+    }
+
+    public Task near(Position pos, int radius) {
+        return new Dig(pos, radius);
+    }
+
+    public Task there(Area area) {
+        return new Dig(area);
+    }
 //    // --- Sugar methods live here ---
 //    public Task anyNearby(BotMan<?> bot, Object... params) {
 //        switch (this) {

@@ -2,28 +2,32 @@ package main.misc;
 
 import main.BotMan;
 import main.BotMenu;
+import main.task.Task;
 import main.task.tasks.basic.Dig;
-import org.osbot.rs07.api.Store;
+import main.task.tasks.basic.Wait;
+import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.script.ScriptManifest;
+
+import java.util.List;
 
 @ScriptManifest(
         info = "",
         author = "ETA",
-        name = "ETAs Testicle Script",
+        name = "BETAs Testicle Script",
         version = 0.1,
         logo = "Never!")
 public class TestyMan extends BotMan<BotMenu> {
     /**
      * Enable tutorial mode by setting this to true, and disable it by setting it to false.
      */
-    private final boolean isLearning = true;
+    private final boolean isLearning = false;
 
     /**
      * onLoad: Write logic here that should only run when the bot starts, such as gearing up or adjusting menu options.
      */@Override
     public boolean onLoad() {
-        //
-        return setStatus("Loading test script...");
+         // insert optional start up commands here
+        return setStatus("Initialized test script!");
     }
 
     /**
@@ -41,11 +45,52 @@ public class TestyMan extends BotMan<BotMenu> {
     public boolean run() throws InterruptedException {
         // this displays a message to the overlay manager (if you've enabled it)
         setStatus("Running!");
-        // start a tutorial for new enthusiasts to learn how to use this library
-        if (isLearning)
-            startTutorial(true);
+        return setStatus("Test result: " + testDigAtWizardsTower());
+//        // start a tutorial for new enthusiasts to learn how to use this library
+//        if (isLearning)
+//            startTutorial(true);
+//
+//        // run tests
+//        setStatus("Dig on spot task (instanced) + task manager: " + (taskDigOnSpotTask() ? "Success" : "Failed"), true);
+//        sleep(1000);
+//        return true;
+    }
 
-        return false;
+    public boolean testDigAtWizardsTower() throws InterruptedException {
+        Position wizardsTowerDigSpot = new Position(3110, 3152, 0);
+
+        Task test1 = new Dig().near(wizardsTowerDigSpot, 1);
+        //Task test2 = new Dig().there(wizardsTowerDigSpot.getArea(50));
+
+        test1.execute(this);
+//        test2.execute(this);
+        return true;
+    }
+
+    public boolean testWait() throws InterruptedException {
+        setStatus("Starting wait test................................................................................");
+        Wait wait = new Wait();
+        wait.test(this);
+        List<Task> t = Dig.getTest();
+        for (Task task : t)
+            task.execute(this);
+
+        return true;
+    }
+
+    public boolean taskDigOnSpotTask() throws InterruptedException {
+        setStatus("Creating dig on spot task...");
+        Task digOnSpot = new Dig().here();
+        setStatus("Queueing task at current index of " + taskMan.getIndex());
+        taskMan.add(digOnSpot);
+        setStatus("Successfully added task to the queue!");
+        setStatus("Queued task count: " + taskMan.getTaskCount());
+        setStatus("Head: " + taskMan.getHead());
+        // call the task manager to run the task at the head of the queue and catch the execution result
+        boolean success = taskMan.call(this);
+        setStatus("Task success = " + success);
+        digOnSpot.tick();
+        return true;
     }
 
     /**
@@ -66,7 +111,6 @@ public class TestyMan extends BotMan<BotMenu> {
             // we can use setStatus as normal output too, this is preferred over logging since it logs as well as prints to user
             setStatus("Status result should be false, result: " + something);
         }
-
 
         setStatus("ok, now that's the boring stuff, let's try something a bit more fun....");
 

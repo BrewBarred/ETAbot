@@ -5,8 +5,6 @@ import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 
 import java.util.function.BooleanSupplier;
-import java.util.function.Function;
-import java.util.function.Supplier;
 
 public abstract class Task {
     /**
@@ -35,13 +33,23 @@ public abstract class Task {
      * The condition attached to this task, if this condition become true, the loop will be broken.
      */
     private BooleanSupplier condition;
+    /**
+     * Used to flag this item as complete. This allows items to do some work, breaking back into the main {@link BotMan}
+     * loop for core checks, and then back into this task without losing queue position.
+     */
+    private boolean completed;
 
     // optional attributes adjusted by children
     protected Position targetPosition;
 
     // menu items
-    private int numLoops = 0;
+    private int maxLoops = 0;
     private int currentLoop = 0;
+    /**
+     * The current progress level (increments
+     */
+    protected int stage = 0;
+    private int totalStages = 0;
 
     protected Task(TaskType type, String description) {
         this.type = type;
@@ -58,7 +66,7 @@ public abstract class Task {
         this(type, description, position, DEFAULT_RADIUS);
     }
 
-    protected Task(String name, TaskType type, String description, Area area) {
+    protected Task(TaskType type, String description, Area area) {
         this(type, description, area.getRandomPosition());
     }
 
@@ -82,7 +90,7 @@ public abstract class Task {
     }
 
     public int getInitialLoops() {
-        return numLoops;
+        return maxLoops;
     }
 
     public int getCurrentLoop() {
@@ -96,11 +104,11 @@ public abstract class Task {
      */
     public int getLoopsLeft() {
         // TODO: double-check quick maf
-        return numLoops - currentLoop;
+        return currentLoop;
     }
 
     public void setLoopCount(int numLoops) {
-        this.numLoops = numLoops;
+        this.maxLoops = numLoops;
     }
 
     /**
@@ -108,7 +116,62 @@ public abstract class Task {
      */
     public boolean isCompleted() {
         // automatically flag as completed if the finish conditions are met, no need for manual flagging
-        return currentLoop > numLoops || condition.getAsBoolean();
+        return (completed || currentLoop >= maxLoops) || condition != null && condition.getAsBoolean();
+    }
+
+    /**
+     * Increments the progress counter which is used to split this task up into various sections, allowing the bot to
+     * put this task down, perform some vital checks and then pick it back up where it left off.
+     * <p>
+     * If the passed reset boolean is true, the progress counter will be reset instead, and the loop counter shall be
+     * incremented to prepare the next loop.
+     * <p>
+     * Finally, this function flags this {@link Task} as complete if the newly incremented loop counter exceeds the
+     * {@link Task#maxLoops)
+     * <p>
+     * Note: This feature can be ignored without any issues. Simply set the complete field to true.
+     *
+     * @param reset
+     */
+    public final boolean tick(boolean isLoopEnd) {
+        // if task has not progressed to the next loop (if any exist)
+        if (isLoopEnd) {
+            stage = 0;
+            // increment the loop count since this function is only called before the
+            currentLoop++;
+            // automatically updates completion status if all loops have completed
+            completed = currentLoop > maxLoops;
+            return true;
+        }
+
+        // increment the progress (which we switch on to determine how to pick up a dropped task)
+        stage++;
+
+        // extends stages in case dev forgot to update total //TODO: change this to display task progress % to graphicsMan
+        if (stage > totalStages)
+            totalStages = stage;
+
+        // TODO: draw to overlay man
+        float progressPercentage = ((float) stage /totalStages * 100);
+
+        return false;
+    }
+
+    /**
+     * Helper for the {@link Task#tick()} function which forces it to return false, providing a simple way to return
+     * false after each stage of a task.
+     *
+     * @return This always returns false, and is only intended to increment the progress and to escape a task until the
+     *         {@link BotMan bot manager} is ready to pick it back up again.
+     */
+    public final boolean tick() {
+        return tick(false);
+    }
+
+    public boolean nextLoop() {
+        currentLoop++;
+        completed = currentLoop >= maxLoops;
+        return !completed;
     }
 
     /**
@@ -118,20 +181,9 @@ public abstract class Task {
         return description;
     }
 
-    /**
-     * Increment the loop counter +1 and return the number of loops remaining until task completion.
-     *
-     * @return An int value representing the number of loops remaining for this task.
-     */
-    public int tick() {
-        // increment loop count
-        currentLoop++;
-        return getLoopsLeft();
-    }
-
     /** Repeat the task X times */
     public Task loop(int times) {
-        this.numLoops = times;
+        this.maxLoops = times;
         return this;
     }
 
@@ -157,7 +209,11 @@ public abstract class Task {
     /**
      * Forces children to define how this task should be completed until a condition is met.
      */
-    public abstract boolean execute(BotMan<?> bot, Supplier<Boolean> condition) throws InterruptedException;
+    public abstract boolean execute(BotMan<?> bot, BooleanSupplier condition) throws InterruptedException;
+    /**
+     * Forces children to define how this task should be completed after walking to a given {@link Position}.
+     */
+    public abstract boolean execute(BotMan<?> bot, Position position) throws InterruptedException;
 
 }
 

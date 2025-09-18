@@ -52,7 +52,7 @@ public final class ETARandom {
      * @return A really really short random integer value designed for delay purposes.
      */
     public static int getRandReallyReallyShortDelayInt() {
-        return ETARandom.getRand(getRandReallyShortDelayInt() - 2000, getRandReallyShortDelayInt() - 8000);
+        return ETARandom.getRand(MIN_LOW - 4000, MIN_HIGH - 10000);
     }
 
     /**
