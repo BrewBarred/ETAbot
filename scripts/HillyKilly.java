@@ -338,7 +338,7 @@ public class HillyKilly extends Script implements MessageListener {
             log("Error opening bank!");
 
         // wait a few seconds for the bank to open then return the result (true if bank is open, else false)
-        new ConditionalSleep(ETARandom.getRand(5000)) {
+        new ConditionalSleep(ETARandom.getRand(3000, 5000)) {
             @Override
             public boolean condition() {
                 return getBank().isOpen();
@@ -357,7 +357,7 @@ public class HillyKilly extends Script implements MessageListener {
                 openBank();
 
             log("Depositing items (keeping coins & 1 brass key)...");
-            getBank().depositAll();
+            getBank().depositAllExcept("Brass Key", "Coins");
 
             // keep 1 brass key
             if (!inventory.contains("Brass key") && getBank().contains("Brass key")) {
@@ -374,7 +374,7 @@ public class HillyKilly extends Script implements MessageListener {
             while (skills.getDynamic(Skill.HITPOINTS) < skills.getStatic(Skill.HITPOINTS)
                     && getBank().contains("Lobster")) {
                 getBank().withdraw("Lobster", 1);
-                new ConditionalSleep(2000) {
+                new ConditionalSleep(4000) {
                     @Override
                     public boolean condition() {
                         return inventory.contains("Lobster");
