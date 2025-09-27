@@ -30,14 +30,15 @@ import java.util.EnumMap;
  *  - Fallback logic for Home Teleport cooldown → defaults to Draynor if unavailable.
  *  - Periodic XP logging for Mining and Runecrafting.
  *  - ✅ Robust portal exit logic for both Rune Essence mine & Air Altar chamber.
+ *  - ✅ Diagonal unstuck movement in essence mine when rocks aren’t visible.
  *
- * Version: 1.8 (exitAirAltar reworked to mirror exitEssenceMine logic)
+ * Version: 1.9 (added diagonal unstuck logic)
  */
 @ScriptManifest(
         author = "E.T.A.",
         name = "FreeRC",
         info = "Rune essence miner + air rune crafter (F2P, modular)",
-        version = 1.8,
+        version = 1.9,
         logo = ""
 )
 public class FreeRC extends Script implements MessageListener {
@@ -46,8 +47,8 @@ public class FreeRC extends Script implements MessageListener {
     // Configurable toggles
     // ----------------------------
     private static final boolean BANK_ESSENCE = false;     // true = bank essence, false = craft runes
-    private static final boolean USE_SEDRIDOR = true;      // true = Sedridor teleport, false = Aubury
-    private static final int XP_LOG_INTERVAL_MINUTES = 2;  // XP log frequency
+    private static final boolean USE_SEDRIDOR = true;    // true = Sedridor teleport, false = Aubury
+    private static final int XP_LOG_INTERVAL_MINUTES = 2; // XP log frequency
 
     // ----------------------------
     // Items
@@ -99,18 +100,16 @@ public class FreeRC extends Script implements MessageListener {
         if (atAirAltarChamber()) {
             try {
                 if (!inventory.isFull() && !inventory.contains("Rune essence")) {
-                    // Empty or only runes → exit altar
                     if (exitAirAltar()) {
                         log("Started inside altar (empty inv) → exiting.");
                     }
                 } else if (inventory.contains("Rune essence")) {
-                    // Holding essence → craft then exit
                     craftRunes();
+                    sleep(ETARandom.getRandShortDelayInt());
                     if (exitAirAltar()) {
                         log("Started inside altar with essence → crafted & exiting.");
                     }
                 } else if (inventory.isFull() && !inventory.contains("Rune essence")) {
-                    // Full of runes → just exit
                     if (exitAirAltar()) {
                         log("Started inside altar with runes → exiting.");
                     }
@@ -138,7 +137,6 @@ public class FreeRC extends Script implements MessageListener {
 
         // If inventory IS full
         if (inventory.isFull()) {
-            // Still inside essence mine? → leave first
             if (atEssenceMine()) {
                 if (!exitEssenceMine()) {
                     log("Failed to exit essence mine, retrying...");
@@ -146,11 +144,9 @@ public class FreeRC extends Script implements MessageListener {
                 }
             }
 
-            // Handle banking OR crafting
             if (BANK_ESSENCE) {
                 doBanking();
             } else {
-                // Craft mode: travel to Air Altar
                 if (!atAirAltarChamber()) {
                     if (!atAirAltarRuins()) {
                         getWalking().webWalk(AIR_ALTAR_RUINS);
@@ -159,11 +155,7 @@ public class FreeRC extends Script implements MessageListener {
                     }
                     return ETARandom.getRandReallyReallyShortDelayInt();
                 }
-
-                // Inside altar chamber → craft runes
                 craftRunes();
-
-                // Only leave once essence has been converted
                 if (!inventory.contains("Rune essence")) {
                     if (!exitAirAltar()) {
                         log("Failed to exit Air Altar, retrying...");
@@ -188,15 +180,13 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Item checks
     // ----------------------------
-    /** Ensures player has pickaxe + tiara or talisman. */
     private boolean hasRequiredItems() {
         boolean pick = getBestPickaxe() != null;
         boolean tiaraEq = equipment.isWearingItem(EquipmentSlot.HAT, TIARA);
         boolean talismanInv = inventory.contains(TALISMAN);
-        return pick && (tiaraEq || talismanInv || inventory.contains(TIARA));
+        return pick && (tiaraEq || talismanInv || inventory.contains(TIARA) || BANK_ESSENCE);
     }
 
-    /** Gets the strongest available pickaxe from inv/equip/bank. */
     private String getBestPickaxe() {
         for (int i = PICKAXES.length - 1; i >= 0; i--) {
             if (inventory.contains(PICKAXES[i]) || equipment.contains(PICKAXES[i]) || getBank().contains(PICKAXES[i])) {
@@ -209,11 +199,9 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Banking
     // ----------------------------
-    /** Handles teleporting/walking to nearest bank and preparing gear. */
     private void doBanking() throws InterruptedException {
         Position bankTile;
 
-        // Decide which bank
         if (USE_SEDRIDOR) {
             if (magic.canCast(Spells.NormalSpells.HOME_TELEPORT)) {
                 log("Home teleport available, casting to Lumbridge...");
@@ -227,36 +215,34 @@ public class FreeRC extends Script implements MessageListener {
             bankTile = VARROCK_EAST_BANK;
         }
 
-        // Walk and open bank
         getWalking().webWalk(bankTile);
         if (!getBank().open()) return;
 
-        // Deposit all except required gear
         String bestPick = getBestPickaxe();
         getBank().depositAllExcept(bestPick, TIARA, TALISMAN);
 
-        // Re-withdraw gear if missing
         if (!inventory.contains(bestPick) && getBank().contains(bestPick)) {
             getBank().withdraw(bestPick, 1);
         }
-        if (!equipment.isWearingItem(EquipmentSlot.HAT, TIARA) && getBank().contains(TIARA)) {
-            getBank().withdraw(TIARA, 1);
-        } else if (!inventory.contains(TALISMAN) && getBank().contains(TALISMAN)) {
-            getBank().withdraw(TALISMAN, 1);
+        if (!BANK_ESSENCE) {
+            if (!equipment.isWearingItem(EquipmentSlot.HAT, TIARA) && getBank().contains(TIARA)) {
+                getBank().withdraw(TIARA, 1);
+            } else if (!inventory.contains(TALISMAN) && getBank().contains(TALISMAN)) {
+                getBank().withdraw(TALISMAN, 1);
+            }
         }
 
         getBank().close();
     }
 
-    /** Casts Home Teleport and waits until Lumbridge arrival. */
     private void teleportToLumbridge() throws InterruptedException {
         if (magic.canCast(Spells.NormalSpells.HOME_TELEPORT)) {
             if (magic.castSpell(Spells.NormalSpells.HOME_TELEPORT)) {
                 log("Casting Home Teleport to Lumbridge...");
-                new ConditionalSleep(10_000) {
+                new ConditionalSleep(17000) {
                     @Override
                     public boolean condition() {
-                        return myPosition().distance(LUMBRIDGE_BANK) < 20;
+                        return myPosition().distance(LUMBRIDGE_BANK) < 10;
                     }
                 }.sleep();
             }
@@ -266,12 +252,10 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Essence mine travel/mining
     // ----------------------------
-    /** Detects if player is inside essence mine. */
     private boolean atEssenceMine() {
         return objects.closest("Rune Essence") != null;
     }
 
-    /** Handles walking + teleporting to essence mine. */
     private void travelToEssenceMine() throws InterruptedException {
         if (USE_SEDRIDOR) {
             if (!WIZARD_TOWER_BASEMENT.contains(myPosition())) {
@@ -314,11 +298,20 @@ public class FreeRC extends Script implements MessageListener {
         }
     }
 
-    /** Mines rune essence until inventory is full. */
+    /** Mines rune essence until inventory is full.
+     *  Includes fallback diagonal walking if stuck in center with no rocks visible.
+     */
     private void mineEssence() throws InterruptedException {
         Entity rock = objects.closest("Rune Essence");
-        if (rock != null && rock.interact("Mine")) {
-            new ConditionalSleep(8000) {
+
+        if (rock == null) {
+            log("No essence rocks nearby → initiating unstuck walk...");
+            walkDiagonalUntilRocks();
+            return;
+        }
+
+        if (rock.interact("Mine")) {
+            new ConditionalSleep(14_000) {
                 @Override
                 public boolean condition() {
                     return inventory.isFull() || !myPlayer().isAnimating();
@@ -327,10 +320,44 @@ public class FreeRC extends Script implements MessageListener {
         }
     }
 
+    /**
+     * Walks in a randomly chosen diagonal direction (NW, NE, SW, SE)
+     * up to 5 tiles, stopping early if rune essence becomes visible.
+     *
+     * This prevents the bot from standing idle if teleported into
+     * the mine center with no essence in detection range.
+     */
+    private void walkDiagonalUntilRocks() throws InterruptedException {
+        int[][] diagonals = {
+                {-2,  2}, // NW
+                { 2,  2}, // NE
+                {-2, -2}, // SW
+                { 2, -2}  // SE
+        };
+
+        int[] dir = diagonals[random(0, diagonals.length)];
+        int dx = dir[0];
+        int dy = dir[1];
+
+        for (int i = 1; i <= 5; i++) {
+            Position step = myPosition().translate(dx * i, dy * i);
+
+            if (map.canReach(step)) {
+                getWalking().walk(step);
+                log("Walking diagonal step " + i + " towards (" + step.getX() + "," + step.getY() + ")");
+                sleep(ETARandom.getRandShortDelayInt());
+            }
+
+            if (objects.closest("Rune Essence") != null) {
+                log("Rune essence found after " + i + " diagonal step(s).");
+                break;
+            }
+        }
+    }
+
     // ----------------------------
     // Exit essence mine
     // ----------------------------
-    /** Exits essence mine via nearest portal (NPC or Object). */
     private boolean exitEssenceMine() throws InterruptedException {
         RS2Object portalObj = objects.closest(o ->
                 o != null && o.getName() != null &&
@@ -366,7 +393,6 @@ public class FreeRC extends Script implements MessageListener {
     private boolean atAirAltarRuins() { return AIR_ALTAR_RUINS.contains(myPosition()); }
     private boolean atAirAltarChamber() { return AIR_ALTAR_CHAMBER.contains(myPosition()); }
 
-    /** Enters Air Altar ruins using Tiara or Talisman. */
     private boolean enterAirAltar() throws InterruptedException {
         Entity ruins = objects.closest("Mysterious ruins");
         if (ruins != null) {
@@ -396,10 +422,6 @@ public class FreeRC extends Script implements MessageListener {
         return false;
     }
 
-    /**
-     * Exits Air Altar chamber via portal (NPC or Object).
-     * Uses same robustness as exitEssenceMine: visibility + fallback actions.
-     */
     private boolean exitAirAltar() throws InterruptedException {
         RS2Object portalObj = objects.closest(o ->
                 o != null && o.getName() != null &&
@@ -433,7 +455,6 @@ public class FreeRC extends Script implements MessageListener {
         return false;
     }
 
-    /** Crafts air runes by interacting with the altar until essence is consumed. */
     private void craftRunes() throws InterruptedException {
         log("Attempting to craft runes...");
         Entity altar = objects.closest("Altar");
@@ -453,7 +474,6 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // XP tracking
     // ----------------------------
-    /** Logs Mining + RC XP gains every X minutes. */
     private void logXpGainsIfDue() {
         long now = System.currentTimeMillis();
         long interval = XP_LOG_INTERVAL_MINUTES * 60_000L;
@@ -471,9 +491,8 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Listener
     // ----------------------------
-    /** Debug chat listener (logs all chat messages). */
     @Override
     public void onMessage(Message message) {
-        log("CHAT DEBUG: [" + message.getType() + "] " + message.getMessage());
+        //log("CHAT DEBUG: [" + message.getType() + "] " + message.getMessage());
     }
 }
