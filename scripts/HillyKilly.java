@@ -74,8 +74,11 @@ public class HillyKilly extends Script implements MessageListener {
             startXp.put(s, skills.getExperience(s));
         }
         lastXpLogTime = System.currentTimeMillis();
-        // gear up before starting
-        doBanking();
+
+        // if the player isnt starting this script inside hill giants, they probably aren't geared up yet
+        if (!HILL_GIANT_COVE.contains(myPlayer()))
+            // gear up before starting
+            doBanking();
     }
 
     @Override
@@ -216,10 +219,8 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
         // FIX 2: If inventory is full skip looting
-        if (inventory.isFull()) {
-            lastDeathTile = null; // prevent stuck retrying
+        if (inventory.isFull())
             return false;
-        }
 
         // Handle target death → mark death tile
         if (lastTarget != null && !lastTarget.exists()) {
