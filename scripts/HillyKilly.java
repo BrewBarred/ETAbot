@@ -1,3 +1,4 @@
+import main.tools.ETARandom;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.GroundItem;
@@ -317,99 +318,116 @@ public class HillyKilly extends Script implements MessageListener {
         return false;
     }
 
+    /**
+     * Walks the player to Varrock West Bank and opens their bank if they have no pin enabled.
+     * */
+    private boolean openBank() throws InterruptedException {
+        // cant open an open bank!
+        if (getBank().isOpen())
+            return true;
+
+        // walk to the bank if not already there
+        if (myPosition().distance(VARROCK_WEST_BANK) > 8) {
+            log("Walking to Varrock West Bank...");
+            getWalking().webWalk(VARROCK_WEST_BANK);
+        }
+
+        // open bank on arrival
+        log("Opening bank...");
+        if (!getBank().open())
+            log("Error opening bank!");
+
+        // wait a few seconds for the bank to open then return the result (true if bank is open, else false)
+        new ConditionalSleep(ETARandom.getRand(5000)) {
+            @Override
+            public boolean condition() {
+                return getBank().isOpen();
+            }
+        }.sleep();
+
+        return false;
+    }
+
     // ----------------------------
     // Banking logic (unchanged except docs)
     // ----------------------------
     private void doBanking() {
         try {
-            if (!getBank().isOpen()) {
-                if (myPosition().distance(VARROCK_WEST_BANK) > 8) {
-                    log("Walking to Varrock West Bank...");
-                    getWalking().webWalk(VARROCK_WEST_BANK);
-                } else {
-                    log("Opening bank...");
-                    getBank().open();
-                    new ConditionalSleep(5000) {
-                        @Override
-                        public boolean condition() {
-                            return getBank().isOpen();
-                        }
-                    }.sleep();
-                }
-            } else {
-                log("Depositing items (keeping coins & 1 brass key)...");
-                getBank().depositAll();
+            if (!openBank())
+                openBank();
 
-                // keep 1 brass key
-                if (!inventory.contains("Brass key") && getBank().contains("Brass key")) {
-                    getBank().withdraw("Brass key", 1);
-                    new ConditionalSleep(3000) {
-                        @Override
-                        public boolean condition() {
-                            return inventory.contains("Brass key");
-                        }
-                    }.sleep();
-                }
+            log("Depositing items (keeping coins & 1 brass key)...");
+            getBank().depositAll();
 
-                // heal fully at bank with lobsters
-                while (skills.getDynamic(Skill.HITPOINTS) < skills.getStatic(Skill.HITPOINTS)
-                        && getBank().contains("Lobster")) {
-                    getBank().withdraw("Lobster", 1);
-                    new ConditionalSleep(2000) {
-                        @Override
-                        public boolean condition() {
-                            return inventory.contains("Lobster");
-                        }
-                    }.sleep();
-                    if (inventory.contains("Lobster")) {
-                        inventory.interact("Eat", "Lobster");
-                        log("Eating Lobster at bank to restore HP...");
-                        sleep(random(1200, 1600));
-                    }
-                }
-
-                // deposit leftovers
-                if (inventory.contains("Lobster")) getBank().depositAll("Lobster");
-
-                // failsafe HP
-                int hp = skills.getDynamic(Skill.HITPOINTS);
-                int maxHp = skills.getStatic(Skill.HITPOINTS);
-                if (hp < (int) (0.8 * maxHp)) {
-                    log("HP still below 80%, staying at bank.");
-                    return;
-                }
-
-                // withdraw food
-                if (getBank().contains("Swordfish")) {
-                    log("Withdrawing Swordfish...");
-                    getBank().withdrawAll("Swordfish");
-                } else if (getBank().contains("Lobster")) {
-                    log("Swordfish not found, using Lobsters...");
-                    getBank().withdrawAll("Lobster");
-                } else {
-                    log("No combat food left in bank! Stopping.");
-                    stop();
-                    return;
-                }
-
+            // keep 1 brass key
+            if (!inventory.contains("Brass key") && getBank().contains("Brass key")) {
+                getBank().withdraw("Brass key", 1);
                 new ConditionalSleep(3000) {
                     @Override
                     public boolean condition() {
-                        return inventory.isFull();
-                    }
-                }.sleep();
-
-                getBank().close();
-                log("Returning to Hill Giant cove...");
-                getWalking().webWalk(HILL_GIANT_COVE);
-
-                new ConditionalSleep(10000) {
-                    @Override
-                    public boolean condition() {
-                        return HILL_GIANT_COVE.contains(myPlayer());
+                        return inventory.contains("Brass key");
                     }
                 }.sleep();
             }
+
+            // heal fully at bank with lobsters
+            while (skills.getDynamic(Skill.HITPOINTS) < skills.getStatic(Skill.HITPOINTS)
+                    && getBank().contains("Lobster")) {
+                getBank().withdraw("Lobster", 1);
+                new ConditionalSleep(2000) {
+                    @Override
+                    public boolean condition() {
+                        return inventory.contains("Lobster");
+                    }
+                }.sleep();
+                if (inventory.contains("Lobster")) {
+                    inventory.interact("Eat", "Lobster");
+                    log("Eating Lobster at bank to restore HP...");
+                    sleep(random(1200, 1600));
+                }
+            }
+
+            // deposit leftovers
+            if (inventory.contains("Lobster")) getBank().depositAll("Lobster");
+
+            // failsafe HP
+            int hp = skills.getDynamic(Skill.HITPOINTS);
+            int maxHp = skills.getStatic(Skill.HITPOINTS);
+            if (hp < (int) (0.8 * maxHp)) {
+                log("HP still below 80%, staying at bank.");
+                return;
+            }
+
+            // withdraw food
+            if (getBank().contains("Swordfish")) {
+                log("Withdrawing Swordfish...");
+                getBank().withdrawAll("Swordfish");
+            } else if (getBank().contains("Lobster")) {
+                log("Swordfish not found, using Lobsters...");
+                getBank().withdrawAll("Lobster");
+            } else {
+                log("No combat food left in bank! Stopping.");
+                stop();
+                return;
+            }
+
+            new ConditionalSleep(3000) {
+                @Override
+                public boolean condition() {
+                    return inventory.isFull();
+                }
+            }.sleep();
+
+            getBank().close();
+            log("Returning to Hill Giant cove...");
+            getWalking().webWalk(HILL_GIANT_COVE);
+
+            new ConditionalSleep(10000) {
+                @Override
+                public boolean condition() {
+                    return HILL_GIANT_COVE.contains(myPlayer());
+                }
+            }.sleep();
         } catch (Exception e) {
             log("Banking error: " + e.getMessage());
         }
