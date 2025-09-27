@@ -125,29 +125,27 @@ public class HillyKilly extends Script implements MessageListener {
     public void onExit() {
         log("HillyKilly2 stopped.");
         logXpGainsIfDue();
+        stop(false);
     }
 
     // ----------------------------
     // Banking logic fixes
     // ----------------------------
-    private boolean needsBanking() {
+    private boolean needsBanking() throws InterruptedException {
         int hp = skills.getDynamic(Skill.HITPOINTS);
 
-        // --- FIX 1: Only block banking if HP is safe AND inventory is not jammed ---
-        if (hp > EAT_AT_HP && hasFood()) {
-            // If full but only with food + bones, no need to bank yet.
-            if (inventory.isFull() && !hasJunk()) {
-                return false;
-            }
-        }
+        // no need to bank if we have food to eat or enough health to keep fighting
+        if (hp > EAT_AT_HP)
+            return false;
+        else if (hasFood())
+            return false;
 
-        // If low HP and no food → bank
-        if (hp <= EAT_AT_HP && !hasFood()) return true;
+        if (hasBones())
+            return false;
 
-        // If full inventory with no bones (can't bury → stuck) → bank
-        if (inventory.isFull() && !hasBones()) return true;
+        // player should never bank if they have food, bones or a spare inventory slot
+        return inventory.isFull();
 
-        return false;
     }
 
     private boolean hasFood() {
@@ -156,19 +154,19 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private boolean hasBones() {
-        for (String bone : BONE_NAMES) if (inventory.contains(bone)) return true;
+        for (String bone : BONE_NAMES)
+            if (inventory.contains(bone)) return true;
         return false;
     }
 
-    // --- NEW helper: detect junk items ---
-    private boolean hasJunk() {
-        // if inventory is full but only contains food + bones + brass key, we’re fine.
-        return inventory.isFull() &&
-                !inventory.onlyContains(item -> {
-                    String name = item.getName();
-                    return isBone(name) || isFood(name) || "Brass key".equalsIgnoreCase(name) || "Coins".equalsIgnoreCase(name);
-                });
-    }
+//    // --- NEW helper: detect junk items ---
+//    private boolean hasJunk() {
+//        // if inventory is full but only contains food + bones + brass key, we’re fine.
+//        return !inventory.onlyContains(item -> {
+//                    String name = item.getName();
+//                    return isBone(name) || isFood(name) || "Brass key".equalsIgnoreCase(name) || "Coins".equalsIgnoreCase(name);
+//                });
+//    }
 
     private boolean isFood(String name) {
         for (String food : FOOD_NAMES) if (food.equalsIgnoreCase(name)) return true;
@@ -295,6 +293,10 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private boolean buryBones() throws InterruptedException {
+        // cant bury nothin!
+        if (!hasBones())
+            return false;
+
         for (String bone : BONE_NAMES) {
             if (inventory.contains(bone) && inventory.interact("Bury", bone)) {
                 log("Burying: " + bone);
