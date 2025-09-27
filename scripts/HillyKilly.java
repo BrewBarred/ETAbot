@@ -254,7 +254,7 @@ public class HillyKilly extends Script implements MessageListener {
 
                 looted = true;
                 log("Looted: " + itemName);
-                sleep(random(400, 700));
+                sleep(ETARandom.getRandReallyReallyShortDelayInt());
             }
         }
 
