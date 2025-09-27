@@ -76,7 +76,8 @@ public class HillyKilly extends Script implements MessageListener {
     @Override
     public int onLoop() throws InterruptedException {
         // 1. Eat if needed
-        if (checkEat()) return random(200, 300);
+        if (checkEat())
+            return random(200, 300);
 
         // 2. Bank if needed
         if (needsBanking()) {
@@ -91,16 +92,13 @@ public class HillyKilly extends Script implements MessageListener {
             return random(600, 900);
         }
 
-        // ----------------------------
-        // BUGFIX ORDER SWAP:
-        // ----------------------------
         // Bury bones BEFORE looting.
-        // This ensures if the inventory is full with bones,
-        // the script frees space instead of getting stuck in lootDrops().
-        if (buryBones()) return random(200, 400);
+        if (buryBones())
+            return random(200, 400);
 
         // 4. Loot drops
-        if (lootDrops()) return random(300, 500);
+        if (lootDrops())
+            return random(300, 500);
 
         // 5. If busy (combat, animating), wait
         if (myPlayer().isUnderAttack()
@@ -215,8 +213,7 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
         // FIX 2: If inventory is full → skip looting unless bones can be buried
-        if (inventory.isFull() && !hasBones()) {
-            log("Skipping loot: inventory full and no bones to bury.");
+        if (inventory.isFull()) {
             lastDeathTile = null; // prevent stuck retrying
             return false;
         }
@@ -239,7 +236,7 @@ public class HillyKilly extends Script implements MessageListener {
 
         boolean looted = false;
         GroundItem drop;
-        while ((drop = groundItems.closest(g ->
+        while (!inventory.isFull() && (drop = groundItems.closest(g ->
                 g != null
                         && (isBone(g.getName()) || isLoot(g.getName()))
                         && g.getPosition().distance(lastDeathTile) <= 5
