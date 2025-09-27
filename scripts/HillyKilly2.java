@@ -195,8 +195,8 @@ public class HillyKilly2 extends Script implements MessageListener {
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
         // If inventory is full and no bones to bury, skip loot to avoid stuckness
-        if (inventory.isFull() && !inventory.contains(BONE_NAMES)) {
-            log("Inventory full (no bones) → skipping loot, will bank soon.");
+        if (inventory.isFull()) {
+            log("Unable to loot drops, inventory is full!");
             lastDeathTile = null;  // clear this so we don’t keep retrying
             return false;
         }
