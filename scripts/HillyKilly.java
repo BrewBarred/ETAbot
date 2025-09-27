@@ -130,9 +130,13 @@ public class HillyKilly extends Script implements MessageListener {
     private boolean needsBanking() throws InterruptedException {
         int hp = skills.getDynamic(Skill.HITPOINTS);
 
-        if (hp > EAT_AT_HP) return false;
-        else if (hasFood()) return false;
-        if (hasBones()) return false;
+        if (hp > EAT_AT_HP)
+            return false;
+        else if (!hasFood())
+            return true;
+
+        if (hasBones())
+            return false;
 
         return inventory.isFull();
     }
@@ -420,7 +424,8 @@ public class HillyKilly extends Script implements MessageListener {
 
         // Handle both GAME and TRADE_RECEIVED types
         if (message.getType() == Message.MessageType.GAME
-                || message.getType() == Message.MessageType.TRADE_RECEIVED) {
+                || message.getType() == Message.MessageType.TRADE_RECEIVED
+                || message.getType() == Message.MessageType.FILTERED) {
 
             if (msg.contains("you're an ironman")) {
                 log("Blocking loot due to ironman restrictions");
