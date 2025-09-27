@@ -57,6 +57,8 @@ public class HillyKilly extends Script implements MessageListener {
     private NPC lastTarget = null;
     private Position lastDeathTile = null;
     private boolean lastIronmanBlock = false;
+    private boolean unreachableBlock = false;
+    private boolean fullInvBlock = false;
 
     private EnumMap<Skill, Integer> startXp;
     private long lastXpLogTime = 0;
@@ -71,6 +73,8 @@ public class HillyKilly extends Script implements MessageListener {
             startXp.put(s, skills.getExperience(s));
         }
         lastXpLogTime = System.currentTimeMillis();
+        // gear up before starting
+        doBanking();
     }
 
     @Override
@@ -212,7 +216,7 @@ public class HillyKilly extends Script implements MessageListener {
     // Looting fixes
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
-        // FIX 2: If inventory is full → skip looting unless bones can be buried
+        // FIX 2: If inventory is full skip looting
         if (inventory.isFull()) {
             lastDeathTile = null; // prevent stuck retrying
             return false;
@@ -232,22 +236,31 @@ public class HillyKilly extends Script implements MessageListener {
             lastTarget = null;
         }
 
-        if (lastDeathTile == null) return false;
+        // don't loot while the target is still alive? TODO: check this comment is true
+        if (lastDeathTile == null)
+            return false;
 
         boolean looted = false;
         GroundItem drop;
+        // loot items until inventory is full or no lootable items are nearby
         while (!inventory.isFull() && (drop = groundItems.closest(g ->
                 g != null
                         && (isBone(g.getName()) || isLoot(g.getName()))
                         && g.getPosition().distance(lastDeathTile) <= 5
         )) != null) {
+            // reset blocks since we are checking a new item
             lastIronmanBlock = false;
+            unreachableBlock = false;
+            fullInvBlock = false;
 
+            // try to take the loot
             if (drop.interact("Take")) {
                 final String name = drop.getName();
                 log("Looting: " + name);
 
                 GroundItem finalDrop = drop;
+
+                // wait for loot to be collected, if blocked, booleans will be updated during this sleep
                 new ConditionalSleep(5000) { // extended timeout
                     @Override
                     public boolean condition() {
@@ -257,7 +270,7 @@ public class HillyKilly extends Script implements MessageListener {
                     }
                 }.sleep();
 
-                if (lastIronmanBlock) {
+                if (lastIronmanBlock || unreachableBlock || fullInvBlock) {
                     log("Blocked from looting (ironman restriction): " + name);
                     lastDeathTile = null; // prevent retries
                     return false;
@@ -424,10 +437,21 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     @Override
     public void onMessage(Message message) {
+        // on game chat occurence
         if (message.getType() == Message.MessageType.GAME) {
-            String text = message.getMessage().toLowerCase();
-            if (text.contains("you're an ironman, so you can't take items")) {
-                lastIronmanBlock = true;
+            // handle each different game chat case accordingly to prevent the bot looping on errors
+            switch (message.getMessage().toLowerCase()) {
+                case "you're an ironman, so you can't take items that other players have dropped.":
+                    lastIronmanBlock = true;
+                    break;
+
+                case "i can't reach that!":
+                    unreachableBlock = true;
+                    break;
+
+                case "you don't have enough inventory space to hold that item.":
+                    fullInvBlock = true;
+                    break;
             }
         }
     }
