@@ -1,4 +1,5 @@
 import main.tools.ETARandom;
+import org.osbot.rs07.api.Chatbox;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.GroundItem;
@@ -43,14 +44,14 @@ public class HillyKilly extends Script implements MessageListener {
             "Swordfish", "Lobster", "Trout", "Salmon", "Tuna"
     };
     private static final String[] BONE_NAMES = {
-            "Big bones", "Bones"
+            "Big bones"
     };
 
     private static final int EAT_AT_HP = 15;
     private static final int XP_LOG_INTERVAL_MINUTES = 2;
 
     private static final Position VARROCK_WEST_BANK = new Position(3185, 3436, 0);
-    private static final Area HILL_GIANT_COVE = new Area(3090, 9860, 3119, 9825).setPlane(0);
+    private static final Area HILL_GIANT_COVE = new Area(3090, 9860, 3119, 9823).setPlane(0);
 
     // ----------------------------
     // State variables
@@ -142,7 +143,8 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private boolean hasBones() {
-        for (String bone : BONE_NAMES) if (inventory.contains(bone)) return true;
+        for (String bone : BONE_NAMES)
+            if (inventory.contains(bone)) return true;
         return false;
     }
 
@@ -209,36 +211,46 @@ public class HillyKilly extends Script implements MessageListener {
         if (lastDeathTile == null)
             return false;
 
+        // ✅ Check if Ironman block was recent enough to matter
+        boolean recentIronmanBlock = lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
+
         boolean looted = false;
         GroundItem item;
 
         while (!inventory.isFull() && (item = groundItems.closest(g -> g != null
                 && (isBone(g.getName()) || isLoot(g.getName()))
                 && g.getPosition().distance(lastDeathTile) <= 5)) != null) {
+
+            final String itemName = item.getName();
+
+            if (recentIronmanBlock || unreachableBlock) {
+                log("Blocked from looting: " + itemName);
+
+                // prevent retrying the same pile
+                lastDeathTile = null;
+
+                // reset the block so it doesn’t carry over forever
+                unreachableBlock = false;
+                lastIronmanBlock = false;
+
+                // break instead of continue so we exit the loop
+                return false;
+            }
+
             lastIronmanBlock = false;
             unreachableBlock = false;
 
+            log("Looting: " + itemName);
             if (item.interact("Take")) {
-                final String itemName = item.getName();
-                log("Looting: " + itemName);
 
                 GroundItem finalDrop = item;
 
-                new ConditionalSleep(ETARandom.getRand(2500, 5000)) {
+                new ConditionalSleep(ETARandom.getRand(4000, 6000)) {
                     @Override
                     public boolean condition() {
                         return !finalDrop.exists() || inventory.contains(itemName);
                     }
                 }.sleep();
-
-                // ✅ Check if Ironman block was recent enough to matter
-                boolean recentIronmanBlock = lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
-
-                if (recentIronmanBlock || unreachableBlock) {
-                    log("Blocked from looting: " + itemName);
-                    lastDeathTile = null; // prevent retries
-                    continue;
-                }
 
                 looted = true;
                 log("Looted: " + itemName);
@@ -402,16 +414,22 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     @Override
     public void onMessage(Message message) {
-        if (message.getType() == Message.MessageType.GAME) {
-            switch (message.getMessage().toLowerCase()) {
-                case "you're an ironman, so you can't take items that other players have dropped.":
-                    lastIronmanBlock = true;
-                    lastIronmanBlockTime = System.currentTimeMillis(); // ✅ timestamp when msg was seen
-                    break;
+        log("CHAT DEBUG: [" + message.getType() + "] " + message.getMessage());
 
-                case "i can't reach that!":
-                    unreachableBlock = true;
-                    break;
+        String msg = message.getMessage().toLowerCase().trim();
+
+        // Handle both GAME and TRADE_RECEIVED types
+        if (message.getType() == Message.MessageType.GAME
+                || message.getType() == Message.MessageType.TRADE_RECEIVED) {
+
+            if (msg.contains("you're an ironman")) {
+                log("Blocking loot due to ironman restrictions");
+                lastIronmanBlock = true;
+                lastIronmanBlockTime = System.currentTimeMillis();
+            }
+            else if (msg.contains("i can't reach that")) {
+                log("Blocking unreachable loot!");
+                unreachableBlock = true;
             }
         }
     }
