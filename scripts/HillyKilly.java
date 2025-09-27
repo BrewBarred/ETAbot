@@ -1,4 +1,3 @@
-import org.osbot.rs07.api.Bank;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.GroundItem;
@@ -16,50 +15,48 @@ import java.util.EnumMap;
  * HillyKilly2 — Hill Giant killing script for Ironman accounts.
  *
  * Improvements over original:
- *  - Better loot detection (uses death-tile tracking + wait for loot spawn)
- *  - Maintains custom banking/food logic (lobster healing, swordfish primary, fallback)
+ *  - Better loot detection (death-tile tracking + wait for loot spawn)
+ *  - Maintains custom banking/food logic (lobster healing, swordfish preferred, fallback)
  *  - Burying bones, eating at low HP, logging XP, Ironman-safe loot detection
  *
- * Version: 4.3 (fixed banking bone check)
+ * Version: 4.4 (fixes intermittent full-inventory stuck bug & minor logic issues)
  */
 @ScriptManifest(
         author = "E.T.A.",
         name = "HillyKilly",
         info = "Kills Hill Giants, loots own drops, buries bones, eats (≤15 HP), banks when needed, logs XP",
-        version = 4.3,
+        version = 4.4,
         logo = ""
 )
 public class HillyKilly extends Script implements MessageListener {
 
-    // — Loot filters: keywords to match items we want to pick up
+    // ----------------------------
+    // Configurable constants
+    // ----------------------------
     private static final String[] LOOT = {
             "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond", "Arrows"
     };
-    // — Food items we consider usable
     private static final String[] FOOD_NAMES = {
             "Swordfish", "Lobster", "Trout", "Salmon", "Tuna"
     };
-    // — Bone items we bury
     private static final String[] BONE_NAMES = {
             "Big bones", "Bones"
     };
 
-    // — At or below this HP, try to eat or bank
     private static final int EAT_AT_HP = 15;
-    // — Interval (in minutes) between XP log prints
     private static final int XP_LOG_INTERVAL_MINUTES = 2;
 
-    // — Bank and combat locations
     private static final Position VARROCK_WEST_BANK = new Position(3185, 3436, 0);
     private static final Area HILL_GIANT_COVE = new Area(3090, 9860, 3120, 9825).setPlane(0);
 
-    // — State variables
-    private NPC lastTarget = null;           // last NPC (Hill Giant) we commanded to attack
-    private Position lastDeathTile = null;   // where the last target died (to search loot around)
-    private boolean lastIronmanBlock = false;  // was the last loot attempt blocked due to Ironman restrictions
+    // ----------------------------
+    // State variables
+    // ----------------------------
+    private NPC lastTarget = null;
+    private Position lastDeathTile = null;
+    private boolean lastIronmanBlock = false;
 
-    // — XP tracking
     private EnumMap<Skill, Integer> startXp;
     private long lastXpLogTime = 0;
 
@@ -67,9 +64,9 @@ public class HillyKilly extends Script implements MessageListener {
     public void onStart() {
         log("HillyKilly2 started.");
         startXp = new EnumMap<>(Skill.class);
-        for (Skill s : new Skill[] {
+        for (Skill s : new Skill[]{
                 Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE,
-                Skill.HITPOINTS, Skill.RANGED, Skill.MAGIC, Skill.PRAYER }) {
+                Skill.HITPOINTS, Skill.RANGED, Skill.MAGIC, Skill.PRAYER}) {
             startXp.put(s, skills.getExperience(s));
         }
         lastXpLogTime = System.currentTimeMillis();
@@ -77,45 +74,44 @@ public class HillyKilly extends Script implements MessageListener {
 
     @Override
     public int onLoop() throws InterruptedException {
-        // 1. Try to eat if low HP
-        if (checkEat()) {
-            return random(200, 300);
-        }
+        // 1. Eat if needed
+        if (checkEat()) return random(200, 300);
 
-        // 2. Check if we need to bank (no food, or inventory full without bones)
+        // 2. Bank if needed
         if (needsBanking()) {
             doBanking();
             return random(400, 600);
         }
 
-        // 3. Ensure we are inside the Hill Giant cove area
+        // 3. Ensure inside Hill Giant Cove
         if (!HILL_GIANT_COVE.contains(myPlayer())) {
             log("Not in Hill Giant cove, walking back...");
             getWalking().webWalk(HILL_GIANT_COVE);
             return random(600, 900);
         }
 
-        // 4. Loot drops if available
-        if (lootDrops()) {
-            return random(300, 500);
-        }
+        // ----------------------------
+        // BUGFIX ORDER SWAP:
+        // ----------------------------
+        // Bury bones BEFORE looting.
+        // This ensures if the inventory is full with bones,
+        // the script frees space instead of getting stuck in lootDrops().
+        if (buryBones()) return random(200, 400);
 
-        // 5. Bury bones if present
-        if (buryBones()) {
-            return random(200, 400);
-        }
+        // 4. Loot drops
+        if (lootDrops()) return random(300, 500);
 
-        // 6. If currently in combat or interacting, wait
+        // 5. If busy (combat, animating), wait
         if (myPlayer().isUnderAttack()
                 || myPlayer().isInteracting(lastTarget)
                 || myPlayer().isAnimating()) {
             return random(200, 300);
         }
 
-        // 7. Attack a new Hill Giant
+        // 6. Attack Hill Giant
         attackGiant();
 
-        // 8. Log XP gains occasionally
+        // 7. Log XP
         logXpGainsIfDue();
 
         return random(400, 600);
@@ -128,46 +124,55 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     // ----------------------------
-    // Banking & decision helpers
+    // Banking logic fixes
     // ----------------------------
     private boolean needsBanking() {
         int hp = skills.getDynamic(Skill.HITPOINTS);
-        // the bot should never bank if it has enough hp to get xp
-        if (hp > EAT_AT_HP)
-            return false;
 
-        // if it is below the health thresh-hold, check for food
-        if (!hasFood())
-            return true;
+        // --- FIX 1: Only block banking if HP is safe AND inventory is not jammed ---
+        if (hp > EAT_AT_HP && hasFood()) {
+            // If full but only with food + bones, no need to bank yet.
+            if (inventory.isFull() && !hasJunk()) {
+                return false;
+            }
+        }
 
-        // else if health is fine or player has food to eat, check for bones
-        if (!hasBones())
-            return true;
+        // If low HP and no food → bank
+        if (hp <= EAT_AT_HP && !hasFood()) return true;
 
-        // if the player has no food or bones to consume or bury AND inventory is still full, time to bank!
-        return inventory.isFull();
+        // If full inventory with no bones (can't bury → stuck) → bank
+        if (inventory.isFull() && !hasBones()) return true;
+
+        return false;
     }
 
     private boolean hasFood() {
-        for (String food : FOOD_NAMES) {
-            if (inventory.contains(food)) {
-                return true;
-            }
-        }
+        for (String food : FOOD_NAMES) if (inventory.contains(food)) return true;
         return false;
     }
 
     private boolean hasBones() {
-        for (String bone : BONE_NAMES) {
-            if (inventory.contains(bone)) {
-                return true;
-            }
-        }
+        for (String bone : BONE_NAMES) if (inventory.contains(bone)) return true;
+        return false;
+    }
+
+    // --- NEW helper: detect junk items ---
+    private boolean hasJunk() {
+        // if inventory is full but only contains food + bones + brass key, we’re fine.
+        return inventory.isFull() &&
+                !inventory.onlyContains(item -> {
+                    String name = item.getName();
+                    return isBone(name) || isFood(name) || "Brass key".equalsIgnoreCase(name) || "Coins".equalsIgnoreCase(name);
+                });
+    }
+
+    private boolean isFood(String name) {
+        for (String food : FOOD_NAMES) if (food.equalsIgnoreCase(name)) return true;
         return false;
     }
 
     // ----------------------------
-    // Eating / Survival
+    // Eating logic (unchanged)
     // ----------------------------
     private boolean checkEat() throws InterruptedException {
         int hp = skills.getDynamic(Skill.HITPOINTS);
@@ -184,7 +189,7 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     // ----------------------------
-    // Combat / attacking giants
+    // Combat
     // ----------------------------
     private void attackGiant() throws InterruptedException {
         NPC giant = npcs.closest(npc ->
@@ -205,19 +210,19 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     // ----------------------------
-    // Looting & Bones (improved)
+    // Looting fixes
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
-        // If inventory is full and no bones to bury, skip loot to avoid stuckness
-        if (inventory.isFull()) {
-            log("Unable to loot drops, inventory is full!");
-            lastDeathTile = null;  // clear this so we don’t keep retrying
+        // FIX 2: If inventory is full → skip looting unless bones can be buried
+        if (inventory.isFull() && !hasBones()) {
+            log("Skipping loot: inventory full and no bones to bury.");
+            lastDeathTile = null; // prevent stuck retrying
             return false;
         }
 
-        // If we have a lastTarget and it no longer exists, it died → mark death tile
+        // Handle target death → mark death tile
         if (lastTarget != null && !lastTarget.exists()) {
-            new ConditionalSleep(1500) {
+            new ConditionalSleep(2500) { // increased wait to allow loot spawn
                 @Override
                 public boolean condition() {
                     return groundItems.closest(g ->
@@ -225,18 +230,14 @@ public class HillyKilly extends Script implements MessageListener {
                     ) != null;
                 }
             }.sleep();
-
             lastDeathTile = lastTarget.getPosition();
             lastTarget = null;
         }
 
-        if (lastDeathTile == null) {
-            return false;
-        }
+        if (lastDeathTile == null) return false;
 
-        boolean lootedSomething = false;
+        boolean looted = false;
         GroundItem drop;
-
         while ((drop = groundItems.closest(g ->
                 g != null
                         && (isBone(g.getName()) || isLoot(g.getName()))
@@ -249,10 +250,9 @@ public class HillyKilly extends Script implements MessageListener {
                 log("Looting: " + name);
 
                 GroundItem finalDrop = drop;
-                new ConditionalSleep(4000) {
+                new ConditionalSleep(5000) { // extended timeout
                     @Override
                     public boolean condition() {
-                        // stop waiting when item no longer exists OR it’s in inventory OR we got blocked
                         return !finalDrop.exists()
                                 || inventory.contains(name)
                                 || lastIronmanBlock;
@@ -261,18 +261,21 @@ public class HillyKilly extends Script implements MessageListener {
 
                 if (lastIronmanBlock) {
                     log("Blocked from looting (ironman restriction): " + name);
-                    lastDeathTile = null;
+                    lastDeathTile = null; // prevent retries
                     return false;
                 }
 
-                lootedSomething = true;
+                looted = true;
                 sleep(random(400, 700));
             } else {
+                // FIX 3: If interact fails, clear death tile to avoid infinite retries
+                log("Failed to loot item, clearing death tile.");
+                lastDeathTile = null;
                 break;
             }
         }
 
-        if (lootedSomething) {
+        if (looted) {
             lastDeathTile = null;
             return true;
         }
@@ -292,24 +295,19 @@ public class HillyKilly extends Script implements MessageListener {
 
     private boolean isBone(String name) {
         if (name == null) return false;
-        for (String bone : BONE_NAMES) {
-            if (name.equalsIgnoreCase(bone)) return true;
-        }
+        for (String bone : BONE_NAMES) if (name.equalsIgnoreCase(bone)) return true;
         return false;
     }
 
     private boolean isLoot(String name) {
         if (name == null) return false;
-        for (String keyword : LOOT) {
-            if (name.toLowerCase().contains(keyword.toLowerCase())) {
-                return true;
-            }
-        }
+        for (String keyword : LOOT)
+            if (name.toLowerCase().contains(keyword.toLowerCase())) return true;
         return false;
     }
 
     // ----------------------------
-    // Banking (heals + food logic)
+    // Banking logic (unchanged except docs)
     // ----------------------------
     private void doBanking() {
         try {
@@ -331,7 +329,7 @@ public class HillyKilly extends Script implements MessageListener {
                 log("Depositing items (keeping coins & 1 brass key)...");
                 getBank().depositAll();
 
-                // Keep 1 brass key
+                // keep 1 brass key
                 if (!inventory.contains("Brass key") && getBank().contains("Brass key")) {
                     getBank().withdraw("Brass key", 1);
                     new ConditionalSleep(3000) {
@@ -342,7 +340,7 @@ public class HillyKilly extends Script implements MessageListener {
                     }.sleep();
                 }
 
-                // Heal fully using lobsters if available
+                // heal fully at bank with lobsters
                 while (skills.getDynamic(Skill.HITPOINTS) < skills.getStatic(Skill.HITPOINTS)
                         && getBank().contains("Lobster")) {
                     getBank().withdraw("Lobster", 1);
@@ -352,7 +350,6 @@ public class HillyKilly extends Script implements MessageListener {
                             return inventory.contains("Lobster");
                         }
                     }.sleep();
-
                     if (inventory.contains("Lobster")) {
                         inventory.interact("Eat", "Lobster");
                         log("Eating Lobster at bank to restore HP...");
@@ -360,38 +357,34 @@ public class HillyKilly extends Script implements MessageListener {
                     }
                 }
 
-                // Deposit leftover lobsters to free space
-                if (inventory.contains("Lobster")) {
-                    getBank().depositAll("Lobster");
-                }
+                // deposit leftovers
+                if (inventory.contains("Lobster")) getBank().depositAll("Lobster");
 
-                // --- Failsafe 1: Ensure HP is at least 80% ---
+                // failsafe HP
                 int hp = skills.getDynamic(Skill.HITPOINTS);
                 int maxHp = skills.getStatic(Skill.HITPOINTS);
-                if (hp < (int)(0.8 * maxHp)) {
-                    log("HP is still below 80% after healing. Staying at bank.");
-                    return; // do not proceed back to cove
+                if (hp < (int) (0.8 * maxHp)) {
+                    log("HP still below 80%, staying at bank.");
+                    return;
                 }
 
-                // Withdraw combat food (swordfish preferred)
+                // withdraw food
                 if (getBank().contains("Swordfish")) {
-                    log("Withdrawing Swordfish for combat...");
+                    log("Withdrawing Swordfish...");
                     getBank().withdrawAll("Swordfish");
                 } else if (getBank().contains("Lobster")) {
-                    log("Swordfish not found, using Lobsters as fallback...");
+                    log("Swordfish not found, using Lobsters...");
                     getBank().withdrawAll("Lobster");
                 } else {
-                    // --- Failsafe 2: No food left ---
-                    log("No combat food left in bank! Stopping script for safety.");
-                    stop(); // gracefully stops the script
+                    log("No combat food left in bank! Stopping.");
+                    stop();
                     return;
                 }
 
                 new ConditionalSleep(3000) {
                     @Override
                     public boolean condition() {
-                        return inventory.isFull()
-                                || (!getBank().contains("Swordfish") && !getBank().contains("Lobster"));
+                        return inventory.isFull();
                     }
                 }.sleep();
 
@@ -429,7 +422,7 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     // ----------------------------
-    // Chat listener for Ironman restrictions
+    // Ironman restriction listener
     // ----------------------------
     @Override
     public void onMessage(Message message) {
