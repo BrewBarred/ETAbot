@@ -109,11 +109,8 @@ public class HillyKilly extends Script implements MessageListener {
             return random(300, 500);
 
         // 5. If busy (combat, animating), wait
-        if (myPlayer().isUnderAttack()
-                || myPlayer().isInteracting(lastTarget)
-                || myPlayer().isAnimating()) {
+        if (myPlayer().isUnderAttack() || myPlayer().isInteracting(lastTarget) || myPlayer().isAnimating())
             return random(200, 300);
-        }
 
         // 6. Attack Hill Giant
         attackGiant();
@@ -218,10 +215,6 @@ public class HillyKilly extends Script implements MessageListener {
     // Looting fixes
     // ----------------------------
     private boolean lootDrops() throws InterruptedException {
-        // FIX 2: If inventory is full skip looting
-        if (inventory.isFull())
-            return false;
-
         // Handle target death → mark death tile
         if (lastTarget != null && !lastTarget.exists()) {
             new ConditionalSleep(2500) { // increased wait to allow loot spawn
@@ -236,14 +229,14 @@ public class HillyKilly extends Script implements MessageListener {
             lastTarget = null;
         }
 
-        // don't loot while the target is still alive? TODO: check this comment is true
+        // dont loot if nothing was dropped by the thing we killed
         if (lastDeathTile == null)
             return false;
 
         boolean looted = false;
-        GroundItem drop;
+        GroundItem item;
         // loot items until inventory is full or no lootable items are nearby
-        while (!inventory.isFull() && (drop = groundItems.closest(g ->
+        while (!inventory.isFull() && (item = groundItems.closest(g ->
                 g != null
                         && (isBone(g.getName()) || isLoot(g.getName()))
                         && g.getPosition().distance(lastDeathTile) <= 5
@@ -254,26 +247,26 @@ public class HillyKilly extends Script implements MessageListener {
             fullInvBlock = false;
 
             // try to take the loot
-            if (drop.interact("Take")) {
-                final String name = drop.getName();
-                log("Looting: " + name);
+            if (item.interact("Take")) {
+                final String itemName = item.getName();
+                log("Looting: " + itemName);
 
-                GroundItem finalDrop = drop;
+                GroundItem finalDrop = item;
 
                 // wait for loot to be collected, if blocked, booleans will be updated during this sleep
-                new ConditionalSleep(5000) { // extended timeout
+                new ConditionalSleep(ETARandom.getRand(2500, 5000)) { // extended timeout
                     @Override
                     public boolean condition() {
                         return !finalDrop.exists()
-                                || inventory.contains(name)
+                                || inventory.contains(itemName)
                                 || lastIronmanBlock;
                     }
                 }.sleep();
 
                 if (lastIronmanBlock || unreachableBlock || fullInvBlock) {
-                    log("Blocked from looting (ironman restriction): " + name);
+                    log("Blocked from looting (ironman restriction): " + itemName);
                     lastDeathTile = null; // prevent retries
-                    return false;
+                    continue;
                 }
 
                 looted = true;
