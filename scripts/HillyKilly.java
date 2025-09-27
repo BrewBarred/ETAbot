@@ -212,7 +212,6 @@ public class HillyKilly extends Script implements MessageListener {
         boolean looted = false;
         GroundItem item;
 
-        log("Looting...");
         while (!inventory.isFull() && (item = groundItems.closest(g -> g != null
                 && (isBone(g.getName()) || isLoot(g.getName()))
                 && g.getPosition().distance(lastDeathTile) <= 5)) != null) {
@@ -233,8 +232,7 @@ public class HillyKilly extends Script implements MessageListener {
                 }.sleep();
 
                 // ✅ Check if Ironman block was recent enough to matter
-                boolean recentIronmanBlock =
-                        lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
+                boolean recentIronmanBlock = lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
 
                 if (recentIronmanBlock || unreachableBlock) {
                     log("Blocked from looting: " + itemName);
@@ -243,12 +241,12 @@ public class HillyKilly extends Script implements MessageListener {
                 }
 
                 looted = true;
+                log("Looted: " + itemName);
                 sleep(random(400, 700));
             }
         }
 
         if (looted) {
-            log("Loot success!");
             lastDeathTile = null;
             return true;
         }
@@ -331,14 +329,15 @@ public class HillyKilly extends Script implements MessageListener {
                         return inventory.contains("Lobster");
                     }
                 }.sleep();
-                if (inventory.contains("Lobster")) {
-                    inventory.interact("Eat", "Lobster");
+                if (inventory.contains("Tuna")) {
+                    inventory.interact("Eat", "Tuna");
                     log("Eating Lobster at bank to restore HP...");
                     sleep(random(1200, 1600));
                 }
             }
 
-            if (inventory.contains("Lobster")) getBank().depositAll("Lobster");
+            if (inventory.contains("Tuna"))
+                getBank().depositAll("Tuna");
 
             int hp = skills.getDynamic(Skill.HITPOINTS);
             int maxHp = skills.getStatic(Skill.HITPOINTS);
@@ -351,13 +350,16 @@ public class HillyKilly extends Script implements MessageListener {
                 log("Withdrawing Swordfish...");
                 getBank().withdrawAll("Swordfish");
             } else if (getBank().contains("Lobster")) {
-                log("Swordfish not found, using Lobsters...");
-                getBank().withdrawAll("Lobster");
+                log("Swordfish not found, using Tuna...");
+                getBank().withdrawAll("Tuna");
             } else {
                 log("No combat food left in bank! Stopping.");
-                stop();
+                stop(true);
                 return;
             }
+
+            // bank 3 swordfish to free space for drops
+            bank.deposit("Swordfish", 3);
 
             new ConditionalSleep(3000) {
                 @Override
