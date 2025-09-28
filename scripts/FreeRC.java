@@ -2,14 +2,13 @@ import main.tools.ETARandom;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Entity;
-import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.EquipmentSlot;
+import org.osbot.rs07.api.ui.Message;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Spells;
 import org.osbot.rs07.listener.MessageListener;
-import org.osbot.rs07.api.ui.Message;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
@@ -46,8 +45,8 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Configurable toggles
     // ----------------------------
-    private static final boolean BANK_ESSENCE = false;     // true = bank essence, false = craft runes
-    private static final boolean USE_SEDRIDOR = true;    // true = Sedridor teleport, false = Aubury
+    private static final boolean BANK_ESSENCE = true;     // true = bank essence, false = craft runes
+    private static final boolean USE_SEDRIDOR = false;    // true = Sedridor teleport, false = Aubury
     private static final int XP_LOG_INTERVAL_MINUTES = 2; // XP log frequency
 
     // ----------------------------
@@ -57,14 +56,19 @@ public class FreeRC extends Script implements MessageListener {
             "Bronze pickaxe", "Iron pickaxe", "Steel pickaxe",
             "Mithril pickaxe", "Adamant pickaxe", "Rune pickaxe"
     };
-    private static final String TIARA = "Air tiara";
-    private static final String TALISMAN = "Air talisman";
+    private static final String AIR_TIARA = "Air tiara";
+    private static final String AIR_TALISMAN = "Air talisman";
+    private static final String EARTH_TIARA = "Earth tiara";
+    private static final String EARTH_TALISMAN = "Earth talisman";
 
     // ----------------------------
     // Locations
     // ----------------------------
+
     private static final Area AIR_ALTAR_RUINS = new Area(2980, 3293, 2988, 3285);
     private static final Area AIR_ALTAR_CHAMBER = new Area(2830, 4840, 2849, 4826).setPlane(0);
+    private static final Area EARTH_ALTAR_RUINS = new Position(3308, 3476, 0).getArea(2);
+    private static final Area EARTH_ALTAR_CHAMBER = new Area(2652, 4827, 2664, 4845).setPlane(0);
 
     private static final Position LUMBRIDGE_BANK = new Position(3208, 3218, 2);
     private static final Position DRAYNOR_BANK = new Position(3093, 3245, 0);
@@ -87,7 +91,7 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     @Override
     public void onStart() {
-        log("F2PRC started.");
+        log("FreeRC started.");
         startXp = new EnumMap<>(Skill.class);
         for (Skill s : new Skill[]{Skill.MINING, Skill.RUNECRAFTING}) {
             startXp.put(s, skills.getExperience(s));
@@ -100,17 +104,17 @@ public class FreeRC extends Script implements MessageListener {
         if (atAirAltarChamber()) {
             try {
                 if (!inventory.isFull() && !inventory.contains("Rune essence")) {
-                    if (exitAirAltar()) {
+                    if (exitAltar()) {
                         log("Started inside altar (empty inv) → exiting.");
                     }
                 } else if (inventory.contains("Rune essence")) {
                     craftRunes();
                     sleep(ETARandom.getRandShortDelayInt());
-                    if (exitAirAltar()) {
+                    if (exitAltar()) {
                         log("Started inside altar with essence → crafted & exiting.");
                     }
                 } else if (inventory.isFull() && !inventory.contains("Rune essence")) {
-                    if (exitAirAltar()) {
+                    if (exitAltar()) {
                         log("Started inside altar with runes → exiting.");
                     }
                 }
@@ -147,18 +151,31 @@ public class FreeRC extends Script implements MessageListener {
             if (BANK_ESSENCE) {
                 doBanking();
             } else {
-                if (!atAirAltarChamber()) {
-                    if (!atAirAltarRuins()) {
-                        getWalking().webWalk(AIR_ALTAR_RUINS);
-                    } else {
-                        enterAirAltar();
+                boolean isNotAtRuins = USE_SEDRIDOR ? !atAirAltarRuins() : !atEarthAltarRuins();
+                boolean isNotAtChamber = USE_SEDRIDOR ? !atAirAltarChamber() : !atEarthAltarChamber();
+                Area ruins = USE_SEDRIDOR ? AIR_ALTAR_RUINS : EARTH_ALTAR_RUINS;
+                if (USE_SEDRIDOR) {
+                    if (isNotAtChamber) {
+                        if (isNotAtRuins)
+                            getWalking().webWalk(ruins);
+                        else
+                            enterAltar();
+                        return ETARandom.getRandReallyReallyShortDelayInt();
                     }
-                    return ETARandom.getRandReallyReallyShortDelayInt();
+                } else {
+                    if (!atEarthAltarChamber()) {
+                        if (!atEarthAltarRuins()) {
+                            getWalking().webWalk(EARTH_ALTAR_RUINS);
+                        } else {
+                            enterAltar();
+                        }
+                        return ETARandom.getRandReallyReallyShortDelayInt();
+                    }
                 }
                 craftRunes();
                 if (!inventory.contains("Rune essence")) {
-                    if (!exitAirAltar()) {
-                        log("Failed to exit Air Altar, retrying...");
+                    if (!exitAltar()) {
+                        log("Failed to exit Altar, retrying...");
                         return random(600, 900);
                     }
                 }
@@ -180,11 +197,14 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Item checks
     // ----------------------------
+
     private boolean hasRequiredItems() {
         boolean pick = getBestPickaxe() != null;
-        boolean tiaraEq = equipment.isWearingItem(EquipmentSlot.HAT, TIARA);
-        boolean talismanInv = inventory.contains(TALISMAN);
-        return pick && (tiaraEq || talismanInv || inventory.contains(TIARA) || BANK_ESSENCE);
+        boolean tiaraEq = equipment.isWearingItem(EquipmentSlot.HAT, USE_SEDRIDOR ? AIR_TIARA : EARTH_TIARA);
+        boolean tiaraInv = inventory.contains(USE_SEDRIDOR ? AIR_TIARA : EARTH_TIARA);
+        boolean talismanInv = inventory.contains(USE_SEDRIDOR ? AIR_TALISMAN : EARTH_TALISMAN);
+
+        return pick && (tiaraEq || talismanInv || tiaraInv || BANK_ESSENCE);
     }
 
     private String getBestPickaxe() {
@@ -216,19 +236,23 @@ public class FreeRC extends Script implements MessageListener {
         }
 
         getWalking().webWalk(bankTile);
-        if (!getBank().open()) return;
+        if (!getBank().open())
+            return;
 
         String bestPick = getBestPickaxe();
-        getBank().depositAllExcept(bestPick, TIARA, TALISMAN);
+        String tiara = USE_SEDRIDOR ? AIR_TIARA : EARTH_TIARA;
+        String talisman = USE_SEDRIDOR ? AIR_TALISMAN : EARTH_TALISMAN;
+        getBank().depositAllExcept(bestPick, tiara, talisman);
 
         if (!inventory.contains(bestPick) && getBank().contains(bestPick)) {
             getBank().withdraw(bestPick, 1);
         }
+
         if (!BANK_ESSENCE) {
-            if (!equipment.isWearingItem(EquipmentSlot.HAT, TIARA) && getBank().contains(TIARA)) {
-                getBank().withdraw(TIARA, 1);
-            } else if (!inventory.contains(TALISMAN) && getBank().contains(TALISMAN)) {
-                getBank().withdraw(TALISMAN, 1);
+            if (!equipment.isWearingItem(EquipmentSlot.HAT, tiara) && getBank().contains(tiara)) {
+                getBank().withdraw(tiara, 1);
+            } else if (!inventory.contains(talisman) && getBank().contains(talisman)) {
+                getBank().withdraw(talisman, 1);
             }
         }
 
@@ -296,7 +320,29 @@ public class FreeRC extends Script implements MessageListener {
                 }.sleep();
             }
         }
+        // check player isnt stuck on a rock on mine entry (happens every now and then)
+        handleTeleportStuck();
     }
+
+    /**
+     * Detects if the player is stuck after teleporting into the essence mine.
+     * Triggered when player is not moving and rocks are visible but unreachable.
+     */
+    private void handleTeleportStuck() throws InterruptedException {
+        log("Checking if player is stuck...");
+        if (myPlayer().isMoving() || myPlayer().isAnimating()) {
+            log("Player is not stuck...");
+            return; // we’re actively doing something → not stuck
+        }
+
+        // If essence rocks exist but haven’t moved in ~3s → assume blocked
+        Entity rock = objects.closest("Rune Essence");
+        if (rock != null) {
+            log("Teleport-stuck detected (blocked by rock) → doing diagonal walk...");
+            walkDiagonalUntilRocks();
+        }
+    }
+
 
     /** Mines rune essence until inventory is full.
      *  Includes fallback diagonal walking if stuck in center with no rocks visible.
@@ -328,6 +374,10 @@ public class FreeRC extends Script implements MessageListener {
      * the mine center with no essence in detection range.
      */
     private void walkDiagonalUntilRocks() throws InterruptedException {
+        log("Moving camera...");
+        getCamera().moveYaw(ETARandom.getRand(320));
+        getCamera().movePitch(ETARandom.getRand(90));
+
         int[][] diagonals = {
                 {-2,  2}, // NW
                 { 2,  2}, // NE
@@ -335,21 +385,22 @@ public class FreeRC extends Script implements MessageListener {
                 { 2, -2}  // SE
         };
 
-        int[] dir = diagonals[random(0, diagonals.length)];
+        int[] dir = diagonals[random(0, diagonals.length - 1)];
         int dx = dir[0];
         int dy = dir[1];
 
-        for (int i = 1; i <= 5; i++) {
+        for (int i = 5; i <= 10; i++) {
             Position step = myPosition().translate(dx * i, dy * i);
 
             if (map.canReach(step)) {
                 getWalking().walk(step);
                 log("Walking diagonal step " + i + " towards (" + step.getX() + "," + step.getY() + ")");
-                sleep(ETARandom.getRandShortDelayInt());
+                sleep(ETARandom.getRandReallyReallyShortDelayInt());
             }
 
+            log("Looking for essence to mine...");
             if (objects.closest("Rune Essence") != null) {
-                log("Rune essence found after " + i + " diagonal step(s).");
+                log("Essence found after " + i + " diagonal step(s).");
                 break;
             }
         }
@@ -390,30 +441,37 @@ public class FreeRC extends Script implements MessageListener {
     // ----------------------------
     // Air Altar handling
     // ----------------------------
-    private boolean atAirAltarRuins() { return AIR_ALTAR_RUINS.contains(myPosition()); }
-    private boolean atAirAltarChamber() { return AIR_ALTAR_CHAMBER.contains(myPosition()); }
+    private boolean atAirAltarRuins() {
+        return AIR_ALTAR_RUINS.contains(myPosition()); }
+    private boolean atAirAltarChamber() {
+        return AIR_ALTAR_CHAMBER.contains(myPosition()); }
+    // ----------------------------
+    // Earth Altar handling
+    // ----------------------------
+    private boolean atEarthAltarRuins() {
+        return EARTH_ALTAR_RUINS.contains(myPosition()); }
+    private boolean atEarthAltarChamber() {
+        return EARTH_ALTAR_CHAMBER.contains(myPosition()); }
 
-    private boolean enterAirAltar() throws InterruptedException {
+    private boolean enterAltar() throws InterruptedException {
         Entity ruins = objects.closest("Mysterious ruins");
         if (ruins != null) {
-            if (equipment.isWearingItem(EquipmentSlot.HAT, TIARA)) {
+            if (equipment.isWearingItem(EquipmentSlot.HAT, AIR_TIARA) || equipment.isWearingItem(EquipmentSlot.HAT, EARTH_TIARA)) {
                 if (ruins.interact("Enter")) {
-                    log("Entering Air Altar with Tiara...");
-                    return new ConditionalSleep(5000) {
+                    return new ConditionalSleep(8000) {
                         @Override
                         public boolean condition() {
-                            return atAirAltarChamber();
+                            return atAirAltarChamber() || atEarthAltarChamber();
                         }
                     }.sleep();
                 }
-            } else if (inventory.contains(TALISMAN) && inventory.interact("Use", TALISMAN)) {
+            } else if (hasAirGear() || hasEarthGear()) {
                 sleep(ETARandom.getRandReallyReallyShortDelayInt());
                 if (ruins.interact("Use")) {
-                    log("Entering Air Altar with Talisman...");
-                    return new ConditionalSleep(5000) {
+                    return new ConditionalSleep(8000) {
                         @Override
                         public boolean condition() {
-                            return atAirAltarChamber();
+                            return atAirAltarChamber() || atEarthAltarChamber();
                         }
                     }.sleep();
                 }
@@ -422,7 +480,15 @@ public class FreeRC extends Script implements MessageListener {
         return false;
     }
 
-    private boolean exitAirAltar() throws InterruptedException {
+    private boolean hasAirGear() {
+        return inventory.contains(AIR_TALISMAN) && inventory.interact("Use", AIR_TALISMAN);
+    }
+
+    private boolean hasEarthGear() {
+        return inventory.contains(EARTH_TALISMAN) && inventory.interact("Use", EARTH_TALISMAN);
+    }
+
+    private boolean exitAltar() throws InterruptedException {
         RS2Object portalObj = objects.closest(o ->
                 o != null && o.getName() != null &&
                         o.getName().toLowerCase().contains("portal"));
@@ -442,7 +508,7 @@ public class FreeRC extends Script implements MessageListener {
             String[] actions = {"Exit", "Use", "Teleport"};
             for (String action : actions) {
                 if (portalEntity.hasAction(action) && portalEntity.interact(action)) {
-                    log("Using portal to exit Air Altar (" + action + ")...");
+                    log("Using portal to exit Altar (" + action + ")...");
                     return new ConditionalSleep(6000) {
                         @Override
                         public boolean condition() {
@@ -456,20 +522,39 @@ public class FreeRC extends Script implements MessageListener {
     }
 
     private void craftRunes() throws InterruptedException {
-        log("Attempting to craft runes...");
         Entity altar = objects.closest("Altar");
-        if (altar == null) return;
+
+        // If altar not in detection range (common at Earth altar), move north
+        if (altar == null) {
+            log("Can't find altar!");
+            if (atEarthAltarChamber()) {
+                log("At earth chamber");
+                log("Altar not visible → stepping north to locate altar...");
+                Position northStep = myPosition().translate(0, 8); // 3 tiles north
+                if (map.canReach(northStep)) {
+                    getWalking().walk(northStep);
+                    sleep(ETARandom.getRandShortDelayInt());
+                    altar = objects.closest("Altar");
+                }
+            }
+        }
+
+        if (altar == null) {
+            log("No altar found even after adjusting position.");
+            return;
+        }
 
         if (altar.interact("Craft-rune")) {
-            log("Clicked altar to craft runes...");
             new ConditionalSleep(5000) {
                 @Override
                 public boolean condition() {
                     return !inventory.contains("Rune essence");
                 }
             }.sleep();
+            log("You craft some runes... you have gained " + (getExperienceTracker().getGainedXP(Skill.RUNECRAFTING) - startXp.get(Skill.RUNECRAFTING)) + " rune crafting experience so far.");
         }
     }
+
 
     // ----------------------------
     // XP tracking
