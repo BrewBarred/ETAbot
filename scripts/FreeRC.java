@@ -246,8 +246,10 @@ public class FreeRC extends Script implements MessageListener {
         }
 
         getWalking().webWalk(bankTile);
-        if (!getBank().open())
+        if (!getBank().open()) {
+            sleep(ETARandom.getRandReallyReallyShortDelayInt());
             return;
+        }
 
         String bestPick = getBestPickaxe();
         sleep(ETARandom.getRandReallyReallyShortDelayInt());
