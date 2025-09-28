@@ -14,8 +14,6 @@ import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static main.task.TaskType.DIG;
-
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
  * walking, inventory checking & tracking, skill tracking, banking, teleporting and equipment management.

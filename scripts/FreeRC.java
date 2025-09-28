@@ -90,13 +90,23 @@ public class FreeRC extends Script implements MessageListener {
     // Lifecycle
     // ----------------------------
     @Override
-    public void onStart() {
+    public void onStart() throws InterruptedException {
         log("FreeRC started.");
         startXp = new EnumMap<>(Skill.class);
         for (Skill s : new Skill[]{Skill.MINING, Skill.RUNECRAFTING}) {
             startXp.put(s, skills.getExperience(s));
         }
         lastXpLogTime = System.currentTimeMillis();
+
+        // Recovery if script starts inside essence mine
+        if (atEssenceMine()) {
+            if (inventory.isFull() || !hasRequiredItems()) {
+                log("Player is inside essence mines but not ready to mine yet! Attempting to leave...");
+                exitEssenceMine();
+            }
+            handleTeleportStuck();
+            mineEssence();
+        }
     }
 
     @Override
@@ -133,10 +143,10 @@ public class FreeRC extends Script implements MessageListener {
         if (!inventory.isFull()) {
             if (!atEssenceMine()) {
                 travelToEssenceMine();
-                return random(600, 900);
+                return ETARandom.getRandReallyShortDelayInt();
             }
             mineEssence();
-            return random(500, 700);
+            return ETARandom.getRandReallyShortDelayInt();
         }
 
         // If inventory IS full
@@ -240,12 +250,15 @@ public class FreeRC extends Script implements MessageListener {
             return;
 
         String bestPick = getBestPickaxe();
+        sleep(ETARandom.getRandReallyReallyShortDelayInt());
         String tiara = USE_SEDRIDOR ? AIR_TIARA : EARTH_TIARA;
         String talisman = USE_SEDRIDOR ? AIR_TALISMAN : EARTH_TALISMAN;
         getBank().depositAllExcept(bestPick, tiara, talisman);
+        sleep(ETARandom.getRandReallyReallyShortDelayInt());
 
         if (!inventory.contains(bestPick) && getBank().contains(bestPick)) {
             getBank().withdraw(bestPick, 1);
+            sleep(ETARandom.getRandReallyReallyShortDelayInt());
         }
 
         if (!BANK_ESSENCE) {
@@ -254,9 +267,11 @@ public class FreeRC extends Script implements MessageListener {
             } else if (!inventory.contains(talisman) && getBank().contains(talisman)) {
                 getBank().withdraw(talisman, 1);
             }
+            sleep(ETARandom.getRandReallyReallyShortDelayInt());
         }
 
         getBank().close();
+        sleep(ETARandom.getRandReallyShortDelayInt());
     }
 
     private void teleportToLumbridge() throws InterruptedException {
@@ -357,7 +372,7 @@ public class FreeRC extends Script implements MessageListener {
         }
 
         if (rock.interact("Mine")) {
-            new ConditionalSleep(14_000) {
+            new ConditionalSleep(ETARandom.getRand(10000, 14000)) {
                 @Override
                 public boolean condition() {
                     return inventory.isFull() || !myPlayer().isAnimating();
@@ -374,10 +389,6 @@ public class FreeRC extends Script implements MessageListener {
      * the mine center with no essence in detection range.
      */
     private void walkDiagonalUntilRocks() throws InterruptedException {
-        log("Moving camera...");
-        getCamera().moveYaw(ETARandom.getRand(320));
-        getCamera().movePitch(ETARandom.getRand(90));
-
         int[][] diagonals = {
                 {-2,  2}, // NW
                 { 2,  2}, // NE
@@ -389,20 +400,39 @@ public class FreeRC extends Script implements MessageListener {
         int dx = dir[0];
         int dy = dir[1];
 
-        for (int i = 5; i <= 10; i++) {
+        int steps = 0;
+
+        // walk between 1 and 20 tiles in a random diagonal direction to see if u can find a rock
+        for (int i = 3; i <= 20; i++) {
+            log("Looking for essence to mine...");
+            // RNG camera move logic — more likely the further we go
+            double roll = ETARandom.getRand(0, i) / 100.0;
+            double threshold = (i * 4) / 100.0; // grows from 0.12 at i=3 up to 0.80 at i=20
+            if (roll > threshold) {
+                log("Moving camera (RNG triggered at step " + i + ")");
+                getCamera().moveYaw(ETARandom.getRand(180));
+                getCamera().movePitch(ETARandom.getRand(90));
+            }
+
+            // pretend to take in new area
+            sleep(ETARandom.getRandReallyReallyShortDelayInt());
+            // generate a random tile to walk to, increasing in distance from player with each attempt
             Position step = myPosition().translate(dx * i, dy * i);
 
             if (map.canReach(step)) {
                 getWalking().walk(step);
                 log("Walking diagonal step " + i + " towards (" + step.getX() + "," + step.getY() + ")");
-                sleep(ETARandom.getRandReallyReallyShortDelayInt());
+                steps += i;
+            } else {
+                log("Looking for essence to mine...");
             }
 
-            log("Looking for essence to mine...");
-            if (objects.closest("Rune Essence") != null) {
-                log("Essence found after " + i + " diagonal step(s).");
+            Entity rock = objects.closest("Rune Essence");
+            if (rock != null && rock.getPosition().distance(myPosition()) <= 5 && map.canReach(rock)) {
+                log("Essence found within " + rock.getPosition().distance(myPosition()) + " tiles after " + steps + " random step(s).");
                 break;
             }
+
         }
     }
 
@@ -426,7 +456,7 @@ public class FreeRC extends Script implements MessageListener {
                 }
             }
             if (portalEntity.interact("Use") || portalEntity.interact("Exit")) {
-                log("Using portal to exit Rune Essence mine...");
+                log("You mine some essence... you have gained " + (getExperienceTracker().getGainedXP(Skill.MINING) - startXp.get(Skill.MINING)) + " mining experience this run.");
                 return new ConditionalSleep(6000) {
                     @Override
                     public boolean condition() {
@@ -551,7 +581,7 @@ public class FreeRC extends Script implements MessageListener {
                     return !inventory.contains("Rune essence");
                 }
             }.sleep();
-            log("You craft some runes... you have gained " + (getExperienceTracker().getGainedXP(Skill.RUNECRAFTING) - startXp.get(Skill.RUNECRAFTING)) + " rune crafting experience so far.");
+            log("You craft some runes... you have gained " + (getExperienceTracker().getGainedXP(Skill.RUNECRAFTING) - startXp.get(Skill.RUNECRAFTING)) + " rune crafting experience this run.");
         }
     }
 
