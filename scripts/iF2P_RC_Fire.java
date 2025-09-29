@@ -45,7 +45,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     private static final String RUNE_ESS = "Rune essence";
     private static final String FIRE_TIARA = "Fire tiara";
     private static final String FIRE_TALISMAN = "Fire talisman";
-    private static final String[] KEPT_ITEMS = {"Fire tiara", "Fire talisman", "Fire rune"};
+    private static final String[] KEPT_ITEMS = {"Fire tiara", "Fire talisman"};
 
     private static final Position DUEL_ARENA_BANK = new Position(3382, 3268, 0);
     private static final Area FIRE_ALTAR_RUINS = new Area(3311, 3256, 3317, 3249);
@@ -309,7 +309,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     }
 
     private void craftRunes() throws InterruptedException {
-        new ConditionalSleep(ETARandom.getRandReallyShortDelayInt()) {
+        new ConditionalSleep(ETARandom.getRandReallyReallyShortDelayInt()) {
             @Override
             public boolean condition() {
                 return objects.closest("Altar") != null;
