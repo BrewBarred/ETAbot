@@ -437,7 +437,7 @@ public class FreeRC extends Script implements MessageListener {
             } else {
                 log("Randomly moving camera");
                 getCamera().moveYaw(ETARandom.getRand(22, 67));
-                getCamera().movePitch(ETARandom.getRand(90));
+                getCamera().movePitch(ETARandom.getRand(22, 67));
             }
 
             if (map.canReach(step)) {
