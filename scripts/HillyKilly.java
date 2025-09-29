@@ -25,11 +25,17 @@ import java.util.EnumMap;
  */
 @ScriptManifest(
         author = "E.T.A.",
-        name = "HillyKilly",
-        info = "Kills Hill Giants, loots own drops, buries bones, eats (≤15 HP), banks when needed, logs XP",
+        name = "(iF2P) HillyKilly - Hill giant killer",
+        info = "Kills Hill Giants, iron-friendly looting system collects commonly sought after f2p drops, automatically " +
+                "buries bones, eats food at a preset hp level (e.g., ≤15 HP), banks loots on full load, tracks xp gains," +
+                "resets load-out if food (swordfish/tuna only support right now) and brass key are present in bank",
         version = 4.5,
         logo = ""
 )
+
+//TODO: test what happens when player has no brass keys.
+//TODO: handle case where player dies to retrieve items
+//TODO:
 public class HillyKilly extends Script implements MessageListener {
 
     // ----------------------------
@@ -38,7 +44,7 @@ public class HillyKilly extends Script implements MessageListener {
     private static final String[] LOOT = {
             "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond",
-            "Arrows", "Salmon"
+            "Arrow", "Salmon"
     };
     private static final String[] FOOD_NAMES = {
             "Swordfish", "Lobster", "Trout", "Salmon", "Tuna"
@@ -415,14 +421,15 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     @Override
     public void onMessage(Message message) {
-        log("CHAT DEBUG: [" + message.getType() + "] " + message.getMessage());
-
-        String msg = message.getMessage().toLowerCase().trim();
+        //log("CHAT DEBUG: [" + message.getType() + "] " + message.getMessage());
 
         // Handle both GAME and TRADE_RECEIVED types
         if (message.getType() == Message.MessageType.GAME
                 || message.getType() == Message.MessageType.TRADE_RECEIVED
                 || message.getType() == Message.MessageType.FILTERED) {
+
+
+            String msg = message.getMessage().toLowerCase().trim();
 
             if (msg.contains("you're an ironman")) {
                 log("Blocking loot due to ironman restrictions");
