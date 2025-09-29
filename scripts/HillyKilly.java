@@ -1,5 +1,4 @@
 import main.tools.ETARandom;
-import org.osbot.rs07.api.Chatbox;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.GroundItem;
@@ -46,8 +45,8 @@ public class HillyKilly extends Script implements MessageListener {
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond",
             "Arrow", "Salmon"
     };
-    private static final String[] FOOD_NAMES = {
-            "Swordfish", "Lobster", "Trout", "Salmon", "Tuna"
+    private static final String[] FOOD_LIST = {
+            "Swordfish", "Tuna", "Lobster", "Pike", "Salmon", "Trout", "Herring", "Sardine"
     };
     private static final String[] BONE_NAMES = {
             "Big bones"
@@ -71,7 +70,7 @@ public class HillyKilly extends Script implements MessageListener {
 
     // --- NEW: timestamp-based Ironman block handling ---
     private long lastIronmanBlockTime = 0;                // time (ms) of last Ironman block message
-    private static final long IRONMAN_MSG_TIMEOUT = 4000; // only valid if <= 4s old
+    private static final long IRONMAN_MSG_TIMEOUT = 1; // only valid if <= 1s old
 
     // XP tracking
     private EnumMap<Skill, Integer> startXp;
@@ -148,7 +147,7 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private boolean hasFood() {
-        for (String food : FOOD_NAMES) if (inventory.contains(food)) return true;
+        for (String food : FOOD_LIST) if (inventory.contains(food)) return true;
         return false;
     }
 
@@ -159,7 +158,7 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private boolean isFood(String name) {
-        for (String food : FOOD_NAMES) if (food.equalsIgnoreCase(name)) return true;
+        for (String food : FOOD_LIST) if (food.equalsIgnoreCase(name)) return true;
         return false;
     }
 
@@ -169,7 +168,7 @@ public class HillyKilly extends Script implements MessageListener {
     private boolean checkEat() throws InterruptedException {
         int hp = skills.getDynamic(Skill.HITPOINTS);
         if (hp <= EAT_AT_HP) {
-            for (String food : FOOD_NAMES) {
+            for (String food : FOOD_LIST) {
                 if (inventory.contains(food) && inventory.interact("Eat", food)) {
                     log("Eating " + food + " at " + hp + " HP");
                     sleep(random(1200, 1600));
@@ -247,7 +246,6 @@ public class HillyKilly extends Script implements MessageListener {
                 return false;
             }
 
-            log("Looting: " + itemName);
             if (item.interact("Take")) {
 
                 GroundItem finalDrop = item;
@@ -348,15 +346,14 @@ public class HillyKilly extends Script implements MessageListener {
                         return inventory.contains("Lobster");
                     }
                 }.sleep();
-                if (inventory.contains("Tuna")) {
-                    inventory.interact("Eat", "Tuna");
-                    log("Eating Lobster at bank to restore HP...");
-                    sleep(random(1200, 1600));
+                if (inventory.contains(FOOD_LIST)) {
+                    inventory.interact("Eat", FOOD_LIST);
+                    sleep(ETARandom.getRandReallyReallyShortDelayInt());
                 }
             }
 
-            if (inventory.contains("Tuna"))
-                getBank().depositAll("Tuna");
+            if (inventory.contains(FOOD_LIST))
+                getBank().depositAll(FOOD_LIST);
 
             int hp = skills.getDynamic(Skill.HITPOINTS);
             int maxHp = skills.getStatic(Skill.HITPOINTS);
@@ -365,27 +362,36 @@ public class HillyKilly extends Script implements MessageListener {
                 return;
             }
 
-            if (getBank().contains("Swordfish")) {
-                log("Withdrawing Swordfish...");
-                getBank().withdrawAll("Swordfish");
-            } else if (getBank().contains("Lobster")) {
-                log("Swordfish not found, using Tuna...");
-                getBank().withdrawAll("Tuna");
-            } else {
-                log("No combat food left in bank! Stopping.");
+            String food = null;
+            // for each food name in the food list (this should iterate from the first -> item, so order list appropriately!)
+            for (String foodListItem : FOOD_LIST) {
+                // store food variable to confirm withdrawal after loop
+                food = foodListItem;
+                // check if the player has this food in the list
+                if (getBank().contains(food)) {
+                    // withdraw the food
+                    log("Withdrawing " + food);
+                    getBank().withdrawAll(food);
+                    // sleep until withdrawal is successful
+                    new ConditionalSleep(ETARandom.getRand(2000, 3000)) {
+                        @Override
+                        public boolean condition() {
+                            return inventory.isFull();
+                        }
+                    }.sleep();
+                }
+            }
+
+            // if the player has no food in their inventory after that loop, they must have run out!
+            if (food != null && !inventory.contains(food)) {
+                // we should logout to avoid losing the players items until this script is upgraded
+                log("No sufficient combat food left in bank! Stopping.");
                 stop(true);
                 return;
             }
 
             // bank 3 swordfish to free space for drops
-            bank.deposit("Swordfish", 3);
-
-            new ConditionalSleep(3000) {
-                @Override
-                public boolean condition() {
-                    return inventory.isFull();
-                }
-            }.sleep();
+            bank.deposit(food, 3);
 
             getBank().close();
             log("Returning to Hill Giant cove...");
