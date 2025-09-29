@@ -419,7 +419,6 @@ public class FreeRC extends Script implements MessageListener {
 
         // walk between 1 and 20 tiles in a random diagonal direction to see if u can find a rock
         for (int i = 3; i <= 20; i++) {
-            log("Looking for essence to mine...");
             // RNG camera move logic — more likely the further we go
             double roll = ETARandom.getRand(0, i) / 100.0;
             double threshold = (i * 4) / 100.0; // grows from 0.12 at i=3 up to 0.80 at i=20
@@ -437,8 +436,8 @@ public class FreeRC extends Script implements MessageListener {
             log("Looking for essence to mine...");
             if (map.canReach(step)) {
                 getWalking().walk(step);
-                log("Walking diagonal step " + i + " towards (" + step.getX() + "," + step.getY() + ")");
                 steps += i;
+                log("Taking " + steps + " steps in a random direction to find some essence, new position: " + step.getX() + "," + step.getY());
                 sleep(ETARandom.getRandReallyReallyShortDelayInt());
             }
 
