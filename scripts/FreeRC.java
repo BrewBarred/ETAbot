@@ -417,23 +417,29 @@ public class FreeRC extends Script implements MessageListener {
 
         int steps = 0;
 
+        // increased k increases chance of moving camera
+        int k = 6;
+
+        log("Looking for essence to mine...");
         // walk between 1 and 20 tiles in a random diagonal direction to see if u can find a rock
         for (int i = 3; i <= 20; i++) {
-            // RNG camera move logic — more likely the further we go
-            double roll = ETARandom.getRand(0, i) / 100.0;
-            double threshold = (i * 4) / 100.0; // grows from 0.12 at i=3 up to 0.80 at i=20
-            if (roll > threshold) {
-                log("Moving camera (RNG triggered at step " + i + ")");
-                getCamera().moveYaw(ETARandom.getRand(180));
-                getCamera().movePitch(ETARandom.getRand(90));
-            }
-
-            // pretend to take in new area
-            sleep(ETARandom.getRandReallyReallyShortDelayInt());
             // generate a random tile to walk to, increasing in distance from player with each attempt
             Position step = myPosition().translate(dx * i, dy * i);
 
-            log("Looking for essence to mine...");
+            // RNG camera move logic — more likely the further we go
+            double roll = ETARandom.getRand(0, i) / 100.0;
+            double threshold = (i * k) / 100.0; // grows from 0.12 at i=3 up to 0.80 at i=20
+
+            // randomly look move camera or look at new position for human-like behaviour
+            if (roll < threshold) {
+                log("Moving camera to position (k = " + k + ", steps = " + i + ")");
+                getCamera().toPosition(step);
+            } else {
+                log("Randomly moving camera");
+                getCamera().moveYaw(ETARandom.getRand(22, 67));
+                getCamera().movePitch(ETARandom.getRand(90));
+            }
+
             if (map.canReach(step)) {
                 getWalking().walk(step);
                 steps += i;
