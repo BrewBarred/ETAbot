@@ -43,9 +43,9 @@ public class HillyKilly extends Script implements MessageListener {
     // Configurable constants
     // ----------------------------
     private static final String[] LOOT = {
-            "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
+            "Bones", "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond",
-            "Arrow", "Salmon", "Bones"
+            "Arrow", "Salmon"
     };
     private static final String[] FOOD_LIST = {
             "Swordfish", "Tuna", "Lobster", "Pike", "Salmon", "Trout", "Herring", "Sardine"
@@ -58,7 +58,7 @@ public class HillyKilly extends Script implements MessageListener {
     private static final int XP_LOG_INTERVAL_MINUTES = 2;
 
     private static final Position VARROCK_WEST_BANK = new Position(3185, 3436, 0);
-    private static final Area HILL_GIANT_COVE = new Area(3090, 9860, 3119, 9823).setPlane(0);
+    private static final Area HILL_GIANT_COVE = new Area(3094, 9860, 3125, 9824);
 
     private static final long BLOCK_DURATION = 15000; // 15s, adjust as needed
 
