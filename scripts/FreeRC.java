@@ -345,19 +345,25 @@ public class FreeRC extends Script implements MessageListener {
      * Detects if the player is stuck after teleporting into the essence mine.
      * Triggered when player is not moving and rocks are visible but unreachable.
      */
-    private void handleTeleportStuck() throws InterruptedException {
+    private boolean handleTeleportStuck() throws InterruptedException {
         log("Checking if player is stuck...");
-        if (myPlayer().isMoving() || myPlayer().isAnimating()) {
-            log("Player is not stuck...");
-            return; // we’re actively doing something → not stuck
+        // if the player is not moving, and not mining/animating
+        if (!myPlayer().isMoving() || !myPlayer().isAnimating()) {
+            // check if they are near essence rocks
+            Entity rock = objects.closest("Rune Essence");
+            // player is stuck if no rocks exist within 15 tiles of the player
+            boolean isStuck = rock == null || rock.getPosition().distance(myPlayer()) > 15;
+            // if the rock exists and is
+            if (isStuck) {
+                // if not near rocks, try walk to rocks and return result
+                log("Unable to find essence mine... trying to walk in a random diagonal direction...");
+                return walkDiagonalUntilRocks();
+            }
         }
 
-        // If essence rocks exist but haven’t moved in ~3s → assume blocked
-        Entity rock = objects.closest("Rune Essence");
-        if (rock != null) {
-            log("Teleport-stuck detected (blocked by rock) → doing diagonal walk...");
-            walkDiagonalUntilRocks();
-        }
+        // else if the player is moving/animating or next to rocks, they aren't stuck
+        log("Player is not stuck...");
+        return true;
     }
 
 
@@ -386,11 +392,11 @@ public class FreeRC extends Script implements MessageListener {
     /**
      * Walks in a randomly chosen diagonal direction (NW, NE, SW, SE)
      * up to 5 tiles, stopping early if rune essence becomes visible.
-     *
+     * <p>
      * This prevents the bot from standing idle if teleported into
      * the mine center with no essence in detection range.
      */
-    private void walkDiagonalUntilRocks() throws InterruptedException {
+    private boolean walkDiagonalUntilRocks() throws InterruptedException {
         int[][] diagonals = {
                 {-2,  2}, // NW
                 { 2,  2}, // NE
@@ -421,21 +427,21 @@ public class FreeRC extends Script implements MessageListener {
             // generate a random tile to walk to, increasing in distance from player with each attempt
             Position step = myPosition().translate(dx * i, dy * i);
 
+            log("Looking for essence to mine...");
             if (map.canReach(step)) {
                 getWalking().walk(step);
                 log("Walking diagonal step " + i + " towards (" + step.getX() + "," + step.getY() + ")");
                 steps += i;
-            } else {
-                log("Looking for essence to mine...");
+                sleep(ETARandom.getRandReallyReallyShortDelayInt());
             }
 
             Entity rock = objects.closest("Rune Essence");
             if (rock != null && rock.getPosition().distance(myPosition()) <= 15) {
                 log("Essence found within " + rock.getPosition().distance(myPosition()) + " tiles after " + steps + " random step(s).");
-                break;
+                return true;
             }
-
         }
+        return false;
     }
 
     // ----------------------------

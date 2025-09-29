@@ -227,7 +227,7 @@ public class HillyKilly extends Script implements MessageListener {
 
             final String itemName = item.getName();
 
-            if (recentIronmanBlock || unreachableBlock) {
+            if (unreachableBlock || recentIronmanBlock) {
                 log("Blocked from looting: " + itemName);
 
                 // prevent retrying the same pile
@@ -240,9 +240,6 @@ public class HillyKilly extends Script implements MessageListener {
                 // break instead of continue so we exit the loop
                 return false;
             }
-
-            lastIronmanBlock = false;
-            unreachableBlock = false;
 
             log("Looting: " + itemName);
             if (item.interact("Take")) {
