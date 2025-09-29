@@ -104,6 +104,7 @@ public class FreeRC extends Script implements MessageListener {
                 log("Player is inside essence mines but not ready to mine yet! Attempting to leave...");
                 exitEssenceMine();
             }
+
             handleTeleportStuck();
             mineEssence();
         }
@@ -337,8 +338,14 @@ public class FreeRC extends Script implements MessageListener {
                 }.sleep();
             }
         }
+
         // check player isnt stuck on a rock on mine entry (happens every now and then)
-        handleTeleportStuck();
+        if (!handleTeleportStuck()) {
+            //TODO: remove this later, just testing how often the handleTeleportStuck() function fails
+            log("Player is still stuck... trying again");
+            // if the player is still stuck after trying to free themselves, try again
+            handleTeleportStuck();
+        }
     }
 
     /**
