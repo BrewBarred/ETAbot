@@ -286,7 +286,7 @@ public class HillyKilly extends Script implements MessageListener {
                     // find the closest loot by confirming its in the bones or loot lists
                     && (isBone(g.getName()) || isLoot(g.getName()))
                     // items are "lootable" if they are within 10 tiles of the player
-                    && g.getPosition().distance(lastKillTile) <= 10
+                    && g.getPosition().distance(lastKillTile) <= 5
                     // and if they are not on blocked tiles
                     && !isTileBlocked(g.getPosition()));
 
