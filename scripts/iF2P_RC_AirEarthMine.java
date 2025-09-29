@@ -40,7 +40,7 @@ import java.util.EnumMap;
         version = 1.9,
         logo = ""
 )
-public class FreeRC extends Script implements MessageListener {
+public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
 
     // ----------------------------
     // Configurable toggles
