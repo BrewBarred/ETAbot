@@ -75,7 +75,7 @@ public class HillyKilly extends Script implements MessageListener {
 
     // --- NEW: timestamp-based Ironman block handling ---
     private long lastIronmanBlockTime = 0;                // time (ms) of last Ironman block message
-    private static final long IRONMAN_MSG_TIMEOUT = 3; // only valid if <= 1s old
+    private static final long IRONMAN_MSG_TIMEOUT = 1500; // only valid if <= 1s old
     /**
      * Stores tiles that have been blocked by being unreachable or containing other players drops (prevents ironman bug
      * trying to pick up other players items).
@@ -101,7 +101,7 @@ public class HillyKilly extends Script implements MessageListener {
             doBanking();
 
         // example excluding tiles from loot range (this example should be kept as it prevent the bot looting unreachable bones in the hill giants cove)
-        blockedTiles.put(new Position(3107, 9823, 0), -1L); // permanently exclude this tile
+        blockTilePermanent(new Position(3107, 9823, 0));
     }
 
     @Override
@@ -132,7 +132,9 @@ public class HillyKilly extends Script implements MessageListener {
         if (myPlayer().isUnderAttack() || myPlayer().isInteracting(lastTarget)) // TODO: consider adding: || myPlayer().isAnimating()
             return ETARandom.getRandReallyReallyShortDelayInt();
 
+        // find a giant and attack it
         attackGiant();
+        // write xp gains if not written recently
         logXpGainsIfDue();
         // cleanup any tiles that don't need to be blocked anymore
         cleanupBlockedTiles();
@@ -302,11 +304,7 @@ public class HillyKilly extends Script implements MessageListener {
                 blockTileTemp(lastKillTile);
                 // prevent retrying the same pile
                 lastKillTile = null;
-
-//                // reset the block so it doesn’t carry over forever
-//                unreachableBlock = false;
-//                lastIronmanBlock = false;
-
+                lastIronmanBlock = false;
                 // break instead of continue so we exit the loop
                 return false;
             }
@@ -316,6 +314,7 @@ public class HillyKilly extends Script implements MessageListener {
                 blockTileTemp(lastKillTile);
                 // prevent retrying the same pile
                 lastKillTile = null;
+                unreachableBlock = false;
                 // break instead of continue so we exit the loop
                 return false;
             }
