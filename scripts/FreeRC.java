@@ -103,10 +103,10 @@ public class FreeRC extends Script implements MessageListener {
             if (inventory.isFull() || !hasRequiredItems()) {
                 log("Player is inside essence mines but not ready to mine yet! Attempting to leave...");
                 exitEssenceMine();
+            } else {
+                handleTeleportStuck();
+                mineEssence();
             }
-
-            handleTeleportStuck();
-            mineEssence();
         }
     }
 
