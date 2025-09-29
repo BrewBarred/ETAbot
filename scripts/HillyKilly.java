@@ -157,13 +157,14 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private void blockTileTemp(Position tile) {
-        log("Temporarily blocking tile: " + tile);
         blockedTiles.put(tile, System.currentTimeMillis());
+        lastIronmanBlockTime = System.currentTimeMillis();
+        log("Temporarily blocked tile: " + tile);
     }
 
     private void blockTilePermanent(Position tile) {
-        log("Permanently blocking tile: " + tile);
         blockedTiles.put(tile, -1L);
+        log("Permanently blocked tile: " + tile);
     }
 
     private void removeBlockedTile(Position tile) {
@@ -274,9 +275,6 @@ public class HillyKilly extends Script implements MessageListener {
         if (lastKillTile == null)
             return false;
 
-        // ✅ Check if Ironman block was recent enough to matter
-        boolean recentIronmanBlock = lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
-
         boolean looted = false;
         GroundItem loot = null;
 
@@ -299,12 +297,11 @@ public class HillyKilly extends Script implements MessageListener {
             final String lootName = loot.getName();
 
             // if this loot is on a blocked tile
-            if (recentIronmanBlock) {
-                log("Temporarily blocked from looting " + lootName + " since iron-men are self-sufficient.");
+            if (blockedTiles.containsKey(loot.getPosition())) {
+                log("Blocked from looting " + lootName + " since iron-men are self-sufficient.");
                 blockTileTemp(lastKillTile);
                 // prevent retrying the same pile
                 lastKillTile = null;
-                lastIronmanBlock = false;
                 // break instead of continue so we exit the loop
                 return false;
             }
@@ -510,9 +507,8 @@ public class HillyKilly extends Script implements MessageListener {
             String msg = message.getMessage().toLowerCase().trim();
 
             if (msg.contains("you're an ironman")) {
-                log("Blocking loot due to ironman restrictions");
-                lastIronmanBlock = true;
-                lastIronmanBlockTime = System.currentTimeMillis();
+                log("Blocking loot tile due to ironman restrictions");
+                blockTileTemp(myPosition());
             }
             else if (msg.contains("i can't reach that")) {
                 log("Blocking unreachable loot!");
