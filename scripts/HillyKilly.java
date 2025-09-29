@@ -45,7 +45,7 @@ public class HillyKilly extends Script implements MessageListener {
     private static final String[] LOOT = {
             "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond",
-            "Arrow", "Salmon"
+            "Arrow", "Salmon", "Bones"
     };
     private static final String[] FOOD_LIST = {
             "Swordfish", "Tuna", "Lobster", "Pike", "Salmon", "Trout", "Herring", "Sardine"
