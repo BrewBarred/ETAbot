@@ -42,6 +42,7 @@ public class HillyKilly extends Script implements MessageListener {
     // ----------------------------
     // Configurable constants
     // ----------------------------
+    //TODO rework so that list order is priority order, this way you won't pick up iron arrows instead of diamonds for example.
     private static final String[] LOOT = {
             "Bones", "Limpwurt", "Coin", "Steel", "Mithril", "Adamant", "Rune",
             "Scroll", "Giant", "Sapphire", "Ruby", "Emerald", "Diamond",
@@ -307,8 +308,8 @@ public class HillyKilly extends Script implements MessageListener {
             }
 
             if (unreachableBlock) {
-                log("Permanently blocked from looting " + lootName + " since iron-men are self-sufficient.");
-                blockTileTemp(lastKillTile);
+                log("Permanently blocked from looting " + lootName + " - unreachable item.");
+                blockTilePermanent(lastKillTile);
                 // prevent retrying the same pile
                 lastKillTile = null;
                 unreachableBlock = false;
