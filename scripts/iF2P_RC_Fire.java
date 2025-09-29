@@ -45,6 +45,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     private static final String RUNE_ESS = "Rune essence";
     private static final String FIRE_TIARA = "Fire tiara";
     private static final String FIRE_TALISMAN = "Fire talisman";
+    private static final String[] KEPT_ITEMS = {"Fire tiara", "Fire talisman", "Fire rune"};
 
     private static final Position DUEL_ARENA_BANK = new Position(3382, 3268, 0);
     private static final Area FIRE_ALTAR_RUINS = new Area(3311, 3256, 3317, 3249);
@@ -55,9 +56,9 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     // ----------------------------
     private enum State {
         CHECK_GEAR,     // ensure tiara/talisman
-        CHECK_ESSENCE,  // withdraw essence if available
-        CRAFT,          // walk to altar and craft
-        BANK_RUNES,     // deposit crafted runes
+        FETCH_ESSENCE,  // withdraw essence if available
+        CRAFT_RUNES,    // walk to altar and craft
+        DEPOSIT_RUNES,  // deposit crafted runes
         STOP            // no essence/gear → end
     }
 
@@ -89,14 +90,14 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
                 }
                 break;
 
-            case CHECK_ESSENCE:
+            case FETCH_ESSENCE:
                 if (!withdrawEssence()) {
                     log("No essence in bank or inventory → stopping.");
                     stopFlag = true;
                 }
                 break;
 
-            case CRAFT:
+            case CRAFT_RUNES:
                 if (!atFireAltarChamber()) {
                     travelToFireAltar();
                 } else {
@@ -104,7 +105,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
                 }
                 break;
 
-            case BANK_RUNES:
+            case DEPOSIT_RUNES:
                 bankRunes();
                 break;
 
@@ -130,14 +131,14 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
         if (!hasFireAccess()) {
             return State.CHECK_GEAR;
         }
-        if (hasEssence()) {
-            return State.CRAFT;
+        if (inventoryHasEssence()) {
+            return State.CRAFT_RUNES;
+        }
+        if (!inventoryHasEssence()) {
+            return State.DEPOSIT_RUNES;
         }
         if (bankHasEssence()) {
-            return State.CHECK_ESSENCE;
-        }
-        if (!inventory.isEmptyExcept("Fire talisman", "Fire tiara", "Fire rune")) {
-            return State.BANK_RUNES;
+            return State.FETCH_ESSENCE;
         }
         return State.STOP;
     }
@@ -215,14 +216,11 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     // ----------------------------
     // Essence handling
     // ----------------------------
-    private boolean hasEssence() {
+    private boolean inventoryHasEssence() {
         return inventory.contains(PURE_ESS) || inventory.contains(RUNE_ESS);
     }
 
     private boolean bankHasEssence() {
-        // assume player has essence if the bank is not open
-        if (!getBank().isOpen())
-            return true;
         return getBank().contains(PURE_ESS) || getBank().contains(RUNE_ESS);
     }
 
@@ -266,13 +264,18 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     // Banking
     // ----------------------------
     private void bankRunes() throws InterruptedException {
-        getWalking().webWalk(DUEL_ARENA_BANK);
-
-        if (!getBank().open())
+        if (!getWalking().webWalk(DUEL_ARENA_BANK)) {
+            log("Error travelling to bank...");
             return;
+        }
 
-        getBank().depositAll();
-        sleep(ETARandom.getRandShortDelayInt());
+        if (!getBank().open()){
+            log("Error opening bank...");
+            return;
+        }
+
+        getBank().depositAllExcept(KEPT_ITEMS);
+        sleep(ETARandom.getRandReallyReallyShortDelayInt());
         getBank().close();
     }
 
