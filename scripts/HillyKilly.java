@@ -11,6 +11,8 @@ import org.osbot.rs07.listener.MessageListener;
 import org.osbot.rs07.api.ui.Message;
 
 import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * HillyKilly — Hill Giant killing script for Ironman accounts.
@@ -49,7 +51,7 @@ public class HillyKilly extends Script implements MessageListener {
             "Swordfish", "Tuna", "Lobster", "Pike", "Salmon", "Trout", "Herring", "Sardine"
     };
     private static final String[] BONE_NAMES = {
-            "Big bones"
+            "Big bones", "Bones"
     };
 
     private static final int EAT_AT_HP = 15;
@@ -58,11 +60,14 @@ public class HillyKilly extends Script implements MessageListener {
     private static final Position VARROCK_WEST_BANK = new Position(3185, 3436, 0);
     private static final Area HILL_GIANT_COVE = new Area(3090, 9860, 3119, 9823).setPlane(0);
 
+    private static final long BLOCK_DURATION = 15000; // 15s, adjust as needed
+
+
     // ----------------------------
     // State variables
     // ----------------------------
     private NPC lastTarget = null;
-    private Position lastDeathTile = null;
+    private Position lastKillTile = null;
 
     // Ironman / pathing blocks
     private boolean lastIronmanBlock = false;
@@ -70,7 +75,12 @@ public class HillyKilly extends Script implements MessageListener {
 
     // --- NEW: timestamp-based Ironman block handling ---
     private long lastIronmanBlockTime = 0;                // time (ms) of last Ironman block message
-    private static final long IRONMAN_MSG_TIMEOUT = 1; // only valid if <= 1s old
+    private static final long IRONMAN_MSG_TIMEOUT = 3; // only valid if <= 1s old
+    /**
+     * Stores tiles that have been blocked by being unreachable or containing other players drops (prevents ironman bug
+     * trying to pick up other players items).
+     */
+    private final Map<Position, Long> blockedTiles = new HashMap<>();
 
     // XP tracking
     private EnumMap<Skill, Integer> startXp;
@@ -89,37 +99,45 @@ public class HillyKilly extends Script implements MessageListener {
 
         if (!HILL_GIANT_COVE.contains(myPlayer()))
             doBanking();
+
+        // example excluding tiles from loot range (this example should be kept as it prevent the bot looting unreachable bones in the hill giants cove)
+        blockedTiles.put(new Position(3107, 9823, 0), -1L); // permanently exclude this tile
     }
 
     @Override
     public int onLoop() throws InterruptedException {
         if (checkEat())
-            return random(200, 300);
+            return ETARandom.getRandReallyReallyShortDelayInt();
 
         if (needsBanking()) {
             doBanking();
-            return random(400, 600);
+            return ETARandom.getRandReallyReallyShortDelayInt();
         }
 
         if (!HILL_GIANT_COVE.contains(myPlayer())) {
             log("Not in Hill Giant cove, walking back...");
             getWalking().webWalk(HILL_GIANT_COVE);
-            return random(600, 900);
+            return ETARandom.getRandReallyReallyShortDelayInt();
         }
 
+        // bury bones before all else (to clear space for drops)
         if (buryBones())
-            return random(200, 400);
+            return ETARandom.getRandReallyReallyShortDelayInt();
 
+        // prioritize drops over combat or you'll get stuck in combat and lose a bunch of drops
         if (lootDrops())
-            return random(300, 500);
+            return ETARandom.getRandReallyReallyShortDelayInt();
 
-        if (myPlayer().isUnderAttack() || myPlayer().isInteracting(lastTarget) || myPlayer().isAnimating())
-            return random(200, 300);
+        // prevent the player attacking giants while busy or in combat
+        if (myPlayer().isUnderAttack() || myPlayer().isInteracting(lastTarget)) // TODO: consider adding: || myPlayer().isAnimating()
+            return ETARandom.getRandReallyReallyShortDelayInt();
 
         attackGiant();
         logXpGainsIfDue();
+        // cleanup any tiles that don't need to be blocked anymore
+        cleanupBlockedTiles();
 
-        return random(400, 600);
+        return ETARandom.getRandReallyReallyShortDelayInt();
     }
 
     @Override
@@ -128,6 +146,40 @@ public class HillyKilly extends Script implements MessageListener {
         logXpGainsIfDue();
         stop(false);
     }
+
+    private void cleanupBlockedTiles() {
+        long now = System.currentTimeMillis();
+        blockedTiles.entrySet().removeIf(entry ->
+                entry.getValue() != -1L && now - entry.getValue() > BLOCK_DURATION
+        );
+    }
+
+    private void blockTileTemp(Position tile) {
+        log("Temporarily blocking tile: " + tile);
+        blockedTiles.put(tile, System.currentTimeMillis());
+    }
+
+    private void blockTilePermanent(Position tile) {
+        log("Permanently blocking tile: " + tile);
+        blockedTiles.put(tile, -1L);
+    }
+
+    private void removeBlockedTile(Position tile) {
+        if (tile != null && blockedTiles.containsKey(tile)) {
+            blockedTiles.remove(tile);
+            log("Removed blocked tile: " + tile);
+        }
+    }
+
+    private boolean isTileBlocked(Position tile) {
+        return blockedTiles.containsKey(tile);
+    }
+
+    private void clearAllBlockedTiles() {
+        blockedTiles.clear();
+        log("Cleared all blocked tiles.");
+    }
+
 
     // ----------------------------
     // Banking logic
@@ -213,58 +265,78 @@ public class HillyKilly extends Script implements MessageListener {
                     ) != null;
                 }
             }.sleep();
-            lastDeathTile = lastTarget.getPosition();
+            lastKillTile = lastTarget.getPosition();
             lastTarget = null;
         }
 
-        if (lastDeathTile == null)
+        if (lastKillTile == null)
             return false;
 
         // ✅ Check if Ironman block was recent enough to matter
         boolean recentIronmanBlock = lastIronmanBlock && System.currentTimeMillis() - lastIronmanBlockTime < IRONMAN_MSG_TIMEOUT;
 
         boolean looted = false;
-        GroundItem item;
+        GroundItem loot = null;
 
-        while (!inventory.isFull() && (item = groundItems.closest(g -> g != null
-                && (isBone(g.getName()) || isLoot(g.getName()))
-                && g.getPosition().distance(lastDeathTile) <= 5)) != null) {
+        // while there is room for loot and loot nearby
+        while (!inventory.isFull()) {
+            // identify nearby loot
+            loot = groundItems.closest(g -> g != null
+                    // find the closest loot by confirming its in the bones or loot lists
+                    && (isBone(g.getName()) || isLoot(g.getName()))
+                    // items are "lootable" if they are within 10 tiles of the player
+                    && g.getPosition().distance(lastKillTile) <= 10
+                    // and if they are not on blocked tiles
+                    && !isTileBlocked(g.getPosition()));
 
-            final String itemName = item.getName();
+            // stop looting if no loot exists
+            if (loot == null)
+                break;
 
-            if (unreachableBlock || recentIronmanBlock) {
-                log("Blocked from looting: " + itemName);
+            // get the name of the loot so we can fetch it
+            final String lootName = loot.getName();
 
+            // if this loot is on a blocked tile
+            if (recentIronmanBlock) {
+                log("Temporarily blocked from looting " + lootName + " since iron-men are self-sufficient.");
+                blockTileTemp(lastKillTile);
                 // prevent retrying the same pile
-                lastDeathTile = null;
+                lastKillTile = null;
 
-                // reset the block so it doesn’t carry over forever
-                unreachableBlock = false;
-                lastIronmanBlock = false;
+//                // reset the block so it doesn’t carry over forever
+//                unreachableBlock = false;
+//                lastIronmanBlock = false;
 
                 // break instead of continue so we exit the loop
                 return false;
             }
 
-            if (item.interact("Take")) {
+            if (unreachableBlock) {
+                log("Permanently blocked from looting " + lootName + " since iron-men are self-sufficient.");
+                blockTileTemp(lastKillTile);
+                // prevent retrying the same pile
+                lastKillTile = null;
+                // break instead of continue so we exit the loop
+                return false;
+            }
 
-                GroundItem finalDrop = item;
-
+            if (loot.interact("Take")) {
+                GroundItem finalDrop = loot;
                 new ConditionalSleep(ETARandom.getRand(4000, 6000)) {
                     @Override
                     public boolean condition() {
-                        return !finalDrop.exists() || inventory.contains(itemName);
+                        return !finalDrop.exists() || inventory.contains(lootName);
                     }
                 }.sleep();
 
                 looted = true;
-                log("Looted: " + itemName);
+                log("Looted: " + lootName);
                 sleep(ETARandom.getRandReallyReallyShortDelayInt());
             }
         }
 
         if (looted) {
-            lastDeathTile = null;
+            lastKillTile = null;
             return true;
         }
         return false;
@@ -379,6 +451,7 @@ public class HillyKilly extends Script implements MessageListener {
                             return inventory.isFull();
                         }
                     }.sleep();
+                    break;
                 }
             }
 
