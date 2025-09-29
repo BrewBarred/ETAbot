@@ -418,7 +418,7 @@ public class FreeRC extends Script implements MessageListener {
         int steps = 0;
 
         // increased k increases chance of moving camera
-        int k = 6;
+        int k = 4;
 
         log("Looking for essence to mine...");
         // walk between 1 and 20 tiles in a random diagonal direction to see if u can find a rock
@@ -432,7 +432,7 @@ public class FreeRC extends Script implements MessageListener {
 
             // randomly look move camera or look at new position for human-like behaviour
             if (roll < threshold) {
-                log("Moving camera to position (k = " + k + ", steps = " + i + ")");
+                log("Moving camera to position (k = " + k + ", steps = " + i + ", position = )" + step);
                 getCamera().toPosition(step);
             } else {
                 log("Randomly moving camera");
