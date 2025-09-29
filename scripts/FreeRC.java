@@ -449,7 +449,7 @@ public class FreeRC extends Script implements MessageListener {
 
             Entity rock = objects.closest("Rune Essence");
             if (rock != null && rock.getPosition().distance(myPosition()) <= 15) {
-                log("Essence found within " + rock.getPosition().distance(myPosition()) + " tiles after " + steps + " random step(s).");
+                log("Essence found within " + rock.getPosition().distance(myPosition()) + " tiles" + (steps > 0 ? " after " + steps + " random step(s)." : "."));
                 return true;
             }
         }
