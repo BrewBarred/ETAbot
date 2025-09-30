@@ -10,6 +10,7 @@ import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
 
+import java.util.Arrays;
 import java.util.EnumMap;
 
 /**
@@ -56,14 +57,15 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     // ----------------------------
     private enum State {
         CHECK_GEAR,     // ensure tiara/talisman
-        FETCH_ESSENCE,  // withdraw essence if available
+        WITHDRAW_ESSENCE,  // withdraw essence if available
         CRAFT_RUNES,    // walk to altar and craft
-        DEPOSIT_RUNES,  // deposit crafted runes
+        OPEN_BANK,  // deposit crafted runes
+        DEPOSIT_RUNES,
         STOP            // no essence/gear → end
     }
 
     private EnumMap<Skill, Integer> startXp;
-    private boolean stopFlag = false;
+    private boolean isStopping = false;
 
     // ----------------------------
     // Lifecycle
@@ -77,27 +79,43 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
 
     @Override
     public int onLoop() throws InterruptedException {
-        if (stopFlag) {
+        if (isStopping) {
             stop();
             return 0;
         }
 
         switch (getState()) {
             case CHECK_GEAR:
+                log("Checking gear...");
                 if (!ensureFireAccess()) {
                     log("No Fire tiara or talisman available → stopping.");
-                    stopFlag = true;
+                    isStopping = true;
                 }
                 break;
 
-            case FETCH_ESSENCE:
+            case OPEN_BANK:
+                // if you arent at the bank, walk there
+                if (!isAtBank()) {
+                    log("Locating bank...");
+                    walkToBank();
+                }
+
+                // if your bank is not open, open it
+                if (!isBanking()) {
+                    log("Opening bank...");
+                    openBank();
+                }
+
+            case WITHDRAW_ESSENCE:
+                log("Withdrawing essence...");
                 if (!withdrawEssence()) {
                     log("No essence in bank or inventory → stopping.");
-                    stopFlag = true;
+                    isStopping = true;
                 }
                 break;
 
             case CRAFT_RUNES:
+                log("Crafting fire runes...");
                 if (!atFireAltarChamber()) {
                     travelToFireAltar();
                 } else {
@@ -106,12 +124,13 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
                 break;
 
             case DEPOSIT_RUNES:
-                bankRunes();
+                log("Depositing fire runes...");
+                deposit();
                 break;
 
             case STOP:
                 log("Nothing left to do → stopping.");
-                stopFlag = true;
+                isStopping = true;
                 break;
         }
 
@@ -134,13 +153,53 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
         if (inventoryHasEssence()) {
             return State.CRAFT_RUNES;
         }
-        if (!inventoryHasEssence()) {
+        if (!isBanking()) {
+            return State.OPEN_BANK;
+        }
+        if (inventoryHasRunes()) {
             return State.DEPOSIT_RUNES;
         }
         if (bankHasEssence()) {
-            return State.FETCH_ESSENCE;
+            return State.WITHDRAW_ESSENCE;
         }
+
         return State.STOP;
+    }
+
+    /**
+     * Check if the player is current banking or not.
+     *
+     * @return True if the player is currently at a bank with a bank interface open, else returns false.
+     * @throws InterruptedException
+     */
+    private boolean openBank() throws InterruptedException {
+        // sleep until the bank is open or until a short delay expires and return the result
+        boolean bankOpened = new ConditionalSleep(ETARandom.getRandReallyShortDelayInt(), ETARandom.getRandShortDelayInt()) {
+            @Override
+            public boolean condition() throws InterruptedException {
+                return getBank().open();
+            }
+        }.sleep();
+
+        if (bankOpened) {
+            sleep(ETARandom.getRandReallyShortDelayInt());
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean isAtBank() {
+        return DUEL_ARENA_BANK.getArea(8).contains(myPlayer());
+    }
+
+    private boolean isBanking() {
+        return getBank().isOpen();
+    }
+
+    private boolean walkToBank() {
+        // attempt to walk to the bank
+        return getWalking().webWalk(DUEL_ARENA_BANK);
     }
 
     // ----------------------------
@@ -212,12 +271,13 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
         return false;
     }
 
-
-    // ----------------------------
-    // Essence handling
-    // ----------------------------
     private boolean inventoryHasEssence() {
         return inventory.contains(PURE_ESS) || inventory.contains(RUNE_ESS);
+    }
+
+    private boolean inventoryHasRunes() {
+        log("Checking inventory for fire runes");
+        return inventory.contains("Fire rune");
     }
 
     private boolean bankHasEssence() {
@@ -229,15 +289,6 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
      * Prefers Pure Essence, falls back to Rune Essence.
      */
     private boolean withdrawEssence() throws InterruptedException {
-        if (!hasFireAccess()) {
-            log("Delaying essence withdraw until fire gear is ready.");
-            return false;
-        }
-
-        getWalking().webWalk(DUEL_ARENA_BANK);
-        if (!getBank().open())
-            return false;
-
         boolean withdrew = false;
         if (getBank().contains(PURE_ESS)) {
             withdrew = getBank().withdrawAll(PURE_ESS);
@@ -263,20 +314,17 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
     // ----------------------------
     // Banking
     // ----------------------------
-    private void bankRunes() throws InterruptedException {
-        if (!getWalking().webWalk(DUEL_ARENA_BANK)) {
-            log("Error travelling to bank...");
-            return;
+    private void deposit() throws InterruptedException {
+        // if players bank is open, bank runes
+        if (getBank().isOpen()) {
+            log("Depositing all items excluding " + Arrays.toString(KEPT_ITEMS));
+            getBank().depositAllExcept(KEPT_ITEMS);
+            sleep(ETARandom.getRandReallyReallyShortDelayInt());
+            getBank().close();
+        } else {
+            //TODO: remove debug log or make debug only
+            log("Error depositing fire runes!");
         }
-
-        if (!getBank().open()){
-            log("Error opening bank...");
-            return;
-        }
-
-        getBank().depositAllExcept(KEPT_ITEMS);
-        sleep(ETARandom.getRandReallyReallyShortDelayInt());
-        getBank().close();
     }
 
     // ----------------------------
