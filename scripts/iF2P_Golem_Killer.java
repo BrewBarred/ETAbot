@@ -93,6 +93,10 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
         if (lootDrops())
             return ETARandom.getRandReallyReallyShortDelayInt();
 
+        // don't attack or wake anything else until you're not in combat anymore and looted drops.
+        if (lastTarget == null)
+            return ETARandom.getRandReallyReallyShortDelayInt();
+
         // attack or awaken rubble
         if (!myPlayer().isUnderAttack() && !myPlayer().isAnimating()) {
             if (!attackGolem()) {
@@ -136,10 +140,11 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
         if (golem.interact("Attack")) {
             lastTarget = golem;
             log("Attacking golem, lastTarget set to: " + golem.getName());
+            // wait until player is no longer under attack and target is dead
             new ConditionalSleep(ETARandom.getRandReallyShortDelayInt()) {
                 @Override
                 public boolean condition() {
-                    return myPlayer().isUnderAttack();
+                    return !myPlayer().isUnderAttack() && !lastTarget.exists();
                 }
             }.sleep();
             return true;
@@ -160,17 +165,12 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
         NPC rubble = getNpcs().closest(NAME_RUBBLE);
         if (rubble != null && rubble.interact("Awaken")) {
             log("Awakening rubble...");
-            // sleep until a golem exists
-            new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
-                @Override
-                public boolean condition() {
-                    return getNearestGolem() != null;
-                }
-            }.sleep();
+            sleep(ETARandom.getRandReallyShortDelayInt());
+            log("Rubble awoken...");
         }
     }
 
-    private boolean lootDrops() throws InterruptedException {
+    private boolean lootDrops() {
         if (lastTarget == null)
             return false;
 
@@ -183,12 +183,14 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
             }
 
             // Wait briefly for loot to spawn
+            log("Waiting for loot to spawn...");
             new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
                 @Override
                 public boolean condition() {
-                    return getNearestLootable() != null; // sleep until valid loot is null (no valid loot nearby)
+                    return getNearestLootable() != null; // sleep until valid loot is found
                 }
             }.sleep();
+            log("Finsihing waiting for loot...");
 
             // reset target since our target is dead now
             lastTarget = null;
