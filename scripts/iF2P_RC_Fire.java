@@ -106,6 +106,11 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
                     openBank();
                 }
 
+            case DEPOSIT_RUNES:
+                log("Depositing fire runes...");
+                deposit();
+                break;
+
             case WITHDRAW_ESSENCE:
                 log("Withdrawing essence...");
                 if (!withdrawEssence()) {
@@ -123,18 +128,13 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
                 }
                 break;
 
-            case DEPOSIT_RUNES:
-                log("Depositing fire runes...");
-                deposit();
-                break;
-
             case STOP:
                 log("Nothing left to do → stopping.");
                 isStopping = true;
                 break;
         }
 
-        return ETARandom.getRandShortDelayInt();
+        return ETARandom.getRandReallyReallyShortDelayInt();
     }
 
     @Override
@@ -290,6 +290,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
      */
     private boolean withdrawEssence() throws InterruptedException {
         boolean withdrew = false;
+
         if (getBank().contains(PURE_ESS)) {
             withdrew = getBank().withdrawAll(PURE_ESS);
         } else if (getBank().contains(RUNE_ESS)) {
@@ -320,7 +321,6 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
             log("Depositing all items excluding " + Arrays.toString(KEPT_ITEMS));
             getBank().depositAllExcept(KEPT_ITEMS);
             sleep(ETARandom.getRandReallyReallyShortDelayInt());
-            getBank().close();
         } else {
             //TODO: remove debug log or make debug only
             log("Error depositing fire runes!");
