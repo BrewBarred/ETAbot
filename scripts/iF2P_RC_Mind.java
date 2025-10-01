@@ -14,7 +14,7 @@ import java.util.EnumMap;
 
 @ScriptManifest(
         author = "E.T.A.",
-        name = "(iF2P Mind/Fire RC)",
+        name = "(iF2P Mind rune-crafter)",
         info = "Ironman/F2P-friendly script that converts all rune/pure essence in the players bank into mind runes",
         version = 1.2,
         logo = ""
@@ -187,7 +187,7 @@ public class iF2P_RC_Mind extends Script {
         RS2Object entrance = objects.closest("Ruins Entrance"); // confirm exact name
         if (entrance != null && entrance.interact("Enter")) {
             // sleep until the player is inside camdozaal (not the exit area incase we sleep too long and miss it)
-            new ConditionalSleep(ETARandom.getRandReallyShortDelayInt()) {
+            new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
                 @Override
                 public boolean condition() {
                     return CAMDOZAAL.contains(myPlayer());
@@ -320,7 +320,7 @@ public class iF2P_RC_Mind extends Script {
         }
     }
 
-    private void craftRunes() {
+    private void craftRunes() throws InterruptedException {
         new ConditionalSleep(ETARandom.getRandReallyReallyShortDelayInt()) {
             @Override
             public boolean condition() {
@@ -337,6 +337,8 @@ public class iF2P_RC_Mind extends Script {
                         return !inventory.contains(PURE_ESS) && !inventory.contains(RUNE_ESS);
                     }
                 }.sleep();
+                // wait for xp drop to register
+                sleep(ETARandom.getRandReallyReallyShortDelayInt());
                 log("You craft some mind runes and have now gained a total of " + (getSkills().getExperience(Skill.RUNECRAFTING) - startXp.get(Skill.RUNECRAFTING)) + " rune-crafting xp this session.");
 
             }
