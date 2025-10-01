@@ -93,22 +93,28 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
         if (lootDrops())
             return ETARandom.getRandReallyReallyShortDelayInt();
 
-        // don't attack or wake anything else until you're not in combat anymore and looted drops.
-        if (lastTarget == null)
-            return ETARandom.getRandReallyReallyShortDelayInt();
-
         // attack or awaken rubble
         if (!myPlayer().isUnderAttack() && !myPlayer().isAnimating()) {
             if (!attackGolem()) {
+                // if not killing a golem, start killing one
                 log("Searching for rubble...");
                 awakenRubble();
+            } else {
+                log("Waiting for player to kill...");
+                // wait for golem to die
+                new ConditionalSleep(ETARandom.getRandLongDelayInt(), ETARandom.getRandReallyReallyShortDelayInt()) {
+                    @Override
+                    public boolean condition() {
+                        return !myPlayer().isUnderAttack() && !lastTarget.exists();
+                    }
+                }.sleep();
             }
         }
 
         logXpGainsIfDue();
         cleanupBlockedTiles();
 
-        return ETARandom.getRandReallyShortDelayInt();
+        return ETARandom.getRandShortDelayInt();
     }
 
     @Override
@@ -141,12 +147,16 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
             lastTarget = golem;
             log("Attacking golem, lastTarget set to: " + golem.getName());
             // wait until player is no longer under attack and target is dead
-            new ConditionalSleep(ETARandom.getRandReallyShortDelayInt()) {
+            // sleeps for a long time and checks every really short delay to see if player is out of combat and target is dead (not exists)
+            new ConditionalSleep(ETARandom.getRandLongDelayInt(), ETARandom.getRandReallyShortDelayInt()) {
                 @Override
                 public boolean condition() {
                     return !myPlayer().isUnderAttack() && !lastTarget.exists();
                 }
             }.sleep();
+            // set position of where golem died
+            lastKillTile = golem.getPosition();
+            log("Set kill tile position: " + lastKillTile);
             return true;
         }
 
@@ -176,12 +186,6 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
 
         // Check if target has died
         if (!lastTarget.exists()) {
-            // Save death tile before nullifying
-            if (lastKillTile == null) {
-                lastKillTile = lastTarget.getPosition();
-                log("Target died at tile: " + lastKillTile);
-            }
-
             // Wait briefly for loot to spawn
             log("Waiting for loot to spawn...");
             new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
@@ -190,7 +194,6 @@ public class iF2P_Golem_Killer extends Script implements MessageListener {
                     return getNearestLootable() != null; // sleep until valid loot is found
                 }
             }.sleep();
-            log("Finsihing waiting for loot...");
 
             // reset target since our target is dead now
             lastTarget = null;

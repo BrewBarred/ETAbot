@@ -217,7 +217,8 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
      * - Ends script if neither is found.
      */
     private boolean ensureFireAccess() throws InterruptedException {
-        if (hasFireAccess()) return true;
+        if (hasFireAccess())
+            return true;
 
         getWalking().webWalk(DUEL_ARENA_BANK);
 
@@ -356,7 +357,7 @@ public class iF2P_RC_Fire extends Script implements MessageListener {
         return FIRE_ALTAR_CHAMBER.contains(myPosition());
     }
 
-    private void craftRunes() throws InterruptedException {
+    private void craftRunes() {
         new ConditionalSleep(ETARandom.getRandReallyReallyShortDelayInt()) {
             @Override
             public boolean condition() {
