@@ -27,7 +27,7 @@ public class iF2P_RC_Mind extends Script {
     private static final Area CAMDOZAAL_BANK = new Area(2975, 5801, 2980, 5796);
 
     // mind altar
-    private static final Area MIND_ALTAR = new Position(2786,4841, 0).getArea(10);
+    private static final Area MIND_ALTAR = new Position(2786,4841, 0).getArea(6);
     private static final Area MIND_ALTAR_RUINS = new Area(2979, 3513, 2981, 3511);
     private static final Area MIND_ALTAR_CHAMBER = new Area(2760, 4854, 2802, 4818);
 
