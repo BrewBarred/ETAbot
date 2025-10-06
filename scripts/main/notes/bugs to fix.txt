@@ -1,3 +1,7 @@
+(iF2P) Air/Earth/Essence..
+    - Successfully withdraws the selected pickaxe but fails to equip it
+        - should check players attack level and compare against pickaxe requirement somehow, either items cache or maybe osbot api has a function for this
+
 Iron banker:
     - Always banks if started in bank (even if items required already obtained), just opens and closes for no reason
     - If you pause the script it will stop it, then you won't be able to resume again

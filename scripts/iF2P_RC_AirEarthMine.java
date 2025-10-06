@@ -35,7 +35,7 @@ import java.util.EnumMap;
  */
 @ScriptManifest(
         author = "E.T.A.",
-        name = "FreeRC",
+        name = "(iF2P) Air/Earth/Essence miner/crafter",
         info = "Rune essence miner + air rune crafter (F2P, modular)",
         version = 1.9,
         logo = ""
@@ -45,9 +45,9 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
     // ----------------------------
     // Configurable toggles
     // ----------------------------
-    private static final boolean BANK_ESSENCE = true;     // true = bank essence, false = craft runes
+    private static final boolean BANK_ESSENCE = false;     // true = bank essence, false = craft runes
     private static final boolean USE_SEDRIDOR = false;    // true = Sedridor teleport, false = Aubury
-    private static final int XP_LOG_INTERVAL_MINUTES = 2; // XP log frequency
+    private static final int XP_LOG_INTERVAL_MINUTES = 2; // 2 = log total xp gained per session every 2 minutes (adds to the loop cycle rather than own thread so time might be delayed)
 
     // ----------------------------
     // Items
@@ -142,11 +142,11 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
 
         // If inventory is not full → mine essence
         if (!inventory.isFull()) {
-            if (!atEssenceMine()) {
+            if (!atEssenceMine())
                 travelToEssenceMine();
-                return ETARandom.getRandReallyShortDelayInt();
-            }
-            mineEssence();
+            else
+                mineEssence();
+
             return ETARandom.getRandReallyShortDelayInt();
         }
 
@@ -339,13 +339,8 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
             }
         }
 
-        // check player isnt stuck on a rock on mine entry (happens every now and then)
-        if (!handleTeleportStuck()) {
-            //TODO: remove this later, just testing how often the handleTeleportStuck() function fails
-            log("Player is still stuck... trying again");
-            // if the player is still stuck after trying to free themselves, try again
-            handleTeleportStuck();
-        }
+        // check if the player is stuck after teleporting and attempt to free themselves if so
+        handleTeleportStuck();
     }
 
     /**
@@ -353,7 +348,7 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
      * Triggered when player is not moving and rocks are visible but unreachable.
      */
     private boolean handleTeleportStuck() throws InterruptedException {
-        log("Checking if player is stuck...");
+        //log("Checking if player is stuck...");
         // if the player is not moving, and not mining/animating
         if (!myPlayer().isMoving() || !myPlayer().isAnimating()) {
             // check if they are near essence rocks
@@ -363,13 +358,11 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
             // if the rock exists and is
             if (isStuck) {
                 // if not near rocks, try walk to rocks and return result
-                log("Unable to find essence mine... trying to walk in a random diagonal direction...");
+                log("Unable to find essence mine... walking to nearby tiles to find something to mine...");
                 return walkDiagonalUntilRocks();
             }
         }
 
-        // else if the player is moving/animating or next to rocks, they aren't stuck
-        log("Player is not stuck...");
         return true;
     }
 
@@ -477,14 +470,17 @@ public class iF2P_RC_AirEarthMine extends Script implements MessageListener {
             }
             if (portalEntity.interact("Use") || portalEntity.interact("Exit")) {
                 log("You mine some essence... you have gained " + (getExperienceTracker().getGainedXP(Skill.MINING) - startXp.get(Skill.MINING)) + " mining experience this run.");
-                return new ConditionalSleep(6000) {
+                new ConditionalSleep(ETARandom.getRandReallyShortDelayInt()) {
                     @Override
                     public boolean condition() {
                         return !atEssenceMine();
                     }
                 }.sleep();
+
+                return true;
             }
         }
+
         return false;
     }
 

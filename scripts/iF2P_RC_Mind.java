@@ -7,6 +7,7 @@ import org.osbot.rs07.api.ui.EquipmentSlot;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
+import org.osbot.rs07.utility.Condition;
 import org.osbot.rs07.utility.ConditionalSleep;
 
 import java.util.Arrays;
@@ -27,7 +28,7 @@ public class iF2P_RC_Mind extends Script {
     private static final Area CAMDOZAAL_BANK = new Area(2975, 5801, 2980, 5796);
 
     // mind altar
-    private static final Area MIND_ALTAR = new Position(2786,4841, 0).getArea(6);
+    private static final Area MIND_ALTAR = new Position(2786,4841, 0).getArea(5);
     private static final Area MIND_ALTAR_RUINS = new Area(2979, 3513, 2981, 3511);
     private static final Area MIND_ALTAR_CHAMBER = new Area(2760, 4854, 2802, 4818);
 
@@ -72,7 +73,7 @@ public class iF2P_RC_Mind extends Script {
 
         switch (getState()) {
             case CHECK_GEAR:
-                log("Checking gear...");
+                //log("Checking gear...");
                 if (!hasAltarAccess()) {
                     log("No mind tiara or talisman available → stopping.");
                     isStopping = true;
@@ -80,29 +81,21 @@ public class iF2P_RC_Mind extends Script {
                 break;
 
             case OPEN_BANK:
-                // if the player isn't already inside camdozaal, enter it
-                if (!isInCamdozaal()) {
-                    log("Walking to Camdozaal");
-                    // enter camdozaal and wait until player is inside
-                    enterCamdozaal();
-                }
-
-                // walk to the bank area
+                //log("Finding bank...");
+                // enter camdozaal and wait until player is inside
+                findAndEnterCamdozaal();
+                // walk to the camdozaal bank area
                 getWalking().webWalk(CAMDOZAAL_BANK);
-
-                // if your bank is not open, open it
-                if (!isBanking()) {
-                    log("Opening bank...");
-                    openBank();
-                }
+                // open the players bank (if not already open)
+                openBank();
 
             case DEPOSIT_RUNES:
-                log("Depositing mind runes...");
+                //log("Depositing mind runes...");
                 deposit();
                 break;
 
             case WITHDRAW_ESSENCE:
-                log("Withdrawing essence...");
+                //log("Withdrawing essence...");
                 if (!withdrawEssence()) {
                     log("No essence in bank or inventory → stopping.");
                     isStopping = true;
@@ -110,16 +103,9 @@ public class iF2P_RC_Mind extends Script {
                 break;
 
             case CRAFT_RUNES:
-                log("Crafting mind runes...");
-                // enter the ruins if not already inside mind chamber
-                if (!isInAltarChamber()) {
-                    travelToAltar();
-                // if the player is not close enough to the altar
-                } else if (!isAtAltar()){
-                    // walk closer to the altar
-                    getWalking().webWalk(MIND_ALTAR);
-                }
-
+                //log("Crafting mind runes...");
+                // walk to the mind altar
+                travelToAltar();
                 // craft runes
                 craftRunes();
                 break;
@@ -171,16 +157,16 @@ public class iF2P_RC_Mind extends Script {
     }
 
     private boolean inventoryHasRunes() {
-        log("Checking inventory for mind runes");
+        //log("Checking inventory for mind runes");
         return inventory.contains("Mind rune");
     }
-    private void enterCamdozaal() throws InterruptedException {
+    private void findAndEnterCamdozaal() throws InterruptedException {
         // return early if player is already inside camdozaal
         if (isInCamdozaal())
             return;
 
         // else walk to entrance pf camdozaal
-        log("Walking to Camdozaal entrance...");
+        //log("Walking to Camdozaal entrance...");
         getWalking().webWalk(CAMDOZAAL_ENTRANCE);
 
         // find the camdozaal entrance and enter it
@@ -206,7 +192,7 @@ public class iF2P_RC_Mind extends Script {
             return;
 
         // else find the camdozaal exit
-        log("Walking to Camdozaal exit...");
+        //log("Walking to Camdozaal exit...");
         getWalking().webWalk(CAMDOZAAL_EXIT);
 
         // try exit camdozaal
@@ -219,15 +205,22 @@ public class iF2P_RC_Mind extends Script {
                 }
             }.sleep();
         }
+
+        // wait for the player to be outside before looking for next destination
+        sleep(ETARandom.getRandReallyShortDelayInt());
     }
 
     /**
      * Check if the player is current banking or not.
      *
      * @return True if the player is currently at a bank with a bank interface open, else returns false.
-     * @throws InterruptedException
      */
-    private boolean openBank() throws InterruptedException {
+    private void openBank() throws InterruptedException {
+        // return early if the bank is already open
+        if (getBank().isOpen())
+            return;
+
+        //log("Attempting to open bank...");
         // sleep until the bank is open or until a short delay expires and return the result
         boolean bankOpened = new ConditionalSleep(ETARandom.getRandReallyShortDelayInt(), ETARandom.getRandShortDelayInt()) {
             @Override
@@ -237,17 +230,18 @@ public class iF2P_RC_Mind extends Script {
         }.sleep();
 
         if (bankOpened) {
+            //log("Successfully opened bank!");
             sleep(ETARandom.getRandReallyShortDelayInt());
-            return true;
+            return;
         }
 
-        return false;
+        log("Error opening bank!");
     }
 
     private void deposit() throws InterruptedException {
         // if players bank is open, bank runes
         if (getBank().isOpen()) {
-            log("Depositing all items excluding " + Arrays.toString(KEPT_ITEMS));
+            //log("Depositing all items excluding " + Arrays.toString(KEPT_ITEMS));
             getBank().depositAllExcept(KEPT_ITEMS);
             sleep(ETARandom.getRandReallyReallyShortDelayInt());
         } else {
@@ -292,17 +286,38 @@ public class iF2P_RC_Mind extends Script {
         return MIND_ALTAR.contains(myPlayer());
     }
 
+    private boolean isAtRuins() {
+        // return true if the player is within 10 tiles of the ruins
+        return MIND_ALTAR_RUINS.getRandomPosition().distance(myPlayer()) < 10;
+    }
+
     private void travelToAltar() throws InterruptedException {
+        // return early if already at the altar
+        if (isAtAltar())
+            return;
+
+        // exit camdozaal if currently inside
+        if (isInCamdozaal())
+            exitCamdozaal();
+
         // if the player is not already inside the mind altar chamber
         if (!isInAltarChamber()) {
-            // and if the player is currently inside camdozaal
-            if (isInCamdozaal())
-                // try exit camdozaal
-                exitCamdozaal();
-
+            // walk to the ruins
             getWalking().webWalk(MIND_ALTAR_RUINS);
-        }
+            // enter the ruins using tiara or talisman
+            enterRuins();
 
+            new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
+                @Override
+                public boolean condition() {
+                    getWalking().webWalk(MIND_ALTAR);
+                    return isAtRuins();
+                }
+            }.sleep();
+        }
+    }
+
+    private void enterRuins() throws InterruptedException {
         Entity ruins = objects.closest("Mysterious ruins");
         if (ruins != null) {
             if (equipment.isWearingItem(EquipmentSlot.HAT, MIND_TIARA)) {
@@ -318,6 +333,9 @@ public class iF2P_RC_Mind extends Script {
                 }
             }.sleep();
         }
+
+        // wait for the player to be outside before looking for next destination
+        sleep(ETARandom.getRandReallyShortDelayInt());
     }
 
     private void craftRunes() throws InterruptedException {

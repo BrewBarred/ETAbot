@@ -1,14 +1,15 @@
+Drunken Dwarf
+    npc id: 322
 Sergeant Damien:
-    npc ids:
-        npc id: 337
+    npc id: 337
 
     object ids:
-        push ups: "Exercise mat", 16508
-        star jumps: "Exercise mat", 20810
-        jogging: "Exercise mat", 9313
-        sit-ups: "Exercise mat", 20801
+        ?: "Exercise mat", 16508
+        ?: "Exercise mat", 20810
+        ?: "Exercise mat", 9313
+        ?: "Exercise mat", 20801
 
-        WRONG!! Need to obtain since we cant see id ingame:
+        Need to obtain since we cant see id ingame:
 
         try fetch and print the object:
             for (RS2Object sign : objects.getAll()) {

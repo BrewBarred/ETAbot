@@ -31,5 +31,6 @@
     </orderEntry>
     <orderEntry type="library" name="KotlinJavaRuntime" level="project" />
     <orderEntry type="library" name="OSBot 2.7.58" level="application" />
+    <orderEntry type="library" name="osbot 2.7.59" level="project" />
   </component>
 </module>
