@@ -24,6 +24,15 @@ public class BotMenu extends JFrame {
 
     protected boolean isHidingOnExit;
 
+    private final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
+    private final JList<Task> taskList = new JList<>(taskListModel);
+
+//TODO: check necessity of default list model?
+//    /**
+//     * The task list displayed under Dashboard -> Tasks
+//     */
+//    DefaultListModel<String> tasks = new DefaultListModel<>();
+
     /**
      * Launches a bot menu for the associated bot instance (os bot script).
      *
@@ -159,6 +168,8 @@ public class BotMenu extends JFrame {
             tabs.addTab("Task Builder", buildTabTaskBuilder());
             tabs.addTab("Settings", buildTabSettings());
             tabs.addTab("About", buildTabAbout());
+            // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
+            tabs.setSelectedIndex(0);
 
         ///  add bot menu components
 
@@ -237,10 +248,10 @@ public class BotMenu extends JFrame {
         /// add the submenus to a card-panel for easier switching later
         cardPanel.add(buildDashMenuTasks(), "Tasks");
         cardPanel.add(buildDashMenuStatus(), "Status");
-        cardPanel.add(buildDashMenuStatus(), "Trackers"); //TODO build trackers menu
-        cardPanel.add(buildDashMenuStatus(), "Timers"); //TODO build timers menu
+        cardPanel.add(buildDashMenuTrackers(), "Trackers"); //TODO build trackers menu
+        cardPanel.add(buildDashMenuTimers(), "Timers"); //TODO build timers menu
         cardPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
-        cardPanel.add(buildDashMenuStatus(), "Developers Console"); //TODO build player console menu
+        cardPanel.add(buildDashMenuDevelopersConsole(), "Developers Console"); //TODO build player console menu
 
         ///  create a
         DefaultListModel<String> model = new DefaultListModel<>();
@@ -274,16 +285,33 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildDashMenuTasks() {
-        // create a task panel
+        // configure list once
+        taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JButton remove = new JButton("Remove");
+        remove.addActionListener(e -> {
+            int index = taskList.getSelectedIndex();
+            // then remove from the UI model
+            if (index >= 0 && index < taskListModel.size()) {
+                taskListModel.remove(index);
+                bot.taskMan.removeTask(index);
+            } else {
+                setStatus("Unable to remove task!");
+            }
+        });
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttons.add(remove);
+
+        /// create a task panel to store all these controls
+
         JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
         taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
+        taskPanel.add(new JLabel("Task Queue"), BorderLayout.NORTH);
+        taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
+        taskPanel.add(buttons, BorderLayout.SOUTH);
 
-        // add a task title
-        JLabel label = new JLabel("Tasks:");
-        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        label.setForeground(new Color(120, 0, 0));
-
-        taskPanel.add(label, BorderLayout.CENTER);
+        // return the created task panel
         return taskPanel;
     }
 
@@ -366,11 +394,20 @@ public class BotMenu extends JFrame {
         return statusPanel;
     }
 
+    private JComponent buildDashMenuDevelopersConsole() {
+        return getDefaultPanel();
+    }
+
     private JComponent buildDashMenuReferenceManual() {
         return getDefaultPanel();
     }
 
     private JComponent buildTabTaskLibrary() {
+//        JButton add = new JButton("Add Task");
+//            add.addActionListener(e -> {
+//                bot.taskMan.add(task);
+//                // TODO bot.taskMan.add(TaskType, target) later?
+//            });
         return getDefaultPanel();
     }
 
@@ -383,7 +420,36 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildTabAbout() {
-        return getDefaultPanel();
+        JLabel title = new JLabel("About");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+
+        JTextArea body = new JTextArea(
+                "\"This is a Swing UI template with:" +
+                "\n- JTabbedPane for navigation" +
+                "\n- CardLayout dashboard sub-pages" +
+                "\n- GridBagLayout settings form" +
+                "\n- BorderLayout logs table" +
+                "\n- BoxLayout about panel\n" +
+
+                "\nNext upgrades:" +
+                "\n- theme (FlatLaf), icons, animations, docking sidebar" +
+                "\n- persistence (save settings to JSON)" +
+                "\n- real-time charts (custom paint or a chart library)\"");
+        body.setEditable(false);
+        body.setOpaque(false);
+        body.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        ///  create a panel to store all this information on
+
+        JPanel aboutPanel = new JPanel();
+        aboutPanel.setLayout(new BoxLayout(aboutPanel, BoxLayout.Y_AXIS));
+        aboutPanel.setBorder(new EmptyBorder(18, 18, 18, 18));
+        aboutPanel.add(title);
+        aboutPanel.add(Box.createVerticalStrut(10));
+        aboutPanel.add(body);
+        aboutPanel.add(Box.createVerticalGlue());
+
+        return aboutPanel;
     }
 
     /**
@@ -601,6 +667,38 @@ public class BotMenu extends JFrame {
 
         return defaultPanel;
     }
+
+    /**
+     * Handles update logic for the BotMenu, to keeps lists, timers and other features real-time. This function is
+     * called everytime the BotMan's onPaint() function is called.
+     */
+    protected final void update() {
+        bot.setBotStatus("Updating bot menu...");
+        taskListModel.clear();
+
+        for (Task task : bot.taskMan.getTasks()) {
+            taskListModel.addElement(task);
+        }
+    }
+
+    public void refresh() {
+        if (bot == null || bot.taskMan == null) return;
+
+        Runnable r = () -> {
+            taskListModel.clear();
+
+            for (Task task : bot.taskMan.getTasks()) {
+                taskListModel.addElement(task);
+            }
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) {
+            r.run();
+        } else {
+            SwingUtilities.invokeLater(r);
+        }
+    }
+
 
     /**
      * Update the bot status to keep the user informed about the script progress.

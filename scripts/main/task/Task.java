@@ -25,11 +25,11 @@ public abstract class Task {
      * A short description broadly describing the {@link Task} at hand.
      */
     private String description = "Loading task...";
-    /**
-     * A short description describing the current progress of this {@link Task} at any given {@link Task#stage},
-     * used for the status.
-     */
-    private String botStatus = "Thinking...";
+//    /**
+//     * A short description describing the current progress of this {@link Task} at any given {@link Task#stage},
+//     * used for the status.
+//     */
+//    private String botStatus = "Thinking...";
     /**
      * The target {@link Area} in which this {@link Task} should be performed.
      */
@@ -71,7 +71,6 @@ public abstract class Task {
     protected Task(TaskType type, String description, int... opt_loops) {
         this.type = type;
         this.description = description;
-        this.botStatus = "Initializing task...";
         this.stages = getStages();
 
         // if a loop count was passed
@@ -104,10 +103,8 @@ public abstract class Task {
      */
     public final void setLoops(int maxLoops) {
         // validate loop count
-        if (maxLoops < 0 || maxLoops > MAX_LOOPS) {
-            postBotStatus("Maximum loops (" + MAX_LOOPS + " exceeded!");
+        if (maxLoops < 0 || maxLoops > MAX_LOOPS)
             return;
-        }
 
         // update loop count/reset current loop to start loop count again
         this.maxLoops = maxLoops;
@@ -157,13 +154,13 @@ public abstract class Task {
         this.stage = 1;
     }
 
-    public final void postBotStatus(String status) {
-        this.botStatus = status;
-    }
+//    public final void postBotStatus(String status) {
+//        this.botStatus = status;
+//    }
 
-    public final String getBotStatus() {
-        return this.botStatus;
-    }
+//    public final String getBotStatus() {
+//        return this.botStatus;
+//    }
 
     /**
      * @return A short description of this task.
@@ -224,10 +221,14 @@ public abstract class Task {
         }
 
         // if this task has been fully executed
-        if (execute(bot))
+        if (execute(bot)) {
+            bot.setStatus("Executing task stage: " + stage
+                    + ", loops: " + getLoops()
+                    + ", attempts: " + bot.getRemainingAttempts());
             // tick over to the next loop, resetting task stage
             tick();
-        else throw new RuntimeException(getBotStatus());
+        }
+        else throw new RuntimeException(bot.getBotStatus());
 
         bot.setBotStatus("Test passed: " + isCompleted());
         return isCompleted();

@@ -3,7 +3,10 @@ package main.managers;
 import main.BotMan;
 import main.task.Task;
 
+import javax.swing.*;
+import java.awt.*;
 import java.util.*;
+import java.util.List;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -81,7 +84,9 @@ public final class TaskMan {
      * @return The {@link Task task} object that was previously in the queue. This allows for easier rearrangement of queues, if needed.
      */
     public Task removeTask(int index) {
-        return queue.remove(index);
+        if (index >= 0 && index < queue.size())
+            return queue.remove(index);
+        return null;
     }
 
     /**
@@ -141,12 +146,32 @@ public final class TaskMan {
     /**
      * @return The number of remaining tasks in the queue.
      */
-    public int getTaskCount() {
+    public int getTotalTaskCount() {
+        return queue.size();
+    }
+
+    public int getRemainingTaskCount() {
         return queue.size() - currentIndex;
     }
 
     public int getIndex() {
         return currentIndex;
+    }
+
+    /**
+     * Return a list containing all the remaining tasks to be executed in the current loop cycle.
+     *
+     * @return A {@link List<Task>} containing all the remaining tasks to be executed in this cycle.
+     */
+    public List<Task> getTasks() {
+        return queue;
+    }
+
+    public JList<Task> getTaskJList(List<Task> tasks) {
+        JList<Task> taskList = new JList<>();
+        taskList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+
+        return taskList;
     }
 
     /**
@@ -163,7 +188,6 @@ public final class TaskMan {
 
         // update status
         bot.setStatus(getHead().getTaskDescription());
-        bot.setBotStatus(getHead().getBotStatus());
 
         // if the queue has reached the end
         if (currentIndex >= queue.size()) {

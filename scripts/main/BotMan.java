@@ -13,7 +13,6 @@ import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
@@ -141,24 +140,25 @@ public abstract class BotMan extends Script {
             setStatus("Launching... ETA BotManager");
 
             ///  setup defaults
-            setBotStatus("Setting default attempts...");
+
             // reset current attempts
             currentAttempt = 0;
             setStatus("Successfully loaded defaults!");
 
-            setBotStatus("Creating BotMenu...");
-            botMenu = new BotMenu(this);
-            setStatus("Successfully loaded BotMenu!");
-
             /// setup managers
+
             setBotStatus("Creating TaskMan...");
             // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
+
+            setBotStatus("Creating BotMenu...");
+            botMenu = new BotMenu(this);
+
             setBotStatus("Creating GraphicsMan...");
             // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
             graphicsMan = new GraphicsMan(this);
-            setStatus("Successfully loaded managers!");
 
+            setStatus("Successfully loaded managers!");
 
             // force-load child scripts to prevent accidental overrides
             // (only load children after loading managers since children use managers)
@@ -203,10 +203,9 @@ public abstract class BotMan extends Script {
             Task task = taskMan.getHead();
             // if a task was found, attempt to complete it
             if (task != null) {
-                if (!setStatus("Attempting task: " + task.getTaskDescription()))
+                setStatus("Found " + taskMan.getRemainingTaskCount() + " tasks to complete.");
+                if (!setStatus("Executing task: " + task.getTaskDescription()))
                     throw new RuntimeException("Failed to set status!");
-                if (!setBotStatus(task.getBotStatus()))
-                    throw new RuntimeException("Failed to set bot status!");
 
                 // return the result of the task as a delay
                 return attempt(task);
@@ -231,7 +230,7 @@ public abstract class BotMan extends Script {
     }
 
     protected boolean safetyCheck() {
-        setStatus("Checking hp level...");
+        setBotStatus("Checking hp level...");
         // if player hp is below threshold && check hp enabled
         // heal
         // check player prayer level && check prayer enabled
@@ -245,6 +244,8 @@ public abstract class BotMan extends Script {
         // add to loot tracker/table on success
         // check runtime below preset/maximum
         // logout for a period of time if so
+        // draw extra things here, like penises.
+        botMenu.update();
 
         return true;
     }
@@ -290,19 +291,16 @@ public abstract class BotMan extends Script {
     }
 
     protected int checkAttempts() throws InterruptedException {
-        if (isDevMode) {
-            setStatus("Developer mode enabled. Ignoring attempt counter.");
-            currentAttempt--;
-            return MIN_DELAY;
-        }
-
-        setStatus("Attempts: " + getRemainingAttempts());
-
         // exit if attempt limit has been exceeded
         if (currentAttempt >= MAX_ATTEMPTS) {
-            setStatus("Maximum attempt limit has been reached! Exiting...");
-            onExit();
-            return 0;
+            if (isDevMode) {
+                setStatus("Developer mode enabled. Ignoring attempt counter.");
+                currentAttempt--;
+            } else {
+                setStatus("Maximum attempt limit has been reached! Exiting...");
+                onExit();
+            }
+            return MIN_DELAY;
 
         // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
         } else delay = LOOP_DELAY.get() * (currentAttempt * 2);
@@ -404,9 +402,9 @@ public abstract class BotMan extends Script {
     @Override
     public final void onPaint(Graphics2D g) {
         // pass the graphics object over to the graphics man to handle the default on-screen overlays
-        graphicsMan.draw(g);
-        // draw extra things here, like penises.
-        //g.drawString("PENIS", 500, 500);
+        graphicsMan.drawMainOverlay(g);
+//        // draw extra things here, like penises.
+//        botMenu.update(); //TODO consider removing, I think updating on loop is slower but less heavy and still fine
     }
 
 

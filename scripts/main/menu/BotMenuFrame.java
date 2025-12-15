@@ -1,31 +1,5 @@
 
 //
-//    private JComponent buildDashboardStats() {
-//        JPanel p = new JPanel(new BorderLayout(12, 12));
-//        p.setBorder(new EmptyBorder(0, 12, 0, 0));
-//
-//        JLabel label = new JLabel("Stats View (placeholder)");
-//        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
-//
-//        JProgressBar xp = new JProgressBar(0, 100);
-//        xp.setValue(63);
-//        xp.setStringPainted(true);
-//        xp.setString("XP Progress");
-//
-//        JProgressBar supplies = new JProgressBar(0, 100);
-//        supplies.setValue(22);
-//        supplies.setStringPainted(true);
-//        supplies.setString("Supplies Remaining");
-//
-//        JPanel mid = new JPanel(new GridLayout(0, 1, 8, 8));
-//        mid.add(xp);
-//        mid.add(supplies);
-//
-//        p.add(label, BorderLayout.NORTH);
-//        p.add(mid, BorderLayout.CENTER);
-//        return p;
-//    }
-//
 //    private JComponent buildDashboardTasks() {
 //        JPanel p = new JPanel(new BorderLayout(12, 12));
 //        p.setBorder(new EmptyBorder(0, 12, 0, 0));
@@ -183,39 +157,6 @@
 //
 //        panel.add(top, BorderLayout.NORTH);
 //        panel.add(new JScrollPane(table), BorderLayout.CENTER);
-//        return panel;
-//    }
-//
-//    // TAB 4: About (BoxLayout)
-//    private JComponent buildAboutTab() {
-//        JPanel panel = new JPanel();
-//        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-//        panel.setBorder(new EmptyBorder(18, 18, 18, 18));
-//
-//        JLabel h = new JLabel("About");
-//        h.setFont(new Font("Segoe UI", Font.BOLD, 18));
-//
-//        JTextArea body = new JTextArea(
-//                "\"This is a Swing UI template with:" +
-//                "\n- JTabbedPane for navigation" +
-//                "\n- CardLayout dashboard sub-pages" +
-//                "\n- GridBagLayout settings form" +
-//                "\n- BorderLayout logs table" +
-//                "\n- BoxLayout about panel\n" +
-//
-//                "\nNext upgrades:" +
-//                "\n- theme (FlatLaf), icons, animations, docking sidebar" +
-//                "\n- persistence (save settings to JSON)" +
-//                "\n- real-time charts (custom paint or a chart library)\"");
-//        body.setEditable(false);
-//        body.setOpaque(false);
-//        body.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-//
-//        panel.add(h);
-//        panel.add(Box.createVerticalStrut(10));
-//        panel.add(body);
-//        panel.add(Box.createVerticalGlue());
-//
 //        return panel;
 //    }
 //
