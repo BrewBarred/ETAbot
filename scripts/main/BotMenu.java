@@ -56,8 +56,7 @@ public class BotMenu extends JFrame {
     public void setDefaults() {
         ///  Client settings:
         setMinimumSize(new Dimension(800, 500));
-        setSecondScreenPref();
-
+        setScreenPreference();
 
         ///  Menu settings: Settings that change the menu, or how it interacts with the script or client.
 
@@ -117,7 +116,7 @@ public class BotMenu extends JFrame {
      * Makes the BotMenu open on the centre of the users 2nd monitor where more than 1 monitor is available.
      */
     //TODO: Test this on one monitor device
-    private void setSecondScreenPref() {
+    private void setScreenPreference() {
         GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
         GraphicsDevice[] screens = ge.getScreenDevices();
 
@@ -231,30 +230,27 @@ public class BotMenu extends JFrame {
      * @return
      */
     private JComponent buildTabDashboard() {
-        /// create the dashboard panel which will hold all the controls we create
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(new EmptyBorder(12, 12, 12, 12));
-
         /// create cards and a card panel and use it to switch between various sub-menus
         CardLayout cards = new CardLayout();
         JPanel cardPanel = new JPanel(cards);
 
         /// add the submenus to a card-panel for easier switching later
         cardPanel.add(buildDashMenuTasks(), "Tasks");
-        cardPanel.add(buildDashMenustatus(), "Status");
-        cardPanel.add(buildDashMenustatus(), "Trackers"); //TODO build trackers menu
-        cardPanel.add(buildDashMenustatus(), "Timers"); //TODO build trackers menu
-        cardPanel.add(buildDashMenustatus(), "Player Info"); //TODO build trackers menu
-        cardPanel.add(buildDashMenustatus(), "Trackers"); //TODO build trackers menu
+        cardPanel.add(buildDashMenuStatus(), "Status");
+        cardPanel.add(buildDashMenuStatus(), "Trackers"); //TODO build trackers menu
+        cardPanel.add(buildDashMenuStatus(), "Timers"); //TODO build timers menu
+        cardPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
+        cardPanel.add(buildDashMenuStatus(), "Developers Console"); //TODO build player console menu
 
         ///  create a
         DefaultListModel<String> model = new DefaultListModel<>();
-        model.addElement("Tasks");
-        model.addElement("Status");
-        model.addElement("Trackers");
-        model.addElement("Timers");
-        model.addElement("Player Info");
-        model.addElement("Reference Manual");
+            model.addElement("Tasks");
+            model.addElement("Status");
+            model.addElement("Trackers");
+            model.addElement("Timers");
+            model.addElement("Player");
+            model.addElement("Reference Manual");
+            model.addElement("Developers Console");
 
         // make a list using the default list model
         JList<String> navList = new JList<>(model);
@@ -265,41 +261,30 @@ public class BotMenu extends JFrame {
         navList.setFixedCellHeight(36);
         navList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
-        // add each submenu to the nav list
-        navList.addListSelectionListener(e -> {
-            // helps prevent accidental double triggering of this event
-            if (e.getValueIsAdjusting())
-                return;
+        // dynamically load each submenu using the nav lists item name as a reference to the card panel being displayed
+        navList.addListSelectionListener(e -> cards.show(cardPanel, navList.getSelectedValue()));
 
-            // switch to the card that the user selects from the sub menu pane
-            switch (navList.getSelectedValue()) {
-                case "Tasks":
-                    cards.show(cardPanel, "Tasks");
-                    break;
+        /// create the dashboard panel which will hold all the controls we create
+        JPanel dashboardPanel = new JPanel(new BorderLayout());
+        dashboardPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+        // add nav list to the dashboard panel
+        dashboardPanel.add(navList, BorderLayout.WEST);
+        dashboardPanel.add(cardPanel, BorderLayout.CENTER);
+        return dashboardPanel;
+    }
 
-                case "Status":
-                    cards.show(cardPanel, "Status");
-                    break;
+    private JComponent buildDashMenuTasks() {
+        // create a task panel
+        JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
+        taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
 
-                case "Tracker(s)":
-                    cards.show(cardPanel, "Trackers");
-                    break;
+        // add a task title
+        JLabel label = new JLabel("Tasks:");
+        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        label.setForeground(new Color(120, 0, 0));
 
-                case "Timers":
-                    cards.show(cardPanel, "Timers");
-                    break;
-
-                case "Player Info":
-                    cards.show(cardPanel, "Player Info");
-                    break;
-
-                case "Reference Manual":
-                    cards.show(cardPanel, "Reference Manual");
-                    break;
-            }
-        });
-
-        return panel;
+        taskPanel.add(label, BorderLayout.CENTER);
+        return taskPanel;
     }
 
     /**
@@ -307,39 +292,53 @@ public class BotMenu extends JFrame {
      *
      * @return The dashboard panel used to create the {@link BotMenu}.
      */
-    private JComponent buildDashMenuTasks() {
-        JPanel p = new JPanel(new BorderLayout(12, 12));
-        p.setBorder(new EmptyBorder(0, 12, 0, 0));
 
+    private JComponent buildDashMenuStatus() {
+        ///  create a 2x2 grid using GridLayout, adding 4x statCards()
+        //TODO update status displays as these are just placeholders for now
         JPanel grid = new JPanel(new GridLayout(2, 2, 12, 12));
         grid.add(statCard("Status", "Running", "All systems nominal"));
         grid.add(statCard("Uptime", "01:42:13", "Since last restart"));
         grid.add(statCard("Profit/hr", "132k", "Estimate"));
         grid.add(statCard("Tasks", "3 active", "Queue is healthy"));
 
+        ///  add a text area to display extra notes at the bottom of the status menu
+
+        //TODO update notes to something more interesting and also make it read only? can currently type in that box
         JTextArea notes = new JTextArea(
                 "Notes:" +
-                        "\n- This is a 'Dashboard' card grid." +
-                        "\n- The left nav swaps panels using CardLayout." +
-                        "\n- Add your OSBot stats, timers, etc here.");
+                "\n- This is a 'Dashboard' card grid." +
+                "\n- The left nav swaps panels using CardLayout." +
+                "\n- Add your OSBot stats, timers, etc here.");
         notes.setLineWrap(true);
         notes.setWrapStyleWord(true);
         notes.setFont(new Font("Consolas", Font.PLAIN, 13));
         notes.setBorder(new EmptyBorder(10, 10, 10, 10));
 
-        p.add(grid, BorderLayout.CENTER);
-        p.add(new JScrollPane(notes), BorderLayout.SOUTH);
-        return p;
+        ///  create a panel to store all our controls
+
+        JPanel statusPanel =  new JPanel(new GridLayout(2, 1, 12, 12));
+        statusPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
+        statusPanel.add(grid, BorderLayout.CENTER);
+        statusPanel.add(new JScrollPane(notes), BorderLayout.SOUTH);
+        return statusPanel;
     }
 
-    private JComponent buildDashMenustatus() {
+    private JComponent buildDashMenuTrackers() {
+        return getDefaultPanel();
+    }
+
+    private JComponent buildDashMenuTimers() {
+        return getDefaultPanel();
+    }
+
+    private JComponent buildDashMenuPlayer() {
+        //TODO create a function that takes a title and returns a panel with the title added in the default font
+        JLabel title = new JLabel("Player:");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
         // create a status panel
         JPanel statusPanel = new JPanel(new BorderLayout(12, 12));
         statusPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
-
-        // add a status title
-        JLabel label = new JLabel("Status:");
-        label.setFont(new Font("Segoe UI", Font.BOLD, 16));
 
         // display the progress of this task
         JProgressBar progressTask = new JProgressBar(0, 100);
@@ -362,21 +361,9 @@ public class BotMenu extends JFrame {
         progressBarPanel.add(progressXP);
 
         // add the status label panel & progress bar panel to the status panel
-        statusPanel.add(label, BorderLayout.NORTH);
+        statusPanel.add(title, BorderLayout.NORTH);
         statusPanel.add(progressBarPanel, BorderLayout.CENTER);
         return statusPanel;
-    }
-
-    private JComponent buildDashMenuTrackers() {
-        return getDefaultPanel();
-    }
-
-    private JComponent buildDashMenuTimers() {
-        return getDefaultPanel();
-    }
-
-    private JComponent buildDashMenuPlayerInfo() {
-        return getDefaultPanel();
     }
 
     private JComponent buildDashMenuReferenceManual() {
@@ -414,6 +401,15 @@ public class BotMenu extends JFrame {
             setDefaultCloseOperation(HIDE_ON_CLOSE);
         else
             setDefaultCloseOperation(EXIT_ON_CLOSE);
+    }
+
+    /**
+     * Returns the default close operation for this {@link BotMenu}.
+     *
+     * @return True if the default close operation for this menu is set to hide, else false if set to dipose.
+     */
+    protected boolean getHideOnClose() {
+        return this.isHidingOnExit;
     }
 
     /**
@@ -501,9 +497,7 @@ public class BotMenu extends JFrame {
 
         // try open the bot menu using swing utilies to delay premature loading before BotMan is instantiated.
         setStatus("Opening BotMenu...");
-        SwingUtilities.invokeLater(() -> {
-            this.showMenu();
-        });
+        this.showMenu();
 
         // return true if the botmenu successfully opened, otherwise return false
         return bot.botMenu == null;
@@ -517,8 +511,9 @@ public class BotMenu extends JFrame {
         if (bot == null || bot.botMenu == null || !isVisible())
             return;
 
-        // hide menu on close based on setting and force-close override param
+        // if hide on exit is enable and force-close is not enabled
         if (this.isHidingOnExit && !force) {
+            // hide the menu and exit early
             this.hideMenu();
             return;
         }

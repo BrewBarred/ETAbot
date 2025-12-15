@@ -156,7 +156,7 @@ public final class TaskMan {
      * @return true if a task returns successful or if there are no tasks to complete in the last, else returns false.
      */
     public boolean call(BotMan bot) throws InterruptedException{
-        bot.setStatus("[Task Manager] Calling next task...");
+        bot.setStatus("[Task Manager] Calling task...");
         // well, we're already doing nothing!
         if (!hasTasks())
             return false;

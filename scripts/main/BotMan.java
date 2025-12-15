@@ -53,7 +53,10 @@ public abstract class BotMan extends Script {
      * The maximum attempts allowed to complete a task.
      */
     protected final int MAX_ATTEMPTS = 3;
-
+    /**
+     * The minimum delay that can be set to prevent the client from lagging out from excessive loops.
+     */
+    protected final int MIN_DELAY = 350;
     ///
     ///     PROTECTED FIELDS
     ///
@@ -200,7 +203,7 @@ public abstract class BotMan extends Script {
             Task task = taskMan.getHead();
             // if a task was found, attempt to complete it
             if (task != null) {
-                if (!setStatus("Attempting task:" + task.getTaskDescription()))
+                if (!setStatus("Attempting task: " + task.getTaskDescription()))
                     throw new RuntimeException("Failed to set status!");
                 if (!setBotStatus(task.getBotStatus()))
                     throw new RuntimeException("Failed to set bot status!");
@@ -287,8 +290,11 @@ public abstract class BotMan extends Script {
     }
 
     protected int checkAttempts() throws InterruptedException {
-        if (isDevMode)
-            return 0;
+        if (isDevMode) {
+            setStatus("Developer mode enabled. Ignoring attempt counter.");
+            currentAttempt--;
+            return MIN_DELAY;
+        }
 
         setStatus("Attempts: " + getRemainingAttempts());
 
@@ -380,7 +386,8 @@ public abstract class BotMan extends Script {
     @Override
     public final void onExit() throws InterruptedException {
         if (botMenu != null)
-            botMenu.close();
+            // force-close the bot menu
+            botMenu.close(true);
 
         stop(logoutOnExit);
         log("Successfully exited ETA's (OsBot) Bot Manager");
