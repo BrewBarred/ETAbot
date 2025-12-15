@@ -43,11 +43,6 @@ import java.util.function.Supplier;
  */
 public abstract class BotMan extends Script {
     ///
-    ///     PRIVATE STATIC FIELDS
-    ///
-
-
-    ///
     ///     PUBLIC FIELDS
     ///
 
@@ -87,6 +82,11 @@ public abstract class BotMan extends Script {
      * True if the bot should log out when the script is complete.
      */
     private boolean logoutOnExit = false;
+    /**
+     * True if the player is currently in developer mode, which will bypass the attempt counter and enable some extra
+     * features while BotMan is running.
+     */
+    private boolean isDevMode = true;
     /**
      * The type of task currently being performed (if any).
      */
@@ -213,7 +213,7 @@ public abstract class BotMan extends Script {
             throw new RuntimeException("No tasks to complete!");
 
         } catch (RuntimeException i) {
-            setStatus("\n---\n ERROR: " + i.getMessage() + "\n---");
+            setStatus("[ERROR] " + i.getMessage());
             return checkAttempts();
         }
     }
@@ -287,6 +287,9 @@ public abstract class BotMan extends Script {
     }
 
     protected int checkAttempts() throws InterruptedException {
+        if (isDevMode)
+            return 0;
+
         setStatus("Attempts: " + getRemainingAttempts());
 
         // exit if attempt limit has been exceeded
@@ -294,6 +297,7 @@ public abstract class BotMan extends Script {
             setStatus("Maximum attempt limit has been reached! Exiting...");
             onExit();
             return 0;
+
         // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
         } else delay = LOOP_DELAY.get() * (currentAttempt * 2);
 
