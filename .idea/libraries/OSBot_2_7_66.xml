@@ -2,7 +2,6 @@
   <library name="OSBot 2.7.66">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/../OSBot 2.7.66.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/flatlaf.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

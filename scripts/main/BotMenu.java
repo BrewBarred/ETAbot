@@ -3,8 +3,6 @@ package main;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-
-// import 4x custom gui's as themes
 import main.task.Task;
 
 import java.awt.*;
@@ -41,12 +39,14 @@ public class BotMenu extends JFrame {
         this.scriptPanel = new JPanel();
         this.btnExecution = new JButton("Play");
 
-        // create bot menu
-        createMenu();
-        // set default settings
-        setDefaults();
-        // display the menu
-        this.showMenu();
+        SwingUtilities.invokeLater(() -> {
+            // create bot menu
+            createMenu();
+            // set default settings
+            setDefaults();
+            // display the menu
+            this.showMenu();
+        });
     }
 
     ///
@@ -54,23 +54,27 @@ public class BotMenu extends JFrame {
     ///
     //TODO: create a function to handle setting defaults later?
     public void setDefaults() {
-        ///
-        ///     Menu settings: Settings that change the menu, or how it interacts with the script or client.
-        ///
+        ///  Client settings:
+        setMinimumSize(new Dimension(800, 500));
+        setSecondScreenPref();
+
+
+        ///  Menu settings: Settings that change the menu, or how it interacts with the script or client.
+
         setHideOnClose(true);
 
-        ///
-        ///     Script settings: Settings that change how the script runs and operates prior to execution
-        ///
+
+        ///  Script settings: Settings that change how the script runs and operates prior to execution
+
         // this.maxLoops = 1; // disables looping until manually set
         // this.taskType = TaskType.SCAN; // sets default task to scan the surrounding area to decide what can be done
         // this.target = null; // fetches nearest target based on task type?
         // this.position = null; // fetches current position?
         // this.area = null; // fetches current area using (position, DEFAULT_RADIUS)?
 
-        ///
-        ///     Bot settings: Settings that change how the script runs prior and during execution.
-        ///
+
+        ///  Bot settings: Settings that change how the script runs prior and during execution.
+
         // this.isRunning = true;
         // this.isTeleporting = false; // sets the player to use teleports where possible (not setup yet)
 
@@ -83,9 +87,9 @@ public class BotMenu extends JFrame {
         // this.isSolvingRandoms = false; // never leave randoms waiting, always dismiss them after a period of time or solve them
         // this.isSolvingClues = true;
 
-        ///
-        ///     Combat settings: Settings that change how the bot responds to combat
-        ///
+
+        ///  Combat settings: Settings that change how the bot responds to combat
+
         // this.isRetailing = true;
         // this.isRetaliatingPVP = false;
 
@@ -93,9 +97,9 @@ public class BotMenu extends JFrame {
 
         // this.isBurying = true;
 
-        ///
-        ///     Advanced combat settings: Settings that adjust the default combat properties/parameters. Hidden menu - intended for advanced users only.
-        ///
+
+        ///  Advanced combat settings: Settings that adjust the default combat properties/parameters. Hidden menu - intended for advanced users only.
+
         // this.attackStyle = AttackStyle.Slash; // set default attack style to slash (commonly available on all weps)
 
         // this.healBelowHp = 20 // start auto-healing below this hp value (between 1-99)
@@ -103,10 +107,31 @@ public class BotMenu extends JFrame {
 
         // this.dontBury = "Dragon", "Curved"; // if auto-burying is enabled, exclude bones containing the strings in this list, such as "Frost Dragon Bones" via excluding "Dragon" (not case-sensitive)
 
-        ///
-        ///     Advanced settings: Settings that adjust the default properties of other settings or parameters of a function. Hidden menu - intended for advanced users only.
-        ///
+
+        ///  Advanced settings: Settings that adjust the default properties of other settings or parameters of a function. Hidden menu - intended for advanced users only.
+
         // this.runAboveEnergy = 80; // only allow the bot to auto run when energy level is 80 or higher.
+    }
+
+    /**
+     * Makes the BotMenu open on the centre of the users 2nd monitor where more than 1 monitor is available.
+     */
+    //TODO: Test this on one monitor device
+    private void setSecondScreenPref() {
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        GraphicsDevice[] screens = ge.getScreenDevices();
+
+        if (screens.length > 1) {
+            GraphicsConfiguration gc = screens[1].getDefaultConfiguration();
+            Rectangle bounds = gc.getBounds();
+
+            int x = bounds.x + (bounds.width - getWidth()) / 2;
+            int y = bounds.y + (bounds.height - getHeight()) / 2;
+
+            setLocation(x, y);
+        } else {
+            setLocationRelativeTo(null); // fallback
+        }
     }
 
     ///
@@ -118,7 +143,10 @@ public class BotMenu extends JFrame {
         ///     and (in some cases) their own submenus, then finally, place the status' messages along the bottom
         ///
 
-        /// create a bot menu panel to store all the created components
+        ///  adjust window properties
+        setSize(400, 300);
+
+        ///  create a bot menu panel to store all the created components
         JPanel menu = new JPanel(new BorderLayout());
         menu.setBorder(new EmptyBorder(12, 12, 12, 12));
         setContentPane(menu);
@@ -142,12 +170,12 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildHeader() {
-        /// create a header panel which will hold everything we create
+        ///  create a header panel which will hold everything we create
         JPanel header = new JPanel(new BorderLayout());
         // remove header border
         header.setBorder(new EmptyBorder(0, 0, 12, 0));
 
-        /// create header left side
+        ///  create header left side
         // add a header title w/big font
         JLabel title = new JLabel("BotMan | BotMenu");
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
@@ -157,7 +185,7 @@ public class BotMenu extends JFrame {
         subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         subtitle.setForeground(new Color(80, 80, 80));
 
-        /// create a title panel for header/subtitle layout
+        ///  create a title panel for header/subtitle layout
         JPanel titlePanel = new JPanel();
         titlePanel.setLayout(new BoxLayout(titlePanel, BoxLayout.Y_AXIS));
         titlePanel.setOpaque(false);
@@ -167,30 +195,30 @@ public class BotMenu extends JFrame {
 
         ///  create the quick action buttons and link them to an action event
 
-        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
-        JButton action1 = new JButton("Action 1");
-        action1.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 1 fired."));
-        JButton action2 = new JButton("Action 2");
-        action2.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 2 fired."));
-        JButton action3 = new JButton("Action 3");
-        action3.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 3 fired."));
-        JButton action4 = new JButton("Action 4");
-        action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
-
-        ///  create a panel to neatly group our quick action buttons
-
-        JPanel quickPanel = new JPanel();
-        quickPanel.add(action1);
-        quickPanel.add(action2);
-        quickPanel.add(action3);
-        quickPanel.add(action4);
+//        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
+//        JButton action1 = new JButton("Action 1");
+//        action1.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 1 fired."));
+//        JButton action2 = new JButton("Action 2");
+//        action2.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 2 fired."));
+//        JButton action3 = new JButton("Action 3");
+//        action3.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 3 fired."));
+//        JButton action4 = new JButton("Action 4");
+//        action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
+//
+//        ///  create a panel to neatly group our quick action buttons
+//
+//        JPanel quickPanel = new JPanel();
+//        quickPanel.add(action1);
+//        quickPanel.add(action2);
+//        quickPanel.add(action3);
+//        quickPanel.add(action4);
 
         /// add header components
 
         // add header title
         header.add(titlePanel, BorderLayout.WEST);
         // add header quick action buttons
-        header.add(quickPanel, BorderLayout.EAST);
+        //header.add(quickPanel, BorderLayout.EAST);
 
         // return the header we just built
         return header;

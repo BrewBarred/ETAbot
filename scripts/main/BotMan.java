@@ -13,11 +13,11 @@ import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
-// import flat dark laf theme
-
+import javax.swing.*;
 import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -152,7 +152,7 @@ public abstract class BotMan extends Script {
             // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
             setBotStatus("Creating GraphicsMan...");
-            // create a new graphics manager to draw on-screen graphics, pa    ssing an instance of this bot for easier value reading.
+            // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
             graphicsMan = new GraphicsMan(this);
             setStatus("Successfully loaded managers!");
 
@@ -293,6 +293,7 @@ public abstract class BotMan extends Script {
         if (currentAttempt >= MAX_ATTEMPTS) {
             setStatus("Maximum attempt limit has been reached! Exiting...");
             onExit();
+            return 0;
         // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
         } else delay = LOOP_DELAY.get() * (currentAttempt * 2);
 
