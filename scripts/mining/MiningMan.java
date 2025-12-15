@@ -86,7 +86,7 @@
 //        // locate and open the nearest bank
 //        if (!getBank().open())
 //            // ensure bank is open
-//            new ConditionalSleep(Rand.getRandShortDelayInt()) {
+//            new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
 //                @Override public boolean condition() throws InterruptedException {
 //                    return getBank().open();
 //                }

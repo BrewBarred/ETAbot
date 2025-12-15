@@ -105,10 +105,10 @@
 //        return "perform";
 //    }
 //
-//    private static boolean perform(BotMan<?> bot, EmoteMan emote) {
+//    private static boolean perform(BotMan bot, EmoteMan emote) {
 //        if (bot.getWidgets().interact(emote.getRoot(), emote.getChild(), "Perform")) {
 //            // wait some time for emote
-//            sleep(Rand.getRandReallyShortDelayInt());
+//            sleep(ETARandom.getRandReallyShortDelayInt());
 //            return true;
 //        }
 //        return false;
@@ -117,13 +117,13 @@
 //    ///
 //    ///     HELPER FUNCTIONS
 //    ///
-//    public boolean perform(BotMan<?> bot) {
+//    public boolean perform(BotMan bot) {
 //        try {
 //            if (!openEmoteTab(bot)) return false;
 //
 //            bot.setStatus("Performing \"" + this + "\"...");
 //            if (bot.getWidgets().interact(getRoot(), getChild(), getInteraction())) {
-//                sleep(Rand.getRandReallyShortDelayInt());
+//                sleep(ETARandom.getRandReallyShortDelayInt());
 //                return true;
 //            }
 //        } catch (Exception e) {
@@ -136,7 +136,7 @@
 //    /**
 //     * Static helper: convenience call.
 //     */
-//    public static boolean performEmote(BotMan<?> bot, EmoteMan emote) {
+//    public static boolean performEmote(BotMan bot, EmoteMan emote) {
 //        return emote.perform(bot);
 //    }
 //
@@ -146,11 +146,11 @@
 //     * @param bot The {@link BotMan bot} instance.
 //     * @return True if the tab is opened successfully, else return false.
 //     */
-//    public boolean openEmoteTab(BotMan<?> bot) {
+//    public boolean openEmoteTab(BotMan bot) {
 //        // ensure emotes tab is open
 //        if (!bot.getTabs().isOpen(Tab.EMOTES)) {
 //            bot.getTabs().open(Tab.EMOTES);
-//            sleep(Rand.getRandReallyShortDelayInt());
+//            sleep(ETARandom.getRandReallyShortDelayInt());
 //        }
 //
 //        return (bot.getTabs().isOpen(Tab.EMOTES));

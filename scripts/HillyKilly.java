@@ -16,12 +16,12 @@ import java.util.Map;
 
 /**
  * HillyKilly — Hill Giant killing script for Ironman accounts.
- *
+ * <p>
  * Improvements over original:
  *  - Better loot detection (death-tile tracking + wait for loot spawn)
  *  - Maintains custom banking/food logic (lobster healing, swordfish preferred, fallback)
  *  - Burying bones, eating at low HP, logging XP, Ironman-safe loot detection
- *
+ * <p>
  * Version: 4.5 (adds timestamp validation to Ironman block handling)
  */
 @ScriptManifest(
@@ -71,7 +71,7 @@ public class HillyKilly extends Script implements MessageListener {
     private Position lastKillTile = null;
 
     // Ironman / pathing blocks
-    private boolean lastIronmanBlock = false;
+    private final boolean lastIronmanBlock = false;
     private boolean unreachableBlock = false;
 
     // --- NEW: timestamp-based Ironman block handling ---
@@ -94,7 +94,7 @@ public class HillyKilly extends Script implements MessageListener {
         for (Skill s : new Skill[]{
                 Skill.ATTACK, Skill.STRENGTH, Skill.DEFENCE,
                 Skill.HITPOINTS, Skill.RANGED, Skill.MAGIC, Skill.PRAYER}) {
-            startXp.put(s, skills.getExperience(s));
+            startXp.put(s, Integer.valueOf(skills.getExperience(s)));
         }
         lastXpLogTime = System.currentTimeMillis();
 
@@ -125,7 +125,7 @@ public class HillyKilly extends Script implements MessageListener {
         if (buryBones())
             return ETARandom.getRandReallyReallyShortDelayInt();
 
-        // prioritize drops over combat or you'll get stuck in combat and lose a bunch of drops
+        // prioritize drops over combat, or you'll get stuck in combat and lose a bunch of drops
         if (lootDrops())
             return ETARandom.getRandReallyReallyShortDelayInt();
 
@@ -158,13 +158,13 @@ public class HillyKilly extends Script implements MessageListener {
     }
 
     private void blockTileTemp(Position tile) {
-        blockedTiles.put(tile, System.currentTimeMillis());
+        blockedTiles.put(tile, Long.valueOf(System.currentTimeMillis()));
         lastIronmanBlockTime = System.currentTimeMillis();
         log("Temporarily blocked tile: " + tile);
     }
 
     private void blockTilePermanent(Position tile) {
-        blockedTiles.put(tile, -1L);
+        blockedTiles.put(tile, Long.valueOf(-1L));
         log("Permanently blocked tile: " + tile);
     }
 

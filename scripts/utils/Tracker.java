@@ -1,6 +1,6 @@
 package utils;
 
-import com.sun.istack.internal.NotNull;
+
 import org.osbot.rs07.api.Inventory;
 import org.osbot.rs07.api.Skills;
 import org.osbot.rs07.api.ui.Skill;
@@ -63,7 +63,7 @@ public class Tracker {
         public final int startLevel;
         public final int startXP;
 
-        TrackedSkill(ExperienceTracker xpTrack, @NotNull Skill skill,@NotNull int startLevel,@NotNull int startXP) {
+        TrackedSkill(ExperienceTracker xpTrack, Skill skill,int startLevel,int startXP) {
             this.skill = Objects.requireNonNull(skill);
             this.startLevel = startLevel;
             this.startXP = startXP;
@@ -116,7 +116,7 @@ public class Tracker {
      * @param methodProvider OSBot method provider API used for script queries.
      * @param skillsToTrack List of skills to start tracking.
      */
-    public Tracker(@NotNull MethodProvider methodProvider, Skill... skillsToTrack) {
+    public Tracker(MethodProvider methodProvider, Skill... skillsToTrack) {
         // capture tracker start time
         this.startTime = Instant.now();
 
@@ -148,7 +148,7 @@ public class Tracker {
      * @param methodProvider OSBot method provider API used for script queries.
      * @param skillToTrack The {@link Skill} to track.
      */
-    public Tracker(@NotNull MethodProvider methodProvider, @NotNull String skillToTrack) {
+    public Tracker(MethodProvider methodProvider, String skillToTrack) {
         // use the passed skill name to
         this(methodProvider, Skill.forName(skillToTrack));
     }

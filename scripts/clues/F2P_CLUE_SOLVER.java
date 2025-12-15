@@ -7,7 +7,7 @@
 //
 //        // try solve the clue using the text
 //        if (decipherClueText(text)) {
-//            return Rand.getRand(1243);
+//            return ETARandom.getRand(1243);
 //        } else {
 //            // if none of the above or a charlie clue, it must be a digging one
 //            ClueLocation location = readMap();
@@ -19,7 +19,7 @@
 //
 //        // else, there must be an unsolvable clue or bug... exit script until I can work on a fix for it :)
 //        onExit("Unable to process clue scroll! Exiting script...");
-//        return Rand.getRand(0);
+//        return ETARandom.getRand(0);
 //    }
 //
 
@@ -93,7 +93,7 @@
 //        // Try to click the Strange device
 //        final String STRANGE_DEVICE = "Strange device";
 //        if (getInventory().interact("Feel", STRANGE_DEVICE)) {
-//            sleep(Rand.getRandReallyShortDelayInt());
+//            sleep(ETARandom.getRandReallyShortDelayInt());
 //            // Grab the latest chat message
 //            String lastMessage = getChatbox().getMessages(Chatbox.MessageType.GAME).stream()
 //                    .findFirst()

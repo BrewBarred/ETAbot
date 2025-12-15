@@ -1,22 +1,19 @@
 //package fishing;
 //
-//import org.osbot.T;
+//import main.tools.ETARandom;
 //import org.osbot.rs07.api.model.RS2Object;
 //import org.osbot.rs07.api.ui.RS2Widget;
 //import org.osbot.rs07.api.ui.Skill;
 //import org.osbot.rs07.script.MethodProvider;
 //
-//import utils.BotMan;
+//import main.BotMan;
 //import org.osbot.rs07.api.map.Area;
 //import org.osbot.rs07.api.model.Item;
 //import org.osbot.rs07.api.model.NPC;
 //import org.osbot.rs07.utility.ConditionalSleep;
-//import utils.BotMenu;
-//import utils.Rand;
+//import main.BotMenu;
 //
 //import java.awt.*;
-//import java.sql.Time;
-//import java.time.Instant;
 //import java.util.*;
 //import java.util.List;
 //
@@ -123,7 +120,7 @@
 //
 //        // ensure lobster pot is still in player inventory
 //        if (!getInventory().contains("Lobster pot")) {
-            //setStatus("Attempting to find lost lobster pot...");
+//            setStatus("Attempting to find lost lobster pot...");
 //            // TODO: Write logic to find nearby items or search general stores etc for them
 //            setStatus("Unable to find lobster pot, fetching a new one...");
 //            // TODO: Write logic to search bank for pot or coins
@@ -147,7 +144,7 @@
 //
 //        setStatus("Player is fishing...");
 //        // start randomized conditional sleep
-//        new ConditionalSleep(Rand.getRandLongDelayInt(), Rand.getRandShortDelayInt()) {
+//        new ConditionalSleep(ETARandom.getRandLongDelayInt(), ETARandom.getRandShortDelayInt()) {
 //            @Override
 //            public boolean condition() throws InterruptedException {
 //                // stop sleeping early if player is not animating during check
@@ -191,7 +188,7 @@
 //        harpoonSpot.ifPresent(npc -> npc.interact("Harpoon"));
 //        setStatus("Player is harpoon fishing...", false);
 //        // start randomized conditional sleep
-//        new ConditionalSleep(Rand.getRandLongDelayInt(), Rand.getRandShortDelayInt()) {
+//        new ConditionalSleep(ETARandom.getRandLongDelayInt(), ETARandom.getRandShortDelayInt()) {
 //            @Override
 //            public boolean condition() {
 //                // stop sleeping early if player is not animating during check
@@ -241,16 +238,16 @@
 //                        // sell 50 of each raw food as it is found to speed up selling process
 //                        getStore().sell(name, 50);
 //                        soldItems.add(name);
-//                        sleep(Rand.getRandShortDelayInt());
+//                        sleep(ETARandom.getRandShortDelayInt());
 //                    }
 //                }
 //                getStore().close();
-//                sleep(Rand.getRandShortDelayInt());
+//                sleep(ETARandom.getRandShortDelayInt());
 //            }
 //
 //            // hop worlds after a successful sale
 //            getWorlds().hopToF2PWorld();
-//            sleep(Rand.getRandShortDelayInt());
+//            sleep(ETARandom.getRandShortDelayInt());
 //        }
 //    }
 //
@@ -278,12 +275,12 @@
 //
 //        setStatus("Using food on range...");
 //        rawFishy.interact("Use");
-//        MethodProvider.sleep(Rand.getRand(892));
+//        MethodProvider.sleep(ETARandom.getRand(892));
 //        range.interact();
 //
 //        setStatus("Waiting for interface...");
 //        // TODO: Implement anti-bot for this instant sleep cancellation after cooking has finished
-//        new ConditionalSleep(Rand.getRand(534, 1231)) {
+//        new ConditionalSleep(ETARandom.getRand(534, 1231)) {
 //            @Override
 //            public boolean condition() {
 //                return getDialogues().isPendingOption();
@@ -293,7 +290,7 @@
 //        setStatus("Selecting chat option...");
 //
 //        // TODO: Implement anti-bot for this instant sleep cancellation after cooking has finished
-//        new ConditionalSleep(Rand.getRandShortDelayInt()) {
+//        new ConditionalSleep(ETARandom.getRandShortDelayInt()) {
 //            @Override
 //            public boolean condition() {
 //                // return only when the chat options widget appears
@@ -316,7 +313,7 @@
 //
 //        setStatus("Player is cooking...");
 //        // Wait until the player finishes cooking
-//        new ConditionalSleep(Rand.getRandLongDelayInt(), Rand.getRand(2539, 4393)) {
+//        new ConditionalSleep(ETARandom.getRandLongDelayInt(), ETARandom.getRand(2539, 4393)) {
 //            @Override
 //            public boolean condition() {
 //                // stop waiting when there is no raw food left

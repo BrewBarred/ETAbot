@@ -3,7 +3,7 @@
 //import org.osbot.rs07.script.ScriptManifest;
 //import utils.Rand;
 //
-//import static utils.Rand.getRandShortDelayInt;
+//import static utils.ETARandom.getRandShortDelayInt;
 //
 //@ScriptManifest(
 //        name = "F2P Iron Banker",

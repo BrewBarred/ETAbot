@@ -14,7 +14,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        if (target != null && target.exists() && target.hasAction("Talk-to")) {
 //            return target.interact("Talk-to");
 //        }

@@ -1,6 +1,6 @@
 //package utils;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import org.osbot.rs07.api.NPCS;
 //import org.osbot.rs07.api.map.Area;
 //import org.osbot.rs07.api.map.Position;
@@ -21,7 +21,7 @@
 //    private final Area location;
 //    private NPC npc;//TODO: adjust enum to suit
 //
-//    public Toon(@NotNull NPC npc) {
+//    public Toon(NPC npc) {
 //        this.name = npc.getName();
 //        this.location = npc.getArea(1);
 //        this.npc = npc;
@@ -47,7 +47,7 @@
 //     * @param bot The {@link BotMan botting} instance used to find nearby NPCs.
 //     * @param name The name of the NPC to find.
 //     */
-//    public Toon(BotMan<?> bot, String name, Area spawn) {
+//    public Toon(BotMan bot, String name, Area spawn) {
 //        this.name = name;
 //        this.npc = bot.getNpcs().closest(name);
 //        this.location = npc.getArea(1);
@@ -81,7 +81,7 @@
 //        return npc != null && npc.exists();
 //    }
 //
-//    public NPC getNpc(BotMan<?> bot) {
+//    public NPC getNpc(BotMan bot) {
 //        if (!isValid()) {
 //            // refresh from world using name + area
 //            npc = bot.getNpcs().closest(n ->
@@ -97,7 +97,7 @@
 //     *
 //     * @return
 //     */
-//    public Position getRoughPosition(BotMan<?> bot) {
+//    public Position getRoughPosition(BotMan bot) {
 //        NPC active = getNpc(bot);
 //        if (active != null) return active.getPosition();
 //        // fallback: walk to static spawn area
@@ -120,7 +120,7 @@
 //     * @param action The interaction string (e.g., "Talk-to", "Attack").
 //     * @return True if the action was successfully triggered.
 //     */
-//    public boolean interact(BotMan<?> bot, String action) {
+//    public boolean interact(BotMan bot, String action) {
 //        NPC active = getNpc(bot);
 //        return active != null && active.interact(action);
 //    }
@@ -144,7 +144,7 @@
 //            // 🔹 CUSTOM TOON EXTENSIONS
 //            // -------------------------------
 //
-//    public boolean talkTo(BotMan<?> bot, String... options) throws InterruptedException {
+//    public boolean talkTo(BotMan bot, String... options) throws InterruptedException {
 //        return bot.talkTo(this, options);
 //    }
 //
@@ -168,7 +168,7 @@
 //     * @param options A {@link String[]} of chat dialogue options that will be used when conversing with this NPC.
 //     * @return {@link Boolean True} if the travelling or conversation loop is not prematurely broken.
 //     */
-//    public boolean walkAndTalk(BotMan<?> bot, String... options) throws InterruptedException {
+//    public boolean walkAndTalk(BotMan bot, String... options) throws InterruptedException {
 //        // self reference to walk and talk to npcs using this object
 //        if (!bot.walkTo(this))
 //            return !bot.setStatus("Unable to travel to \"" + getName() + "\"");
@@ -182,7 +182,7 @@
 //     * @param emotes A {@link String[]} of chat dialogue options that will be used when conversing with this NPC.
 //     * @return {@link Boolean True} if this task completes successfully.
 //     */
-//    public boolean walkAndEmote(BotMan<?> bot, EmoteMan... emotes) throws InterruptedException {
+//    public boolean walkAndEmote(BotMan bot, EmoteMan... emotes) throws InterruptedException {
 //        if (!bot.walkTo(this))
 //            return !bot.setStatus("Unable to travel to \"" + getName() + "\"");
 //
@@ -199,7 +199,7 @@
 //     *
 //     * @return True if the NPC is targeting the player.
 //     */
-//    public boolean isAggressiveToPlayer(BotMan<?> bot) {
+//    public boolean isAggressiveToPlayer(BotMan bot) {
 //        return npc != null && npc.getInteracting() != null
 //                && npc.getInteracting().equals(bot.myPlayer());
 //    }
@@ -283,12 +283,12 @@
 ////        return fastDialogueOptions;
 ////    }
 ////
-////    public NPC getNearest(BotMan<?> bot) {
+////    public NPC getNearest(BotMan bot) {
 ////            return bot.getNpcs().closest(n -> n != null
 ////                    && n.getName() != null);
 ////    }
 ////
-////    public boolean isVisible(BotMan<?> bot) {
+////    public boolean isVisible(BotMan bot) {
 ////        return bot.getNpcs().closest(n -> n != null
 ////                && n.getName() != null
 ////                && n.getName().equalsIgnoreCase(getName())

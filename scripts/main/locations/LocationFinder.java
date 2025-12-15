@@ -1,6 +1,6 @@
 //package main.locations;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import locations.cityLocations.*;
 //
 //import java.util.Arrays;
@@ -65,7 +65,7 @@
 //     * @return The location if it is found in the {@link Spot locations} class.
 //     */
 //    //TODO: TEST
-//    public static TravelMan find(String name, @NotNull TravelMan... locationEnumValues) {
+//    public static TravelMan find(String name, TravelMan... locationEnumValues) {
 //        for (TravelMan city : locationEnumValues) {
 //            if (city.getName().equalsIgnoreCase(name)) {
 //                return city;

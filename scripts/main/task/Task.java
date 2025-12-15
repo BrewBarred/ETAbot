@@ -3,28 +3,33 @@ package main.task;
 import main.BotMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
+import org.osbot.rs07.api.ui.Skill;
 
+import javax.swing.*;
 import java.util.function.BooleanSupplier;
 
 public abstract class Task {
     /**
-     * The default target area radius (measured in tiles in every direction of the player). This is static so it could be
-     * used in the constructor on instantiation for more creation flexibility.
+     * The maximum number of loops allowed per task.
+     */
+    private static final int MAX_LOOPS = 100;
+    /**
+     * The default radius for the target area (measured in tiles in every direction of the player).
      */
     private static final int DEFAULT_RADIUS = 20;
     /**
      * The type of task currently being performed.
      */
     private final TaskType type;
-    //TODO: consider removing
-//    /**
-//     * The function to perform. This function should return a boolean on completion to track execution results.
-//     */
-//    private Function<BotMan<?>, Boolean> function;
     /**
-     * A short description describing the current task at hand (unlike the lengthy ones provided for AI training in some classes)
+     * A short description broadly describing the {@link Task} at hand.
      */
-    private final String description;
+    private String description = "Loading task...";
+    /**
+     * A short description describing the current progress of this {@link Task} at any given {@link Task#stage},
+     * used for the status.
+     */
+    private String botStatus = "Thinking...";
     /**
      * The target {@link Area} in which this {@link Task} should be performed.
      */
@@ -32,68 +37,88 @@ public abstract class Task {
     /**
      * The condition attached to this task, if this condition become true, the loop will be broken.
      */
-    private BooleanSupplier condition;
-    /**
-     * Used to flag this item as complete. This allows items to do some work, breaking back into the main {@link BotMan}
-     * loop for core checks, and then back into this task without losing queue position.
-     */
-    private boolean completed;
+    private BooleanSupplier condition;;
 
     // optional attributes adjusted by children
     protected Position targetPosition;
 
     // menu items
-    private int maxLoops = 0;
+    private int maxLoops = 1;
     private int currentLoop = 0;
-    /**
-     * The current progress level (increments
-     */
-    protected int stage = 0;
-    private int totalStages = 0;
 
-    protected Task(TaskType type, String description) {
+    /**
+     * The stage that this {@link Task} is currently up to. This stage feature allows the bot to stop in the middle of a
+     * task, then pick up (at least, roughly) where it left off, allowing for smoother, less detectable, more versatile,
+     * and safer botting.
+     */
+    protected int stage = 1;
+
+    /**
+     * The total number of stages involved with this particular {@link Task}. If the current {@link Task#stage} is equal
+     * to the maximum stages, then this {@link Task} must be on its last step. Once the {@link Task#stage} value exceeds
+     * the stages value, the Task must have been executed successfully.
+     */
+    public int stages = 1;
+
+    /**
+     * Every task has a type and a description for on-screen overlays. The task type helps describe the status of the
+     * bot, e.g., "Walking to...", "Checking stock...", "Selling x swordfish...". The description is more independent
+     * and provides broader information to the user, e.g., "Selling fish to Gerrant's shop".
+     *
+     * @param type The type of action being performed.
+     * @param description An informative description of the action being performed.
+     */
+    protected Task(TaskType type, String description, int... opt_loops) {
         this.type = type;
         this.description = description;
+        this.botStatus = "Initializing task...";
+        this.stages = getStages();
+
+        // if a loop count was passed
+        if (opt_loops.length > 0) {
+            // convert it to an integer (should only be 1 value in the array)
+            int loops = opt_loops[0];
+            // if the loop count is a valid integer
+            if (loops >= 0)
+                setLoops(opt_loops[0]);
+        }
+            //TODO: (consider adding) this.stageOneLoops = loops[1]; // repeat stage one of a given task x amount of times
     }
 
-    protected Task(TaskType type, String description, Position position, int radius) {
-        this(type, description);
-        this.targetPosition = position;
-        this.targetArea = position.getArea(radius);
-    }
-
-    protected Task(TaskType type, String description, Position position) {
-        this(type, description, position, DEFAULT_RADIUS);
-    }
-
-    protected Task(TaskType type, String description, Area area) {
-        this(type, description, area.getRandomPosition());
-    }
-
-
-// TODO: implement loops once one cycle runs nicely.
-//    protected Task(TaskType type, int loops) {
-//        this.type = type;
-//        this.loopCount = loops;
-//    }
-
-    public TaskType getType() {
+    public final TaskType getType() {
         return type;
     }
 
-    public BooleanSupplier getCondition() {
-        return this.condition;
-    }
-
-    protected void setCondition(BooleanSupplier condition) {
+    protected final void setCondition(BooleanSupplier condition) {
         this.condition = condition;
     }
 
-    public int getInitialLoops() {
+    public final BooleanSupplier getCondition() {
+        return this.condition;
+    }
+
+    /**
+     * Set the remaining loop count for this {@link Task}.
+     *
+     * @param maxLoops An {@link Integer} value denoting the number of times in which this task will be repeated.
+     */
+    public final void setLoops(int maxLoops) {
+        // validate loop count
+        if (maxLoops < 0 || maxLoops > MAX_LOOPS) {
+            postBotStatus("Maximum loops (" + MAX_LOOPS + " exceeded!");
+            return;
+        }
+
+        // update loop count/reset current loop to start loop count again
+        this.maxLoops = maxLoops;
+        this.currentLoop = 0;
+    }
+
+    public final int getMaxLoops() {
         return maxLoops;
     }
 
-    public int getCurrentLoop() {
+    public final int getCurrentLoop() {
         return currentLoop;
     }
 
@@ -102,119 +127,191 @@ public abstract class Task {
      *
      * @return The loop count as an int.
      */
-    public int getLoopsLeft() {
-        // TODO: double-check quick maf
-        return currentLoop;
-    }
-
-    public void setLoopCount(int numLoops) {
-        this.maxLoops = numLoops;
+    public final int getLoops() {
+        return getMaxLoops() - getCurrentLoop();
     }
 
     /**
-     * @return True if this task has completed all loops or if its passed end condition
+     * @return True if this task has completed all of its loops or if the completion condition has been met.
      */
-    public boolean isCompleted() {
-        // automatically flag as completed if the finish conditions are met, no need for manual flagging
-        return (completed || currentLoop >= maxLoops) || condition != null && condition.getAsBoolean();
+    public final boolean isCompleted() {
+        // automatically flag as completed if the max loops are exceeded or finish condition is true
+        return (getCurrentLoop() >= getMaxLoops()) || getCondition() != null && getCondition().getAsBoolean();
     }
 
     /**
-     * Increments the progress counter which is used to split this task up into various sections, allowing the bot to
-     * put this task down, perform some vital checks and then pick it back up where it left off.
-     * <p>
-     * If the passed reset boolean is true, the progress counter will be reset instead, and the loop counter shall be
-     * incremented to prepare the next loop.
-     * <p>
-     * Finally, this function flags this {@link Task} as complete if the newly incremented loop counter exceeds the
-     * {@link Task#maxLoops)
-     * <p>
-     * Note: This feature can be ignored without any issues. Simply set the complete field to true.
-     *
-     * @param reset
+     * Returns the progress of this task as a {@link Integer} value representing the completion percentage out of 100.
      */
-    public final boolean tick(boolean isLoopEnd) {
-        // if task has not progressed to the next loop (if any exist)
-        if (isLoopEnd) {
-            stage = 0;
-            // increment the loop count since this function is only called before the
-            currentLoop++;
-            // automatically updates completion status if all loops have completed
-            completed = currentLoop > maxLoops;
-            return true;
-        }
-
-        // increment the progress (which we switch on to determine how to pick up a dropped task)
-        stage++;
-
-        // extends stages in case dev forgot to update total //TODO: change this to display task progress % to graphicsMan
-        if (stage > totalStages)
-            totalStages = stage;
-
-        // TODO: draw to overlay man
-        float progressPercentage = ((float) stage /totalStages * 100);
-
-        return false;
+    public final int getTaskProgress() {
+        // TODO: get graphicsMan to call this progress value and print it
+        return Math.min((this.stage / this.stages) * 100, 100);
     }
 
     /**
-     * Helper for the {@link Task#tick()} function which forces it to return false, providing a simple way to return
-     * false after each stage of a task.
-     *
-     * @return This always returns false, and is only intended to increment the progress and to escape a task until the
-     *         {@link BotMan bot manager} is ready to pick it back up again.
+     * Tick over to the next loop, restarting any existing stage progress.
      */
-    public final boolean tick() {
-        return tick(false);
+    public final void tick() {
+        // increment this tasks loop count
+        this.currentLoop++;
+        // reset the task stage
+        this.stage = 1;
     }
 
-    public boolean nextLoop() {
-        currentLoop++;
-        completed = currentLoop >= maxLoops;
-        return !completed;
+    public final void postBotStatus(String status) {
+        this.botStatus = status;
+    }
+
+    public final String getBotStatus() {
+        return this.botStatus;
     }
 
     /**
-     * @return A short description of this task, mainly for menu display purposes.
+     * @return A short description of this task.
      */
-    public String getDescription() {
+    public final String getTaskDescription() {
         return description;
     }
 
     /** Repeat the task X times */
-    public Task loop(int times) {
-        this.maxLoops = times;
+    public final Task loop(int times) {
+        this.setLoops(times);
         return this;
     }
 
     /** Run until a custom condition has been met */
     public Task until(BooleanSupplier condition) {
-        this.condition = condition;
+        this.setCondition(condition);
         return this;
     }
 
-//
-//    /** Run until a set of skills have all reached a specified target */
-//    public Task until(int goal, Skill... skills) {
-//        this.goal = goal;
-//        this.skills = skills;
-//        return this;
-//    }
+    /**
+     * Run this {@link Task} until the passed {@link Skill} reaches the passed level.
+     *
+     * @param bot The bot performing the {@link Task}.
+     * @param skill The target {@link Skill} to level.
+     * @param target The desired level for that skill (between 1-126).
+     * @return An executable {@link Task}.
+     */
+    public Task until(BotMan bot, Skill skill, int target) {
+        if (target > 1 && target < 126) {
+            this.setCondition(() -> bot.getSkills().getVirtualLevel(skill) >= target);
+            return this;
+        }
 
+        else throw new IllegalArgumentException("Level must be between 1 and 126");
+    }
 
+    /**
+     * Creates an executable task which is performed at the players current location
+     *
+     * @return True on successful execution, else returns false.
+     */
+    public boolean run(BotMan bot) throws InterruptedException {
+        if (bot == null)
+            throw new RuntimeException("[Task] Error running bot!");
+
+        // if a target area has been provided for this task, ensure the player is inside
+        if (this.targetArea != null && !this.targetArea.contains(bot.myPosition())) {
+            Position target = this.targetArea.getRandomPosition();
+            bot.setBotStatus("Walking to " + target);
+            bot.getWalking().webWalk(target);
+        }
+
+        // ensure the player is in the correct position before completing task.
+        if (this.targetPosition != null && !this.targetPosition.equals(bot.myPosition())) {
+            bot.setBotStatus("Positioning player at " + this.targetPosition);
+            bot.getWalking().webWalk(targetPosition.getArea(1));
+        }
+
+        // if this task has been fully executed
+        if (execute(bot))
+            // tick over to the next loop, resetting task stage
+            tick();
+        else throw new RuntimeException(getBotStatus());
+
+        bot.setBotStatus("Test passed: " + isCompleted());
+        return isCompleted();
+    }
+
+    /**
+     * Travel to the specified {@link Position} before executing this task.
+     *
+     * @param position The position to travel to.
+     * @return True if the task was completed successfully, else returns false
+     */
+    public Task at(Position position) {
+        targetArea = null;
+        targetPosition = position;
+        return this;
+    }
+
+        /**
+     * Creates an executable task which digs somewhere around the passed {@link Area}.
+     *
+     * @param area The approximate {@link Area} in which to perform this task.
+     * @return True on successful execution, else returns false.
+     */
+    public Task around(Area area) {
+        targetArea = area;
+        targetPosition = null;
+        return this;
+    }
+
+    /**
+     * Executes this {@link Task} somewhere near the passed position, based on the passed radius.
+     *
+     * @param position The centre of the area to perform this task.
+     * @param radius The radius (i.e., radius of 3 = 3 tiles in each direction) in which to dig.
+     * @return True if this task is complete, else returns false.
+     */
+    public Task near(Position position, int radius) {
+        targetArea = position.getArea(radius);
+        targetPosition = null;
+        return this;
+    }
+
+    /**
+     * Executes this {@link Task} until the passed condition is met.
+     *
+     * @param bot The {@link BotMan bot} performing this task.
+     * @param condition The {@link BooleanSupplier condition} which must be true for this {@link Task} to end.
+     * @return True if this Task is complete, else returns false.
+     */
+    public boolean until(BotMan bot, BooleanSupplier condition) throws InterruptedException {
+        bot.setStatus("Sleeping until: " + condition, 1000);
+
+        if (condition.getAsBoolean())
+            return true;
+
+        return run(bot);
+    }
+
+    public boolean loop(BotMan bot, int loops) throws InterruptedException {
+        return run(bot);
+    }
+
+    /**
+     * Return information on this task instead of a meaningless reference.
+     */
+    public String toString() {
+        return getTaskDescription();
+    }
+
+    /**
+     * Forces children to provide the total stages for this {@link Task} for the progress bar calculations.
+     */
+    protected abstract int getStages();
     /**
      * Forces children to define how this task should be completed when called to run no parameters.
      */
-    public abstract boolean execute(BotMan<?> bot) throws InterruptedException;
-    /**
-     * Forces children to define how this task should be completed until a condition is met.
-     */
-    public abstract boolean execute(BotMan<?> bot, BooleanSupplier condition) throws InterruptedException;
-    /**
-     * Forces children to define how this task should be completed after walking to a given {@link Position}.
-     */
-    public abstract boolean execute(BotMan<?> bot, Position position) throws InterruptedException;
+    protected abstract boolean execute(BotMan bot) throws InterruptedException;
 
+    /**
+     * Forces children to define a {@link JPanel panel} with script-specific settings for easier interaction.
+     *
+     * @return A {@link JPanel} object used as a script-settings menu tab in the {@link main.BotMenu}.
+     */
+    public abstract JPanel getTaskSettings();
 }
 
 
@@ -308,7 +405,7 @@ public abstract class Task {
 ////        return false;
 ////    }
 //
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        return type.perform(target);
 //    }
 //
@@ -322,7 +419,7 @@ public abstract class Task {
 //    public String[] getRequired() { return required; }
 //
 //    //TODO: Implement automatic task detection based on passed object
-////    public static Task randomTask(BotMan<?> bot) {
+////    public static Task randomTask(BotMan bot) {
 ////        // pick a random "thing" near the player
 ////        Object target = getRandomNearbyObject(bot);
 ////        if (target == null) return null;
@@ -351,7 +448,7 @@ public abstract class Task {
 //            super();
 //        }
 //
-//        public Throwable exit(BotMan<?> b) throws InterruptedException {
+//        public Throwable exit(BotMan b) throws InterruptedException {
 //            b.onExit();
 //            return new Throwable("Somehow still talking after bot is dead?");
 //        }
@@ -361,7 +458,7 @@ public abstract class Task {
 //
 ////package task;
 ////
-////import com.sun.istack.internal.NotNull;
+////
 ////import org.osbot.rs07.api.map.Area;
 ////import org.osbot.rs07.api.model.Item;
 ////import utils.BotMan;
@@ -385,7 +482,7 @@ public abstract class Task {
 ////    /**
 ////     * The {@link BotMan bot manager} used to perform the task.
 ////     */
-////    public BotMan<?> bot;
+////    public BotMan bot;
 ////    /**
 ////     * The name of this task for display purposes
 ////     */
@@ -443,7 +540,7 @@ public abstract class Task {
 ////     * @param stoppingCondition The {@link BooleanSupplier stopping condition} of this task, used to break out of a (conditional) sleep.
 ////     * @param maxAttempts The {@link Integer max attempts} allowed before this task will exit.
 ////     */
-////    public Task(TaskType action, BotMan<?> bot, String name, String description, String status, HashMap<Item, Integer> required_items,
+////    public Task(TaskType action, BotMan bot, String name, String description, String status, HashMap<Item, Integer> required_items,
 ////                BooleanSupplier stoppingCondition, int maxAttempts, Area... locationPref) {
 ////        this.action = action;
 ////
@@ -462,7 +559,7 @@ public abstract class Task {
 ////    }
 ////
 ////
-////    public abstract boolean run(BotMan<?> bot) throws InterruptedException;
+////    public abstract boolean run(BotMan bot) throws InterruptedException;
 ////
 ////    /**
 ////     * Execute this task and return the result as a {@link Boolean} value.
@@ -471,7 +568,7 @@ public abstract class Task {
 ////     *
 ////     * @return True if the execution is a success, else returns false.
 ////     */
-////    public abstract boolean complete(BotMan<?> bot) throws InterruptedException;
+////    public abstract boolean complete(BotMan bot) throws InterruptedException;
 ////
 ////    /**
 ////     * Executes a block of task logic with automatic attempt handling.
@@ -502,7 +599,7 @@ public abstract class Task {
 ////        }
 ////    }
 ////
-////    public BotMan<?> getBot() {
+////    public BotMan getBot() {
 ////        return bot;
 ////    }
 ///
@@ -516,7 +613,7 @@ public abstract class Task {
 ////        return stoppingCondition;
 ////    }
 ////
-////    public void setStoppingCondition(@NotNull BooleanSupplier condition) {
+////    public void setStoppingCondition(BooleanSupplier condition) {
 ////        stoppingCondition = condition;
 ////    }
 ////
@@ -524,7 +621,7 @@ public abstract class Task {
 ////        return maxAttempts;
 ////    }
 ////
-////    public void setMaxAttempts(@NotNull int attempts) {
+////    public void setMaxAttempts(int attempts) {
 ////        if (attempts > 0)
 ////            maxAttempts = attempts;
 ////    }
@@ -533,9 +630,6 @@ public abstract class Task {
 ////        return required_items;
 ////    }
 ////
-////    public int getAttempts() {
-////        return attempts;
-////    }
 ////
 ////    public boolean isComplete() {
 ////        return stoppingCondition != null && stoppingCondition.getAsBoolean();

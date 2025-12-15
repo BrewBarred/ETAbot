@@ -1,6 +1,7 @@
 //package fishing;
 //
-//import utils.BotMenu;
+//import main.BotMan;
+//import main.BotMenu;
 //
 //import javax.swing.*;
 //import java.awt.*;
@@ -18,10 +19,8 @@
 //     *
 //     * @param bot The BotMan object used to manage the botting script
 //     */
-//    public FishingMenu(FishingMan bot) {
-//        super(bot);
-//        // convert base bot type to FishingMan
-//        this.bot = bot;
+//    public FishingMenu(BotMan bot) {
+//        super((FishingMan) bot);
 //    }
 //
 //    @Override
@@ -48,8 +47,8 @@
 //            this.cbDropFish = new JCheckBox("Drop Fish");
 //            this.cbBankFish = new JCheckBox("Bank Fish");
 //
-//            this.btnRunning = new JButton("Pause Fishing");
-//            this.btnRunning.addActionListener(e -> {
+//            this.btnExecution = new JButton("Pause Fishing");
+//            this.btnExecution.addActionListener(e -> {
 //                try {
 //                    bot.toggleExecutionMode();
 //                } catch (InterruptedException ex) {
@@ -64,7 +63,7 @@
 //            mainPanel.add(this.selectionFishingStyle);
 //            mainPanel.add(this.cbDropFish);
 //            mainPanel.add(this.cbBankFish);
-//            mainPanel.add(this.btnRunning);
+//            mainPanel.add(this.btnExecution);
 //
 //            // Return it as part of the expected array:
 //            return new JPanel[]{
@@ -81,12 +80,12 @@
 //    @Override
 //    protected void onResume() {
 //        log("FishingMenu.onResume() called");
-//        btnRunning.setText("Pause fishing");
+//        btnExecution.setText("Pause fishing");
 //    }
 //
 //    @Override
 //    protected void onPause() {
 //        log("FishingMenu.onPause() called");
-//        btnRunning.setText("Start fishing");
+//        btnExecution.setText("Start fishing");
 //    }
 //}

@@ -14,7 +14,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) {
+//    public boolean run(BotMan bot) {
 //        return rock != null && rock.interact("Mine");
 //    }
 //}

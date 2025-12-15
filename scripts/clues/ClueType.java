@@ -1,6 +1,5 @@
 package clues;
 
-import com.sun.istack.internal.NotNull;
 import org.osbot.rs07.api.model.Item;
 
 public enum ClueType {
@@ -11,7 +10,7 @@ public enum ClueType {
     final String type;
     final Item[] requiredItems;
 
-    ClueType(@NotNull String type, @NotNull Item... requiredItems) {
+    ClueType(String type, Item... requiredItems) {
         this.type = type;
         this.requiredItems = requiredItems;
     }

@@ -1,6 +1,6 @@
 //package clues;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import locations.clueLocations.beginner.CharlieClue;
 //import locations.clueLocations.beginner.HotAndCold;
 //
@@ -25,7 +25,7 @@
 //    }
 //
 //    /** 🔍 Find a clue by exact hint (case-insensitive). */
-//    public static ClueScroll getClue(@NotNull String hint) {
+//    public static ClueScroll getClue(String hint) {
 //        return REGISTRY.get(hint.toLowerCase());
 //    }
 //
@@ -49,7 +49,7 @@
 //
 //    //TODO: write test
 //    /** 🔍 Find a clue by partial match (useful if hints contain extra text). */
-//    public static ClueScroll findByPartialHint(@NotNull String hint) {
+//    public static ClueScroll findByPartialHint(String hint) {
 //        // ensure the passed hint isn't empty to save time
 //        if (!hint.isEmpty())
 //            for (ClueScroll clue : REGISTRY.values()) {

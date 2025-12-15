@@ -37,7 +37,7 @@ public final class ETARandom {
     /**
      * Return a random integer value between two preset 'low' values, intended for minimum delay times.
      *
-     * @return A random integer value between two preset 'low' values as defined in Rand.java.
+     * @return A random integer value between two preset 'low' values as defined in ETARandom.java.
      */
     public static int getRandReallyShortDelayInt() {
         return ETARandom.getRand(MIN_LOW - 2000, MIN_HIGH - 8000);
@@ -58,7 +58,7 @@ public final class ETARandom {
     /**
      * Return a random integer value between two preset 'low' values, intended for minimum delay times.
      *
-     * @return A random integer value between two preset 'low' values as defined in Rand.java.
+     * @return A random integer value between two preset 'low' values as defined in ETARandom.java.
      */
     public static int getRandShortDelayInt() {
         return ETARandom.getRand(MIN_LOW, MIN_HIGH);
@@ -67,7 +67,7 @@ public final class ETARandom {
     /**
      * Return a random integer value between two preset 'high' values, intended for maximum delay times.
      *
-     * @return A random integer value between two preset 'high' values as defined in Rand.java.
+     * @return A random integer value between two preset 'high' values as defined in ETARandom.java.
      */
     public static int getRandLongDelayInt() {
         return ETARandom.getRand(MAX_LOW, MAX_HIGH);

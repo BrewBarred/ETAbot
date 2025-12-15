@@ -22,7 +22,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        bot.setStatus("Solving clue: " + clue.getDescription());
 //        return clue.solve(bot);
 //    }

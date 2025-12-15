@@ -13,7 +13,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) {
+//    public boolean run(BotMan bot) {
 //        if (bot.getSkills().getDynamic(Skill.MINING) >= targetLevel) {
 //            setCompleted(true);
 //            return false; // stop mining

@@ -14,7 +14,7 @@
 //public class ClueSpew {
 //    protected static List<TravelMan> locations = new ArrayList<>();
 //
-//    public static Task chewAndSpewClue(BotMan<?> bot, String hint) throws InterruptedException {
+//    public static Task chewAndSpewClue(BotMan bot, String hint) throws InterruptedException {
 //        switch (hint) {
 //            ///
 //            /// CLUE SCROLL TYPE: HOT AND COLD

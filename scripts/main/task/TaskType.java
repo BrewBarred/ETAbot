@@ -9,8 +9,8 @@
 //
 package main.task;
 
-import main.task.tasks.basic.Dig;
-import main.task.tasks.basic.Wait;
+import main.actions.Dig;
+import main.actions.Wait;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 
@@ -25,16 +25,19 @@ import java.util.function.Function;
  *
  * </pre>
  */
-@SuppressWarnings("unchecked") // can't check a dynamic function in Action(), not possible.
 public enum TaskType {
-//    ACTION(Function.class, target -> new Action((Function<BotMan<?>, Boolean>) target)), // placeholder
+//    ACTION(Function.class, target -> new Action((Function<BotMan, Boolean>) target)), // placeholder
 //    MINE(RS2Object.class, target -> new Mine((RS2Object) target)),
 //    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
 //    ATTACK(NPC.class, target -> new Attack((NPC) target)),
 //    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
-    WAIT_AT(Position.class, target -> new Wait((Position) target)),
     WAIT(Void.class, target -> new Wait()),
-    DIG(Void.class, target -> new Dig());
+    WAIT_AT(Position.class, target -> new Wait((Position) target)),
+    //WAIT_AROUND(Area.class, target -> new Wait((Area) target)),
+    // WAIT_FOR // wait a certain number of ticks, or for an npc to be in range
+    DIG(Void.class, target -> new Dig()),
+    DIG_AT(Position.class, target -> new Dig().at((Position) target)),
+    DIG_AROUND(Area.class, target -> new Dig().around((Area) target));
     //Fetch(Bank., target -> new Fetch(TargetType.Bank)); // doesn’t need a
     //SOLVE(String.class, target -> new Solve((String) target));
 
@@ -69,20 +72,8 @@ public enum TaskType {
         return task.apply(target);
     }
 
-    // --- sugar for Dig ---
-    public Task at(Position pos) {
-        return new Dig(pos);
-    }
-
-    public Task near(Position pos, int radius) {
-        return new Dig(pos, radius);
-    }
-
-    public Task there(Area area) {
-        return new Dig(area);
-    }
 //    // --- Sugar methods live here ---
-//    public Task anyNearby(BotMan<?> bot, Object... params) {
+//    public Task anyNearby(BotMan bot, Object... params) {
 //        switch (this) {
 //            case MINE:
 //                RS2Object rock = bot.getObjects().closest(o -> o.hasAction("Mine"));
@@ -99,21 +90,9 @@ public enum TaskType {
 //        }
 //    }
 
-    //TODO: implement until function: struggling to get player level with this weird setup.
-//    public Task until(BotMan<?> bot, Object target, int level) {
-//        Task t = create(target);
-//        t.setCondition(() -> bot.getSkills(). >= level); // wire this properly
-//        return t;
-//    }
-
-    //TODO: implement looping tasks
-//    public Task repeat(Object target, int loops) {
-//        Task t = create(target, loops);
-//        return t;
-//    }
 
 //    // --- Perform overloads ---
-//    public boolean perform(BotMan<?> bot, Toon toon) {
+//    public boolean perform(BotMan bot, Toon toon) {
 //        switch (this) {
 //            case ATTACK:
 //                NPC npc = toon.getNpc();
@@ -126,11 +105,11 @@ public enum TaskType {
 //        }
 //    }
 //
-//    public boolean perform(BotMan<?> bot, NPC npc) {
+//    public boolean perform(BotMan bot, NPC npc) {
 //        return perform(bot, new Toon(npc));
 //    }
 //
-//    public boolean perform(BotMan<?> bot, Rock rock) {
+//    public boolean perform(BotMan bot, Rock rock) {
 //        switch (this) {
 //            case MINE:
 //                return bot.getObjects().closest(rock.getName()).interact("Mine");
@@ -139,8 +118,8 @@ public enum TaskType {
 //        }
 //    }
 //
-//    public boolean perform(BotMan<?> bot, Area area) {
-//    public boolean perform(BotMan<?> bot, Area area) {
+//    public boolean perform(BotMan bot, Area area) {
+//    public boolean perform(BotMan bot, Area area) {
 //        switch (this) {
 //            case WALK:
 //                return bot.walking.webWalk(area);
@@ -149,7 +128,7 @@ public enum TaskType {
 //        }
 //    }
 //
-//    public boolean perform(BotMan<?> bot, String target) {
+//    public boolean perform(BotMan bot, String target) {
 //        switch (this) {
 //            case DIG:
 //                return bot.getInventory().interact("Spade", "Dig");
@@ -183,7 +162,7 @@ public enum TaskType {
 //    }
 
 //    // --- New helper: mine anything nearby ---
-//    public Task anyNearby(BotMan<?> bot) {
+//    public Task anyNearby(BotMan bot) {
 //        switch (this) {
 //            case MINE:
 //                RS2Object rock = bot.getObjects().closest(obj -> obj.hasAction("Mine"));
@@ -280,7 +259,7 @@ public enum TaskType {
 //    }
 //
 //    // --- NPC-type actions ---
-//    public boolean perform(BotMan<?> bot, Toon toon) {
+//    public boolean perform(BotMan bot, Toon toon) {
 //        switch (this) {
 //            case KILL:
 //            case ATTACK:
@@ -301,13 +280,13 @@ public enum TaskType {
 //        }
 //    }
 //
-//    public boolean perform(BotMan<?> bot, NPC npc) {
+//    public boolean perform(BotMan bot, NPC npc) {
 //        // convert the passed npc into a toon and pass it along instead of defining all npc-type actions twice.
 //        return perform(bot, new Toon(npc));
 //    }
 //
 //    // --- Rock-specific actions ---
-//    public boolean perform(BotMan<?> bot, Rock rock) {
+//    public boolean perform(BotMan bot, Rock rock) {
 //        switch (this) {
 //            case MINE:
 //                return bot.getObjects()
@@ -319,7 +298,7 @@ public enum TaskType {
 //    }
 //
 //    // --- Area / movement ---
-//    public boolean perform(BotMan<?> bot, Area area) {
+//    public boolean perform(BotMan bot, Area area) {
 //        switch (this) {
 //            case WALK:
 //                return bot.walking.webWalk(area);
@@ -329,7 +308,7 @@ public enum TaskType {
 //    }
 //
 //    // --- String-based actions (items/objects/emotes) ---
-//    public boolean perform(BotMan<?> bot, String target) {
+//    public boolean perform(BotMan bot, String target) {
 //        switch (this) {
 //            case DIG:
 //                return bot.getInventory().interact("Spade", "Dig");
@@ -370,7 +349,7 @@ public enum TaskType {
 //    }
 //}
 //
-////    public boolean perform(BotMan<?> bot, Toon npc) {
+////    public boolean perform(BotMan bot, Toon npc) {
 ////        switch (this) {
 ////            case MINE:
 ////                return target instanceof Rock &&

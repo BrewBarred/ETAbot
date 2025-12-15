@@ -37,7 +37,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) {
+//    public boolean run(BotMan bot) {
 //        if (bot.getSkills().getDynamic(Skill.ATTACK) >= targetLevel) {
 //            setCompleted(true);
 //            return false; // done training
@@ -78,7 +78,7 @@
 ////    }
 ////
 ////    @Override
-////    public boolean run(BotMan<?> bot) throws InterruptedException {
+////    public boolean run(BotMan bot) throws InterruptedException {
 ////        if (bot.myPlayer().isUnderAttack())
 ////            return false;
 ////

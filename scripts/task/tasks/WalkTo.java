@@ -20,7 +20,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        if (destination != null) {
 //            // TODO; Flip responsibilities here so bot doesn't need to handle walking logic.
 //            return bot.walkTo(destination, "???");

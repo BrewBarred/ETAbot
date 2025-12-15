@@ -25,7 +25,7 @@
 //    // functions together in a Task made of many actions and setting a loop on the task.
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        if (target != null && target.exists() && target.hasAction("Attack")) {
 //            return target.interact("Attack");
 //        }

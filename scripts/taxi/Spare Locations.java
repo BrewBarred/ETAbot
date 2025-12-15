@@ -9,7 +9,7 @@
 //////                // temporarily drop clues to ensure functionality while this gets implemented
 //////                Item clue = inventory.getItem("Clue scroll (beginner)");
 //////                clue.interact("Drop");
-//////                sleep(Rand.getRandReallyShortDelayInt());
+//////                sleep(ETARandom.getRandReallyShortDelayInt());
 //////                return true;
 
 

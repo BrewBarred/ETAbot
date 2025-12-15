@@ -1,9 +1,11 @@
 package main.tools;
 
 import main.BotMan;
-import org.osbot.rs07.api.map.Position;
 
+import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * GraphicsMan, responsible for drawing informative/decorative on-screen graphics.
@@ -17,22 +19,25 @@ public class GraphicsMan {
     private final Font DEFAULT_FONT_NORMAL = new Font("Arial", Font.PLAIN, 14);
     private final Color DEFAULT_TEXT_COLOR = Color.WHITE;
 
+    public final BotMan bot;
+
     public int currentX;
     public int currentY;
+    private List<String> linesMain = new ArrayList<>();
+    private int linesTR;
+    private int linesBL;
+    private int boxWidthMain;
 
-
-    private final BotMan bot;
 
     public GraphicsMan(BotMan bot) {
         this.bot = bot;
     }
 
     public void draw(Graphics2D g) {
-        ///
-        /// Generic overlay (present for all bots)
-        ///
+        if (bot == null)
+            return;
 
-        // mark starting coordinates to dynamically draw box around contents
+        // always reset layout each frame to prevent drawing off-screen
         currentX = START_X + DEFAULT_PADDING;
         currentY = START_Y + DEFAULT_PADDING;
 
@@ -44,61 +49,61 @@ public class GraphicsMan {
         g.setFont(this.DEFAULT_FONT_TITLE);
 
         // draw bot script name and version as overlay title
-        drawText(g, bot.getName() + " v" + bot.getVersion());
+        drawTextMain(g, bot.getName() + " v" + bot.getVersion());
 
         // set text properties back to normal font
         g.setFont(this.DEFAULT_FONT_NORMAL);
 
         // draw current task
-        drawText(g,"Current task: " + bot.getTaskDescription());
-
-        //TODO: patch up afk timer or implement new one
-//        // draw current status or wait time
-//        String remainingAFK = bot.getRemainingAFK();
-//        boolean isBusy = remainingAFK == null || remainingAFK.isEmpty();
-//        String broadcast = ("Status: " + (isBusy ? bot.status : remainingAFK));
-
+        drawTextMain(g,"Player status: " + bot.getStatus());
+        drawTextMain(g, ("  Progress: " + bot.getTaskProgress() + "%"));
         // draw the bots status
-        drawText(g, bot.getStatus());
+        drawTextMain(g, "Bot status: " + bot.getBotStatus());
+//
+//        //TODO: patch up afk timer or implement new one
+////        // draw current status or wait time
+////        String remainingAFK = bot.getRemainingAFK();
+////        boolean isBusy = remainingAFK == null || remainingAFK.isEmpty();
+////        String broadcast = ("Status: " + (isBusy ? bot.status : remainingAFK));
+//
+//
+//        // draw current position if player is not null
+//        if (bot.myPlayer() != null) {
+//            Position pos = bot.myPlayer().getPosition();
+//            drawText(g, "Position: x = " + pos.getX()
+//                    + ", y = " + pos.getY()
+//                    + ", z = " + pos.getZ());
+//        } else {
+//            bot.log("player is null!");
+//        }
+//
+//        ///
+//        /// Script specific overlay are drawn here
+//        ///
+//        //TODO add feature to send status to BotMenu
+//
+//        // any other custom overlay bits go here using drawText(...) or drawBox(...) etc.
+//            // e.g:
+//                // draw progress circle
+//                // drawProgressCircle(g, 20, 250, 35, progress / 100); // turn this into a completion bar?
+//
+//                // update item tracker
+//                Tracker.draw(g);
 
-        // draw current position if player is not null
-        if (bot.myPlayer() != null) {
-            Position pos = bot.myPlayer().getPosition();
-            drawText(g, "Position: x = " + pos.getX()
-                    + ", y = " + pos.getY()
-                    + ", z = " + pos.getZ());
-        } else {
-            bot.log("player is null!");
-        }
+        ///
+        /// Generic overlay (present for all bots)
+        ///
 
         // draw translucent background around everything we've drawn (black with 50% opacity)
         g.setColor(new Color(0, 0, 0, 128));
-        g.fillRoundRect(START_X, START_Y, currentX, currentY, 30, 30);
-
-        ///
-        /// Script specific overlay are drawn here
-        ///
-
-        // mark the current coords to dynamically draw box over content
-        int scriptStartX = currentX + DEFAULT_PADDING;
-        int scriptStartY = currentY + DEFAULT_PADDING;
-
-        // draw bot specific overlay if any exists
-        //bot.onPaint(g);
-        //bot.botMenu.onPaint(g); //TODO update bot menu with a live status
-
-        // any other custom overlay bits go here using drawText(...) or drawBox(...) etc.
-            // e.g:
-                // draw progress circle
-                // drawProgressCircle(g, 20, 250, 35, progress / 100); // turn this into a completion bar?
-
-//                 update item tracker
-//                Tracker.draw(g);
+        g.fillRoundRect(START_X, START_Y, 650, currentY, 30, 30);
     }
 
-    private void drawText(Graphics2D g, String text) {
+    private void drawTextMain(Graphics2D g, String text) {
         // draw the passed string to the client screen
         g.drawString(text, currentX + DEFAULT_PADDING, currentY + DEFAULT_PADDING);
+        // add this line to the top-left lines list (TL)
+        linesMain.add(text);
         // move y down for next text drawing
         currentY += g.getFont().getSize() + DEFAULT_LINE_SPACING;
     }

@@ -1,7 +1,7 @@
 //package main.unsorted;
 //// MAP NOTES:
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import main.locations.LocationFinder;
 //import locations.Spot;
 //import org.osbot.rs07.api.map.Area;
@@ -112,7 +112,7 @@
 //    }
 //
 //    @Override
-//    public boolean solve(BotMan<?> bot) throws InterruptedException {
+//    public boolean solve(BotMan bot) throws InterruptedException {
 //        return false;
 //    }
 //
@@ -120,7 +120,7 @@
 ////        return (MapClue) ClueHandbook.getClueFromHint(hint);
 ////    }
 //
-//    public MapClue fromRoots(@NotNull List<Integer> activeRootIds) {
+//    public MapClue fromRoots(List<Integer> activeRootIds) {
 //        for (Integer root : activeRootIds) {
 //            if (root == this.mapId)
 //                return this;

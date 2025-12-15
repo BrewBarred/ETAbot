@@ -96,7 +96,7 @@
 //    }
 //
 //    @Override
-//    public boolean solve(BotMan<?> bot) throws InterruptedException {
+//    public boolean solve(BotMan bot) throws InterruptedException {
 //        bot.setStatus("Anagram clue-solving feature is P2P only!");
 //        return false;
 //    }

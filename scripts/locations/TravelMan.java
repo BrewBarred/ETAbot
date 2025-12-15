@@ -1,6 +1,6 @@
 //package locations;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import locations.cityLocations.AlKharidLocation;
 //import org.osbot.rs07.api.map.Area;
 //import org.osbot.rs07.api.map.Position;
@@ -70,7 +70,7 @@
 //     * @param bot The {@link BotMan bot} being controlled.
 //     * @return {@link Boolean True} if the bot successfully walks to this location, else returns false.
 //     */
-//    default boolean walkTo(@NotNull BotMan<?> bot) throws InterruptedException {
+//    default boolean walkTo(BotMan bot) throws InterruptedException {
 //        bot.setStatus("Travellingingingginginginign                            saoidjfgiodasjfiojdasiofs");
 //        // no point in trying to walk somewhere if you're already there!
 //        if (getArea().contains(bot.myPlayer()))
@@ -94,7 +94,7 @@
 //        return bot.getWalking().webWalk(getArea().getRandomPosition());
 //    }
 //
-//    default boolean TeleTo(BotMan<?> bot, MagicSpell teleport) throws InterruptedException {
+//    default boolean TeleTo(BotMan bot, MagicSpell teleport) throws InterruptedException {
 //        // write me a script here to teleport to getArea();
 //        bot.setStatus("Attempting to teleport to " + getArea() + "...");
 //
@@ -104,7 +104,7 @@
 //        if (bot.magic.canCast(teleport)) {
 //            // casts the spell
 //            bot.magic.castSpell(teleport);
-//            BotMan.sleep(Rand.getRandShortDelayInt());
+//            BotMan.sleep(ETARandom.getRandShortDelayInt());
 //            return true;
 //        }
 //
@@ -140,7 +140,7 @@
 //    /**
 //     * Check if the passed Position is inside any of the passed {@link TravelMan} areas.
 //     */
-//    default boolean validatePosition(@NotNull BotMan<?> bot, @NotNull TravelMan... locations) {
+//    default boolean validatePosition(BotMan bot, TravelMan... locations) {
 //        // iterate through each of the passed locations and check if your player is contained in any of them ;)
 //        for (TravelMan location : locations)
 //            if (location.getArea().contains(bot.myPlayer()))

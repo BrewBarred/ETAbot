@@ -96,7 +96,7 @@
 //        return -1;
 //    }
 //
-//    public boolean solve(BotMan<?> bot) throws InterruptedException {
+//    public boolean solve(BotMan bot) throws InterruptedException {
 //        bot.setStatus("Attempting to solve charlie clue...");
 //        // TODO: Test that this actually completes dialogue && solve logic should be inserted here
 //        bot.dialogues.completeDialogue();

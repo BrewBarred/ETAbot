@@ -208,16 +208,16 @@
 //
 //        //TODO: implement afk timer again
 ////        // 50% chance to start fake AFK
-////        if (Rand.getRand(1) == 1) {
+////        if (ETARandom.getRand(1) == 1) {
 ////            // set a random fake AFK time
-////            int delay = Rand.getRand(22673);
+////            int delay = ETARandom.getRand(22673);
 ////            // set AFK timer
 ////            endAFK = Instant.now().plusMillis(delay);
 ////            // afk until the delay timer expires
 ////            isAFK = true;
 ////            return delay;
 ////        }
-//        // forces a random pause after every scripts loop by "getting" a random loop delay from Rand.GetReallyShortDelay
+//        // forces a random pause after every scripts loop by "getting" a random loop delay from ETARandom.GetReallyShortDelay
 //        return LOOP_DELAY.get();
 //    }
 //
@@ -498,11 +498,11 @@
 //     */
 //    //TODO: Extract status into it's own function which takes a bot and automatically calls on exit when a status contains "Error"?
 //
-//    protected boolean walkTo(@NotNull Toon npc) {
+//    protected boolean walkTo(Toon npc) {
 //        return walkTo(npc.getArea(), npc.getName());
 //    }
 //
-//    protected boolean walkTo(@NotNull EmoteClueLocation location) {
+//    protected boolean walkTo(EmoteClueLocation location) {
 //        return walkTo(location.getArea(), location.getName());
 //    }
 //
@@ -530,7 +530,7 @@
 //        // walk to the passed area
 //        if (getWalking().webWalk(area)) {
 //            // AFK for a random amount of time up to 5.2s, checking timeout & condition every 0.3-2.6s
-//            new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
+//            new ConditionalSleep(ETARandom.getRand(5231), ETARandom.getRand(324, 2685)) {
 //                @Override
 //                public boolean condition() {
 //                    // walk until player reaches destination
@@ -610,7 +610,7 @@
 //
 //        // open inventory since it's not already open
 //        if (getTabs().open(tabType)) {
-//            sleep(Rand.getRand(600, 900));
+//            sleep(ETARandom.getRand(600, 900));
 //            return true;
 //        }
 //
@@ -677,7 +677,7 @@
 //     * @param items The items to fetch from the players bank.
 //     * @return True if the passed item is contained in the players inventory after execution, else returns false.
 //     */
-//    protected boolean fetchFromBank(@NotNull String... items) throws InterruptedException {
+//    protected boolean fetchFromBank(String... items) throws InterruptedException {
 //        setStatus("Fetching items from bank...");
 //        HashMap<String, Integer> itemList = new HashMap<String, Integer>();
 //
@@ -711,7 +711,7 @@
 //     * @param items The item(s) to fetch from the players bank.
 //     * @return True if the passed item(s) is contained in the players inventory after execution, else returns false.
 //     */
-//    protected boolean fetchFromBank(@NotNull HashMap<String, Integer> items) throws InterruptedException {
+//    protected boolean fetchFromBank(HashMap<String, Integer> items) throws InterruptedException {
 //        setStatus("Attempting to fetch " + items + " from the bank...");
 //        // why withdraw nothing?
 //        if (items.isEmpty())
@@ -782,7 +782,7 @@
 //            return closeBank();
 //
 //        // short delay to breathe
-//        sleep(Rand.getRandReallyShortDelayInt());
+//        sleep(ETARandom.getRandReallyShortDelayInt());
 //        return true;
 //    }
 //
@@ -961,14 +961,14 @@
 //
 //        // try to open the nearest bank
 //        if (!getBank().open())
-//            new ConditionalSleep((int) Rand.getRandLongDelayInt()) {
+//            new ConditionalSleep((int) ETARandom.getRandLongDelayInt()) {
 //                @Override
 //                public boolean condition() throws InterruptedException {
 //                    return getBank().open();
 //                }
 //            }.sleep();
 //
-//        sleep(Rand.getRandReallyShortDelayInt());
+//        sleep(ETARandom.getRandReallyShortDelayInt());
 //        return getBank().open();
 //    }
 //
@@ -979,7 +979,7 @@
 //     * @return True if the player has all the passed items, else false if
 //     * at least one of the passed items are not found in the players inventory.
 //     */
-//    public boolean hasItems(@NotNull  String... requiredItems) {
+//    public boolean hasItems( String... requiredItems) {
 //        setStatus("Checking players inventory...");
 //        // check to ensure all items aren't already in the players inventory before going to a bank
 //        for (String item : requiredItems) {
@@ -994,7 +994,7 @@
 //            }
 //        }
 //
-//        sleep(Rand.getRandReallyShortDelayInt());
+//        sleep(ETARandom.getRandReallyShortDelayInt());
 //        return true;
 //    }
 //
@@ -1019,7 +1019,7 @@
 //        return !(getNpcs().closest(name) == null);
 //    }
 //
-//    protected boolean talkTo(@NotNull Toon npc, String... options) throws InterruptedException {
+//    protected boolean talkTo(Toon npc, String... options) throws InterruptedException {
 //        setStatus("Attempting to talk to " + npc.getName() + "...");
 //
 //        // if the npc is not nearby
@@ -1032,7 +1032,7 @@
 //        npc.talkTo(this);
 //
 //        // wait for chat dialogue box to appear then use options to skip dialogue
-//        sleep(Rand.getRand(1241));
+//        sleep(ETARandom.getRand(1241));
 //        return handleDialogue(options);
 //    }
 //
@@ -1055,7 +1055,7 @@
 //            dialogues.completeDialogue(options);
 //
 //        // random delay
-//        sleep(Rand.getRand(1241));
+//        sleep(ETARandom.getRand(1241));
 //        return true;
 //    }
 //
@@ -1066,7 +1066,7 @@
 //     *
 //     * @return true if all items were found and equipped, false otherwise
 //     */
-//    public boolean equipItems(@NotNull String... reqItems) throws InterruptedException {
+//    public boolean equipItems(String... reqItems) throws InterruptedException {
 //        for (String name : reqItems) {
 //            Item item = getInventory().getItem(name);
 //            if (item == null)
@@ -1087,10 +1087,10 @@
 //        return false;
 //    }
 //
-//    public boolean isWearing(@NotNull String... items) {
+//    public boolean isWearing(String... items) {
 //        setStatus("Checking worn items...");
 //        // sleep for a second incase item is still being equipped
-//        sleep(Rand.getRandReallyShortDelayInt());
+//        sleep(ETARandom.getRandReallyShortDelayInt());
 //
 //        // for each worn item slot there is e.g., cape, boots, legs, etc.
 //        for (EquipmentSlot e : EquipmentSlot.values()) {
@@ -1163,7 +1163,7 @@
 ////import clues.EmoteClueLocation;
 ////import locations.bankLocations.Bank;
 ////import locations.LocationFinder;
-////import com.sun.istack.internal.NotNull;
+////
 ////import org.osbot.rs07.api.map.Area;
 ////import org.osbot.rs07.api.map.Position;
 ////import org.osbot.rs07.api.model.*;
@@ -1182,7 +1182,7 @@
 ////import java.util.function.Supplier;
 ////
 ////import static java.time.LocalTime.now;
-////import static utils.Rand.getRandShortDelayInt;
+////import static utils.ETARandom.getRandShortDelayInt;
 ////
 /////**
 //// * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -1329,16 +1329,16 @@
 ////
 ////        //TODO: implement afk timer again
 //////        // 50% chance to start fake AFK
-//////        if (Rand.getRand(1) == 1) {
+//////        if (ETARandom.getRand(1) == 1) {
 //////            // set a random fake AFK time
-//////            int delay = Rand.getRand(22673);
+//////            int delay = ETARandom.getRand(22673);
 //////            // set AFK timer
 //////            endAFK = Instant.now().plusMillis(delay);
 //////            // afk until the delay timer expires
 //////            isAFK = true;
 //////            return delay;
 //////        }
-////        // forces a random pause after every scripts loop by "getting" a random loop delay from Rand.GetReallyShortDelay
+////        // forces a random pause after every scripts loop by "getting" a random loop delay from ETARandom.GetReallyShortDelay
 ////        return LOOP_DELAY.get();
 ////    }
 ////
@@ -1660,11 +1660,11 @@
 ////        return setStatus(status, false);
 ////    }
 ////
-////    protected boolean walkTo(@NotNull Toon npc) {
+////    protected boolean walkTo(Toon npc) {
 ////        return walkTo(npc.getArea(), npc.getName());
 ////    }
 ////
-////    protected boolean walkTo(@NotNull EmoteClueLocation location) {
+////    protected boolean walkTo(EmoteClueLocation location) {
 ////        return walkTo(location.getArea(), location.getName());
 ////    }
 ////
@@ -1692,7 +1692,7 @@
 ////        // walk to the passed area
 ////        if (getWalking().webWalk(area)) {
 ////            // AFK for a random amount of time up to 5.2s, checking timeout & condition every 0.3-2.6s
-////            new ConditionalSleep(Rand.getRand(5231), Rand.getRand(324, 2685)) {
+////            new ConditionalSleep(ETARandom.getRand(5231), ETARandom.getRand(324, 2685)) {
 ////                @Override
 ////                public boolean condition() {
 ////                    // walk until player reaches destination
@@ -1772,7 +1772,7 @@
 ////
 ////        // open inventory since it's not already open
 ////        if (getTabs().open(tabType)) {
-////            sleep(Rand.getRand(600, 900));
+////            sleep(ETARandom.getRand(600, 900));
 ////            return true;
 ////        }
 ////
@@ -1839,7 +1839,7 @@
 ////     * @param items The items to fetch from the players bank.
 ////     * @return True if the passed item is contained in the players inventory after execution, else returns false.
 ////     */
-////    protected boolean fetchFromBank(@NotNull String... items) throws InterruptedException {
+////    protected boolean fetchFromBank(String... items) throws InterruptedException {
 ////        setStatus("Fetching items from bank...");
 ////        HashMap<String, Integer> itemList = new HashMap<String, Integer>();
 ////
@@ -1873,7 +1873,7 @@
 ////     * @param items The item(s) to fetch from the players bank.
 ////     * @return True if the passed item(s) is contained in the players inventory after execution, else returns false.
 ////     */
-////    protected boolean fetchFromBank(@NotNull HashMap<String, Integer> items) throws InterruptedException {
+////    protected boolean fetchFromBank(HashMap<String, Integer> items) throws InterruptedException {
 ////        setStatus("Attempting to fetch " + items + " from the bank...");
 ////        // why withdraw nothing?
 ////        if (items.isEmpty())
@@ -1944,7 +1944,7 @@
 ////            return closeBank();
 ////
 ////        // short delay to breathe
-////        sleep(Rand.getRandReallyShortDelayInt());
+////        sleep(ETARandom.getRandReallyShortDelayInt());
 ////        return true;
 ////    }
 ////
@@ -2123,14 +2123,14 @@
 ////
 ////        // try to open the nearest bank
 ////        if (!getBank().open())
-////            new ConditionalSleep((int) Rand.getRandLongDelayInt()) {
+////            new ConditionalSleep((int) ETARandom.getRandLongDelayInt()) {
 ////                @Override
 ////                public boolean condition() throws InterruptedException {
 ////                    return getBank().open();
 ////                }
 ////            }.sleep();
 ////
-////        sleep(Rand.getRandReallyShortDelayInt());
+////        sleep(ETARandom.getRandReallyShortDelayInt());
 ////        return getBank().open();
 ////    }
 ////
@@ -2141,7 +2141,7 @@
 ////     * @return True if the player has all the passed items, else false if
 ////     * at least one of the passed items are not found in the players inventory.
 ////     */
-////    public boolean hasItems(@NotNull  String... requiredItems) {
+////    public boolean hasItems( String... requiredItems) {
 ////        setStatus("Checking players inventory...");
 ////        // check to ensure all items aren't already in the players inventory before going to a bank
 ////        for (String item : requiredItems) {
@@ -2156,7 +2156,7 @@
 ////            }
 ////        }
 ////
-////        sleep(Rand.getRandReallyShortDelayInt());
+////        sleep(ETARandom.getRandReallyShortDelayInt());
 ////        return true;
 ////    }
 ////
@@ -2181,7 +2181,7 @@
 ////        return !(getNpcs().closest(name) == null);
 ////    }
 ////
-////    protected boolean talkTo(@NotNull Toon npc, String... options) throws InterruptedException {
+////    protected boolean talkTo(Toon npc, String... options) throws InterruptedException {
 ////        setStatus("Attempting to talk to " + npc.getName() + "...");
 ////
 ////        // if the npc is not nearby
@@ -2194,7 +2194,7 @@
 ////        npc.talkTo(this);
 ////
 ////        // wait for chat dialogue box to appear then use options to skip dialogue
-////        sleep(Rand.getRand(1241));
+////        sleep(ETARandom.getRand(1241));
 ////        return handleDialogue(options);
 ////    }
 ////
@@ -2217,7 +2217,7 @@
 ////            dialogues.completeDialogue(options);
 ////
 ////        // random delay
-////        sleep(Rand.getRand(1241));
+////        sleep(ETARandom.getRand(1241));
 ////        return true;
 ////    }
 ////
@@ -2228,7 +2228,7 @@
 ////     *
 ////     * @return true if all items were found and equipped, false otherwise
 ////     */
-////    public boolean equipItems(@NotNull String... reqItems) throws InterruptedException {
+////    public boolean equipItems(String... reqItems) throws InterruptedException {
 ////        for (String name : reqItems) {
 ////            Item item = getInventory().getItem(name);
 ////            if (item == null)
@@ -2249,10 +2249,10 @@
 ////        return false;
 ////    }
 ////
-////    public boolean isWearing(@NotNull String... items) {
+////    public boolean isWearing(String... items) {
 ////        setStatus("Checking worn items...");
 ////        // sleep for a second incase item is still being equipped
-////        sleep(Rand.getRandReallyShortDelayInt());
+////        sleep(ETARandom.getRandReallyShortDelayInt());
 ////
 ////        // for each worn item slot there is e.g., cape, boots, legs, etc.
 ////        for (EquipmentSlot e : EquipmentSlot.values()) {

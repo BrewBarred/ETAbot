@@ -1,6 +1,6 @@
 //package clues;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import org.osbot.T;
 //import org.osbot.rs07.api.Widgets;
 //import org.osbot.rs07.script.ScriptManifest;
@@ -55,7 +55,7 @@
 //    public boolean onLoad() {
 //        try {
 //            setStatus("Initializing beginner clue-man...");
-//            DEFAULT_DELAY_MS = Rand.getRandShortDelayInt();
+//            DEFAULT_DELAY_MS = ETARandom.getRandShortDelayInt();
 //            return true;
 //        } catch (Exception e) {
 //            log(e.getMessage());
@@ -170,7 +170,7 @@
 ////            super();
 ////        }
 ////
-////        public Throwable exit(BotMan<?> b) throws InterruptedException {
+////        public Throwable exit(BotMan b) throws InterruptedException {
 ////            b.onExit();
 ////            return new Throwable("Somehow still talking after bot is dead?");
 ////        }
@@ -196,7 +196,7 @@
 ////        g.drawString("Status: " + status, x, y += 16);
 ////    }
 //
-//    public static boolean isReadingBeginnerMap(@NotNull Widgets w) {
+//    public static boolean isReadingBeginnerMap(Widgets w) {
 //        return w.get(203, 2) != null;
 //    }
 //}

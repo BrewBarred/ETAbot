@@ -36,7 +36,7 @@
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        bot.setStatus("Solving clue: " + clue.getDescription());
 //        return setCompleted(clue.solve(bot));
 //    }
@@ -79,9 +79,9 @@
 ///////     }
 /////// });
 ///////
-/////// Task t6 = new Action(bot, new Function<BotMan<?>, Boolean>() {
+/////// Task t6 = new Action(bot, new Function<BotMan, Boolean>() {
 ///////     @Override
-///////     public Boolean apply(BotMan<?> b) {
+///////     public Boolean apply(BotMan b) {
 ///////         return b.getInventory().drop("Shrimp");
 ///////     }
 /////// });
@@ -106,14 +106,14 @@
 //// * queued scripts internally instead of using OSBots ugly ass client.
 //// */
 ////public class Solve extends Task {
-////    private final Function<BotMan<?>, Boolean> action;
+////    private final Function<BotMan, Boolean> action;
 ////    /**
 ////     * Create a new dynamic action by complete the passed function instead. The function must extend BotMan or script
 ////     * to be successfully executed, I think?
 ////     * <p>
 ////     * @param action The custom action to perform (mainly designed for scripting from a menu).
 ////     */
-////    public Solve(Function<BotMan<?>, Boolean> action) {
+////    public Solve(Function<BotMan, Boolean> action) {
 ////        super(TaskType.ACTION);
 ////        this.action = action;
 ////    }
@@ -123,7 +123,7 @@
 //////     * Create a submittable task
 //////     * @param tasks
 //////     */
-//////    public Action(@NotNull Task... tasks) {
+//////    public Action(Task... tasks) {
 //////        super(TaskType.ACTION);
 //////        for (Task t : tasks) {
 //////
@@ -137,7 +137,7 @@
 ////     * @return
 ////     */
 ////    @Override
-////    public boolean run(BotMan<?> bot) {
+////    public boolean run(BotMan bot) {
 ////        // run this task and then updates Task.completed with the result. //TODO: inspect what we can do with Task.completed cos id like to not have flags if not needed
 ////
 ////        // get the bot to complete this action, then set the 'completed' result to match the result of execution in Task class

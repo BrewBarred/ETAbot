@@ -60,7 +60,7 @@
 //     * @return true if the clue was successfully solved, false otherwise.
 //     * @throws InterruptedException If the solving process is interrupted.
 //     */
-//    boolean solve(BotMan<?> bot) throws InterruptedException;
+//    boolean solve(BotMan bot) throws InterruptedException;
 //
 //}
 //

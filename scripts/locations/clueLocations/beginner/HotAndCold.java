@@ -86,7 +86,7 @@
 //    }
 //
 //    @Override
-//    public boolean solve(BotMan<?> bot) throws InterruptedException {
+//    public boolean solve(BotMan bot) throws InterruptedException {
 //
 //                return false;
 //    }

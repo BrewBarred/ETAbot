@@ -1,6 +1,6 @@
 //package clues;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import locations.clueLocations.beginner.CharlieClue;
 //import org.osbot.rs07.api.model.Item;
 //import org.osbot.rs07.api.ui.RS2Widget;
@@ -147,7 +147,7 @@
 //     * @param bot
 //     * @return
 //     */
-//    protected String readClue(BotMan<?> bot) {
+//    protected String readClue(BotMan bot) {
 //        setStatus("Reading clue...");
 //
 //        // look through all widgets to find one that’s visible
@@ -174,7 +174,7 @@
 //            return true;
 //
 //        // try an alternate location here?
-//        sleep(Rand.getRand(1223, 2541));
+//        sleep(ETARandom.getRand(1223, 2541));
 //        return false;
 //    }
 //
@@ -196,7 +196,7 @@
 //     * @param emote The emote to perform on arrival.
 //     * @return True if the emote was successfully perform at the passed location, else returns false.
 //     */
-//    protected boolean solveClue(@NotNull BotMan<?> bot, @NotNull EmoteMan emote, @NotNull Toon npc, @NotNull String... reqItems) throws InterruptedException {
+//    protected boolean solveClue(BotMan bot, EmoteMan emote, Toon npc, String... reqItems) throws InterruptedException {
 //        setStatus("Attempting to solve emote clue...");
 //        //TODO: upgrade this to bag manager and add a function to check the players worn items too
 //

@@ -1,6 +1,6 @@
 //package task.tasks;
 //
-//import com.sun.istack.internal.NotNull;
+//
 //import task.Task;
 //import task.TaskType;
 //import utils.BotMan;
@@ -10,14 +10,14 @@
 //    Toon target;
 //    String name;
 //
-//    public Talk(@NotNull Toon npc, String... options) {
+//    public Talk(Toon npc, String... options) {
 //        super(TaskType.TALK_TO);
 //        target = npc;
 //        name = npc.getName();
 //    }
 //
 //    @Override
-//    public boolean run(BotMan<?> bot) throws InterruptedException {
+//    public boolean run(BotMan bot) throws InterruptedException {
 //        return target.walkAndTalk(bot);
 //    }
 //
