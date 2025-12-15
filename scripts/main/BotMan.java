@@ -135,9 +135,6 @@ public abstract class BotMan extends Script {
     @Override
     public final void onStart() throws InterruptedException {
         try {
-            //TODO: move back to BotMenu if possible, thinking the creation of BotMenu itself was conflicting with this,
-            // since bot menu creates parts that this changes.
-            // set startup messages for debugging
             setStatus("Launching... ETA BotManager");
 
             ///  setup defaults
@@ -162,10 +159,10 @@ public abstract class BotMan extends Script {
 
             // force-load child scripts to prevent accidental overrides
             // (only load children after loading managers since children use managers)
-            setBotStatus("Checking child load...");
+            setBotStatus("Checking children...");
             if (!onLoad())
                 throw new RuntimeException("Failed BotMan.onStart()");
-            setStatus("Successfully loaded child script!");
+            setStatus("Successfully loaded children!");
 
             ///  setup menu items
             setBotStatus("Setting up menu items...");
@@ -173,7 +170,6 @@ public abstract class BotMan extends Script {
             setStatus("Successfully loaded menu items!");
 
             //TODO remove status/setupTest() after testing is complete
-            setBotStatus("Creating TaskMan...");
             setupTest();
             setStatus("Initialization complete!");
 
@@ -227,6 +223,7 @@ public abstract class BotMan extends Script {
     ///     MAIN FUNCTIONS
     ///
     protected void setupTest() throws InterruptedException {
+        setStatus("Setting up tests...");
         taskMan.add(Dig.getTests());
     }
 

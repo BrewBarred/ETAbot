@@ -134,7 +134,10 @@ public class BotMenu extends JFrame {
             tabs.addTab("About", buildTabAbout());
 
         ///  add bot menu components
+
+        // add menu header
         menu.add(buildHeader(), BorderLayout.NORTH);
+        // add main menu tabs (dashboard, task manager, etc...)
         menu.add(tabs, BorderLayout.CENTER);
     }
 
@@ -162,7 +165,7 @@ public class BotMenu extends JFrame {
         titlePanel.add(Box.createVerticalStrut(4));
         titlePanel.add(subtitle);
 
-        /// create quick action buttons
+        ///  create the quick action buttons and link them to an action event
 
         // create 4x quick-action buttons which can be used to create short-cuts later for the user.
         JButton action1 = new JButton("Action 1");
@@ -174,15 +177,20 @@ public class BotMenu extends JFrame {
         JButton action4 = new JButton("Action 4");
         action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
 
+        ///  create a panel to neatly group our quick action buttons
+
+        JPanel quickPanel = new JPanel();
+        quickPanel.add(action1);
+        quickPanel.add(action2);
+        quickPanel.add(action3);
+        quickPanel.add(action4);
+
         /// add header components
 
         // add header title
         header.add(titlePanel, BorderLayout.WEST);
         // add header quick action buttons
-        header.add(action1, BorderLayout.EAST);
-        header.add(action2, BorderLayout.EAST);
-        header.add(action3, BorderLayout.EAST);
-        header.add(action4, BorderLayout.EAST);
+        header.add(quickPanel, BorderLayout.EAST);
 
         // return the header we just built
         return header;
