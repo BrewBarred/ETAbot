@@ -70,9 +70,9 @@ public final class TaskMan {
      * @return The {@link Task task} object that was previously in the queue. This allows for easier rearrangement of queues, if needed.
      */
     public Task removeTask(int index) {
-        if (index >= 0 && index < queue.size()) {
+        if (index >= 0 && index < queue.size())
             return queue.remove(index);
-        }
+
         return null;
     }
 
@@ -133,9 +133,8 @@ public final class TaskMan {
         if (index == -1 && currentIndex >= 1)
             currentIndex--;
         else
-            setIndex(index);
+            currentIndex = index;
     }
-
 
     /**
      * Return a list containing all the remaining tasks to be executed in the current loop cycle.
