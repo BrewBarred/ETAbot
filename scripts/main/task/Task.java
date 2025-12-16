@@ -1,6 +1,7 @@
 package main.task;
 
 import main.BotMan;
+import main.BotMenu;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.ui.Skill;
@@ -20,7 +21,7 @@ public abstract class Task {
     /**
      * The type of task currently being performed.
      */
-    private final TaskType type;
+    private final Action type;
     /**
      * A short description broadly describing the {@link Task} at hand.
      */
@@ -49,6 +50,7 @@ public abstract class Task {
     /**
      * The stage that this {@link Task} is currently up to. This stage feature allows the bot to stop in the middle of a
      * task, then pick up (at least, roughly) where it left off, allowing for smoother, less detectable, more versatile,
+     * task, then pick up (at least, roughly) where it left off, allowing for smoother, less detectable, more versatile,
      * and safer botting.
      */
     protected int stage = 1;
@@ -68,10 +70,18 @@ public abstract class Task {
      * @param type The type of action being performed.
      * @param description An informative description of the action being performed.
      */
-    protected Task(TaskType type, String description, int... opt_loops) {
+    protected Task(Action type, String description, int... opt_loops) {
+        ///  define default variables (bot menu settings)
         this.type = type;
         this.description = description;
         this.stages = getStages();
+        // get loops
+        // get condition
+        // get currentLoop
+        // get maxLoop
+        // get isComplete
+        // get taskProgress
+        // get stage (action/index in the action list)
 
         // if a loop count was passed
         if (opt_loops.length > 0) {
@@ -81,14 +91,15 @@ public abstract class Task {
             if (loops >= 0)
                 setLoops(opt_loops[0]);
         }
-            //TODO: (consider adding) this.stageOneLoops = loops[1]; // repeat stage one of a given task x amount of times
+        //TODO: (consider adding) this.stageOneLoops = loops[1]; // repeat stage one of a given task x amount of times
+        BotMenu.updateTaskLibrary(this);
     }
 
-    public final TaskType getType() {
+    public final Action getType() {
         return type;
     }
 
-    protected final void setCondition(BooleanSupplier condition) {
+    public final void setCondition(BooleanSupplier condition) {
         this.condition = condition;
     }
 
@@ -313,6 +324,22 @@ public abstract class Task {
      * @return A {@link JPanel} object used as a script-settings menu tab in the {@link main.BotMenu}.
      */
     public abstract JPanel getTaskSettings();
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null)
+            return false;
+
+        // compare by class type
+        if (this.getClass() != o.getClass())
+            return false;
+
+        Task other = (Task) o;
+        // compare by description
+        return java.util.Objects.equals(this.description, other.description);
+    }
 }
 
 

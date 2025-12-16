@@ -4,10 +4,17 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
 import main.task.Task;
+import main.task.Action;
 
 import java.awt.*;
 
 public class BotMenu extends JFrame {
+    public static void updateTaskLibrary(Task... tasks) {
+        for (Task task : tasks)
+            if (!taskLibraryModel.contains(task))
+                taskLibraryModel.addElement(task);
+    }
+
     /**
      * A reference to the {@link BotMan} object that this {@link BotMenu} interacts with.
      */
@@ -26,6 +33,38 @@ public class BotMenu extends JFrame {
 
     private final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
     private final JList<Task> taskList = new JList<>(taskListModel);
+
+    private static final DefaultListModel<Task> taskLibraryModel = new DefaultListModel<>();
+    private static final JList<Task> taskLibraryList = new JList<>(taskLibraryModel);
+
+    private final DefaultListModel<Action> actionModel = new DefaultListModel<>();
+    private final JList<Action> actionList = new JList<>(actionModel);
+
+    private final JPanel taskTypeSettingsCard = new JPanel(new CardLayout());
+    private static final String CARD_EMPTY = "EMPTY";
+    private static final String CARD_EDITOR = "EDITOR";
+    private final JTextField tfDesc = new JTextField();
+    private final JSpinner spLoops = new JSpinner(new SpinnerNumberModel(1, 0, 100, 1));
+
+    // Position inputs
+    private final JPanel posPanel = new JPanel(new GridLayout(0, 2, 8, 8));
+    private final JSpinner spX = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+    private final JSpinner spY = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+    private final JSpinner spZ = new JSpinner(new SpinnerNumberModel(0, 0, 3, 1));
+
+    // Area inputs (two corners)
+    private final JPanel areaPanel = new JPanel(new GridLayout(0, 2, 8, 8));
+    private final JSpinner spX1 = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+    private final JSpinner spY1 = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+    private final JSpinner spX2 = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+    private final JSpinner spY2 = new JSpinner(new SpinnerNumberModel(0, 0, 10000, 1));
+
+    /**
+     * The currently selected {@link Action} in the Task Builder menu, used to load script-specific settings in the
+     * adjacent panel.
+     */
+    private Action selectedAction;
+
 
 //TODO: check necessity of default list model?
 //    /**
@@ -166,8 +205,9 @@ public class BotMenu extends JFrame {
             tabs.addTab("Dashboard", buildTabDashboard());
             tabs.addTab("Task Library", buildTabTaskLibrary());
             tabs.addTab("Task Builder", buildTabTaskBuilder());
+            tabs.addTab("Taxi", buildTabSettings());
             tabs.addTab("Settings", buildTabSettings());
-            tabs.addTab("About", buildTabAbout());
+            tabs.addTab("Logs", buildTabSettings());
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
             tabs.setSelectedIndex(0);
 
@@ -205,23 +245,23 @@ public class BotMenu extends JFrame {
 
         ///  create the quick action buttons and link them to an action event
 
-//        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
-//        JButton action1 = new JButton("Action 1");
-//        action1.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 1 fired."));
-//        JButton action2 = new JButton("Action 2");
-//        action2.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 2 fired."));
-//        JButton action3 = new JButton("Action 3");
-//        action3.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 3 fired."));
-//        JButton action4 = new JButton("Action 4");
-//        action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
-//
-//        ///  create a panel to neatly group our quick action buttons
-//
-//        JPanel quickPanel = new JPanel();
-//        quickPanel.add(action1);
-//        quickPanel.add(action2);
-//        quickPanel.add(action3);
-//        quickPanel.add(action4);
+        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
+        JButton action1 = new JButton("Action 1");
+        action1.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 1 fired."));
+        JButton action2 = new JButton("Action 2");
+        action2.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 2 fired."));
+        JButton action3 = new JButton("Action 3");
+        action3.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 3 fired."));
+        JButton action4 = new JButton("Action 4");
+        action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
+
+        ///  create a panel to neatly group our quick action buttons
+
+        JPanel quickPanel = new JPanel(new GridLayout(0, 4));
+        quickPanel.add(action1);
+        quickPanel.add(action2);
+        quickPanel.add(action3);
+        quickPanel.add(action4);
 
         /// add header components
 
@@ -251,7 +291,8 @@ public class BotMenu extends JFrame {
         cardPanel.add(buildDashMenuTrackers(), "Trackers"); //TODO build trackers menu
         cardPanel.add(buildDashMenuTimers(), "Timers"); //TODO build timers menu
         cardPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
-        cardPanel.add(buildDashMenuDevelopersConsole(), "Developers Console"); //TODO build player console menu
+        cardPanel.add(buildDashMenuDevConsole(), "Dev Console"); //TODO build player console menu
+        cardPanel.add(buildDashMenuAbout(), "About");
 
         ///  create a
         DefaultListModel<String> model = new DefaultListModel<>();
@@ -261,7 +302,8 @@ public class BotMenu extends JFrame {
             model.addElement("Timers");
             model.addElement("Player");
             model.addElement("Reference Manual");
-            model.addElement("Developers Console");
+            model.addElement("Dev Console");
+            model.addElement("About");
 
         // make a list using the default list model
         JList<String> navList = new JList<>(model);
@@ -307,7 +349,7 @@ public class BotMenu extends JFrame {
 
         JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
         taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
-        taskPanel.add(new JLabel("Task Queue"), BorderLayout.NORTH);
+        taskPanel.add(new JLabel("Task List:"), BorderLayout.NORTH);
         taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
         taskPanel.add(buttons, BorderLayout.SOUTH);
 
@@ -394,7 +436,7 @@ public class BotMenu extends JFrame {
         return statusPanel;
     }
 
-    private JComponent buildDashMenuDevelopersConsole() {
+    private JComponent buildDashMenuDevConsole() {
         return getDefaultPanel();
     }
 
@@ -403,23 +445,206 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildTabTaskLibrary() {
-//        JButton add = new JButton("Add Task");
-//            add.addActionListener(e -> {
-//                bot.taskMan.add(task);
-//                // TODO bot.taskMan.add(TaskType, target) later?
-//            });
-        return getDefaultPanel();
+        taskLibraryList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        //actionList.setFixedCellHeight(30); //TODO check if needed?
+        //actionList.setFont(new Font("Segoe UI", Font.PLAIN, 13)); //TODO check if needed?
+
+        ///  create button to queue tasks stored in task library
+
+        JButton btnQueue = new JButton("Add");
+        btnQueue.addActionListener(e -> {
+            bot.taskMan.add(taskLibraryList.getSelectedValue());
+            bot.botMenu.refresh();
+            JOptionPane.showMessageDialog(this, "Item has been added to the queue!");
+        });
+
+        ///  create an up arrow button as an alternate way to navigate the task library list
+
+        JButton btnUp = new JButton("↑");
+        btnUp.addActionListener(e -> {
+            taskLibraryList.setSelectedIndex(taskLibraryList.getSelectedIndex() - 1);
+            bot.botMenu.refresh();
+        });
+
+        ///  create a down arrow button as an alternate way to navigate the task library list
+        JButton btnDown = new JButton("↓");
+        btnDown.addActionListener(e -> {
+            taskLibraryList.setSelectedIndex(taskLibraryList.getSelectedIndex() + 1);
+            bot.botMenu.refresh();
+
+        });
+
+        ///  create a button to delete any unwanted tasks from the task library
+
+        JButton btnDelete = new JButton("Delete");
+        btnDelete.addActionListener(e -> {
+            if (taskLibraryList.getModel().getSize() > 0) {
+                taskLibraryList.remove(taskLibraryList.getSelectedIndex());
+                bot.botMenu.refresh();
+                JOptionPane.showMessageDialog(this, "Item has been deleted!");
+                return;
+            }
+            JOptionPane.showMessageDialog(this, "No items to delete!");
+        });
+
+        ///  create a panel to store the buttons neatly
+
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            buttons.add(btnQueue);
+            buttons.add(btnUp);
+            buttons.add(btnDown);
+            buttons.add(btnDelete);
+
+        update(); //Todo confirm if needed?
+
+        /// create a task panel to store all these controls
+
+        JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
+            taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
+            taskPanel.add(new JLabel("Task Library: (" + taskLibraryModel.getSize() + ")"), BorderLayout.NORTH);
+            taskPanel.add(new JScrollPane(taskLibraryList), BorderLayout.CENTER);
+            taskPanel.add(buttons, BorderLayout.SOUTH);
+
+        // return the created task panel
+        return taskPanel;
+
+//
+//        JScrollPane leftScroll = new JScrollPane(actionList);
+//        leftScroll.setPreferredSize(new Dimension(220, 0));
+//
+//        // ----- right settings card -----
+//        taskTypeSettingsCard.removeAll();
+//        taskTypeSettingsCard.add(buildEmptyTaskPanel(), CARD_EMPTY);
+//        taskTypeSettingsCard.add(buildTabTaskBuilder(), CARD_EDITOR);
+//
+//        // default view
+//        ((CardLayout) taskTypeSettingsCard.getLayout()).show(taskTypeSettingsCard, CARD_EMPTY);
+//
+//        // selection handler (fires on click + arrow keys + scrolling selection)
+//        actionList.addListSelectionListener(e -> {
+//            if (e.getValueIsAdjusting())
+//                return;
+//            Action selected = actionList.getSelectedValue();
+//            showTaskTypeEditor(selected);
+//        });
+//
+//        // ----- split pane -----
+//        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftScroll, taskTypeSettingsCard);
+//        split.setResizeWeight(0.20);   // left takes ~20%
+//
+//        JPanel root = new JPanel(new BorderLayout());
+//        root.setBorder(new EmptyBorder(12, 12, 12, 12));
+//        root.add(new JLabel("Task Library"), BorderLayout.NORTH);
+//        root.add(split, BorderLayout.CENTER);
+//
+//        return root;
+    }
+
+    private void showTaskTypeEditor(Action t) {
+        selectedAction = t;
+
+        CardLayout cl = (CardLayout) taskTypeSettingsCard.getLayout();
+        if (t == null) {
+            cl.show(taskTypeSettingsCard, CARD_EMPTY);
+            return;
+        }
+        cl.show(taskTypeSettingsCard, CARD_EDITOR);
+
+        // basic defaults
+        tfDesc.setText(t.name());
+        spLoops.setValue(1);
+
+        // show/hide parameter inputs
+        posPanel.setVisible(t.isTargetTypePosition());
+        areaPanel.setVisible(t.isTargetTypeArea());
+
+        taskTypeSettingsCard.revalidate();
+        taskTypeSettingsCard.repaint();
     }
 
     private JComponent buildTabTaskBuilder() {
-        return getDefaultPanel();
+//        // ----- left list -----
+//        actionModel.clear();
+//        for (Action t : Action.values())
+//            actionModel.addElement(t);
+//
+//        actionList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+//        actionList.setFixedCellHeight(30);
+//        actionList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+//
+//        JScrollPane leftScroll = new JScrollPane(actionList);
+//        leftScroll.setPreferredSize(new Dimension(220, 0));
+//
+//        // ----- right settings card -----
+//        taskTypeSettingsCard.removeAll();
+//        taskTypeSettingsCard.add(buildEmptyTaskPanel(), CARD_EMPTY);
+//        taskTypeSettingsCard.add(buildTabTaskBuilder(), CARD_EDITOR);
+//
+//        // default view
+//        ((CardLayout) taskTypeSettingsCard.getLayout()).show(taskTypeSettingsCard, CARD_EMPTY);
+//
+//        // selection handler (fires on click + arrow keys + scrolling selection)
+//        actionList.addListSelectionListener(e -> {
+//            if (e.getValueIsAdjusting())
+//                return;
+//            Action selected = actionList.getSelectedValue();
+//            showTaskTypeEditor(selected);
+//        });
+//
+//        // ----- split pane -----
+//        JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, leftScroll, taskTypeSettingsCard);
+//        split.setResizeWeight(0.20);   // left takes ~20%
+//
+//        JPanel root = new JPanel(new BorderLayout());
+//        root.setBorder(new EmptyBorder(12, 12, 12, 12));
+//        root.add(split, BorderLayout.CENTER);
+//        return root;
+//        JPanel form = new JPanel(new GridLayout(0, 2, 10, 10));
+//        form.setBorder(new EmptyBorder(12, 12, 12, 12));
+//
+//        form.add(new JLabel("Description"));
+//        form.add(tfDesc);
+//
+//        form.add(new JLabel("Loops"));
+//        form.add(spLoops);
+//
+//        // Position panel
+//        posPanel.removeAll();
+//        posPanel.add(new JLabel("X")); posPanel.add(spX);
+//        posPanel.add(new JLabel("Y")); posPanel.add(spY);
+//        posPanel.add(new JLabel("Z")); posPanel.add(spZ);
+//
+//        // Area panel
+//        areaPanel.removeAll();
+//        areaPanel.add(new JLabel("X1")); areaPanel.add(spX1);
+//        areaPanel.add(new JLabel("Y1")); areaPanel.add(spY1);
+//        areaPanel.add(new JLabel("X2")); areaPanel.add(spX2);
+//        areaPanel.add(new JLabel("Y2")); areaPanel.add(spY2);
+//
+//        // Wrap dynamic panels so we can show/hide them
+//        JPanel dyn = new JPanel(new BorderLayout(0, 10));
+//        dyn.add(posPanel, BorderLayout.NORTH);
+//        dyn.add(areaPanel, BorderLayout.CENTER);
+//
+        JPanel right = new JPanel(new BorderLayout(12, 12));
+//        right.add(form, BorderLayout.NORTH);
+//        right.add(dyn, BorderLayout.CENTER);
+//
+////        JButton btnCreate = new JButton("Create task");
+////        btnCreate.addActionListener(e -> );
+//
+//        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+//        //bottom.add(btnCreate);
+//        right.add(bottom, BorderLayout.SOUTH);
+
+        return right;
     }
 
     private JComponent buildTabSettings() {
         return getDefaultPanel();
     }
 
-    private JComponent buildTabAbout() {
+    private JComponent buildDashMenuAbout() {
         JLabel title = new JLabel("About");
         title.setFont(new Font("Segoe UI", Font.BOLD, 18));
 
@@ -668,25 +893,44 @@ public class BotMenu extends JFrame {
         return defaultPanel;
     }
 
+    private JComponent buildEmptyTaskPanel() {
+        JPanel p = new JPanel(new BorderLayout());
+        JLabel l = new JLabel("Select a task type to edit parameters.");
+        l.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        p.add(l, BorderLayout.NORTH);
+        return p;
+    }
+
     /**
      * Handles update logic for the BotMenu, to keeps lists, timers and other features real-time. This function is
      * called everytime the BotMan's onPaint() function is called.
      */
     protected final void update() {
-        bot.setBotStatus("Updating bot menu...");
         taskListModel.clear();
 
         for (Task task : bot.taskMan.getTasks()) {
             taskListModel.addElement(task);
+            // TODO remove
         }
+
+//        // refresh the task library
+//        ListModel<Task> model = taskLibraryList.getModel();
+//        for (int i = 0; i < model.getSize(); i++) {
+//            Task task = model.getElementAt(i);
+//            if (task != null) {
+//                if (!taskLibraryModel.contains(task))
+//                    taskLibraryModel.addElement(task);
+//            }
+//        }
     }
 
     public void refresh() {
+        bot.setBotStatus("Refreshing bot menu...");
         if (bot == null || bot.taskMan == null) return;
 
         Runnable r = () -> {
+            bot.setBotStatus("Refreshing bot menu...");
             taskListModel.clear();
-
             for (Task task : bot.taskMan.getTasks()) {
                 taskListModel.addElement(task);
             }
@@ -698,7 +942,6 @@ public class BotMenu extends JFrame {
             SwingUtilities.invokeLater(r);
         }
     }
-
 
     /**
      * Update the bot status to keep the user informed about the script progress.

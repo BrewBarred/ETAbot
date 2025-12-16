@@ -3,7 +3,7 @@ package main;
 import main.actions.Dig;
 import main.managers.TaskMan;
 import main.task.Task;
-import main.task.TaskType;
+import main.task.Action;
 import main.tools.ETARandom;
 import main.tools.GraphicsMan;
 import org.osbot.rs07.api.map.Area;
@@ -92,7 +92,7 @@ public abstract class BotMan extends Script {
     /**
      * The type of task currently being performed (if any).
      */
-    protected TaskType taskType = TaskType.WAIT;
+    protected Action action = Action.WAIT;
 
     ///
     ///     PRIVATE FIELDS
@@ -294,7 +294,7 @@ public abstract class BotMan extends Script {
         // exit if attempt limit has been exceeded
         if (currentAttempt >= MAX_ATTEMPTS) {
             if (isDevMode) {
-                setStatus("Developer mode enabled. Ignoring attempt counter.");
+                setBotStatus("Developer mode enabled. Bypassed maximum attempts...");
                 currentAttempt--;
             } else {
                 setStatus("Maximum attempt limit has been reached! Exiting...");

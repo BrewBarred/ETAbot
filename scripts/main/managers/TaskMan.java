@@ -1,10 +1,9 @@
 package main.managers;
 
 import main.BotMan;
+import main.BotMenu;
 import main.task.Task;
 
-import javax.swing.*;
-import java.awt.*;
 import java.util.*;
 import java.util.List;
 
@@ -26,45 +25,38 @@ import java.util.List;
  */
 public final class TaskMan {
     private final List<Task> queue = new ArrayList<>();
-    private final List<Task> ghostQueue = new ArrayList<>();
+    private final List<Task> backupQueue = new ArrayList<>();
     /**
      * This index value is provided for testing purposes only and not intended for normal use-cases. The TaskManager
      * usually only tackles the first task at all times, and removes it on completion, ready to start the next task.
      */
     private int currentIndex = 0;
 
+    private boolean add(boolean urgent, Task... tasks) {
+        // ensure all tasks submitted to task man are also stored in the task library for later
+        BotMenu.updateTaskLibrary(tasks);
+        // ensure every executed task is inside the task library
+        backupQueue.addAll((urgent ? 1 : queue.size()), Arrays.asList(tasks));
+        return queue.addAll((urgent ? 1 : queue.size()), Arrays.asList(tasks));
+    }
     /**
      * Add the passed tasks to end of the queue.
      *
-     * @param tasks The {@link Task task(s)} to add to the end of the task-queue.
+     * @param tasks The {@link Task task(s)} to add to the queue.
      * @return True if the tasks are successfully added to the queue.
      */
     public boolean add(Task... tasks) {
-        // update ghost queue so each loop mimics this new behaviour too
-        ghostQueue.addAll(Arrays.asList(tasks));
-        return queue.addAll(Arrays.asList(tasks));
+        return add(false, tasks);
     }
 
     /**
-     * Add the passed list of tasks to the end of the queue.
+     * Add the passed tasks to the start of the queue.
      *
-     * @param tasks The {@link Task} tasks(s) to add to the end of the task-queue.
+     * @param tasks The {@link Task task(s)} to add to the queue.
      * @return True if the tasks are successfully added to the queue.
      */
-    public boolean add(List<Task> tasks) {
-        // update ghost queue so each loop mimic this new behaviour too
-        ghostQueue.addAll(tasks);
-        return queue.addAll(tasks);
-    }
-
-    /**
-     * Add the passed task to the queue start of the queue. These tasks are treated as one-off urgent tasks and are not
-     * repeated on the next loop cycle (if any remain).
-     *
-     * @param tasks The {@link Task task(s)} to be added to the task-queue.
-     */
-    boolean addUrgentTask(Task... tasks) {
-        return queue.addAll(1, Arrays.asList(tasks));
+    public boolean addUrgent(Task... tasks) {
+        return add(true, tasks);
     }
 
     /**
@@ -73,7 +65,7 @@ public final class TaskMan {
      * @param task The task to remove from the queue.
      */
     boolean removeTask(Task task) {
-        ghostQueue.remove(task);
+        backupQueue.remove(task);
         return queue.remove(task);
     }
 
@@ -167,13 +159,6 @@ public final class TaskMan {
         return queue;
     }
 
-    public JList<Task> getTaskJList(List<Task> tasks) {
-        JList<Task> taskList = new JList<>();
-        taskList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
-
-        return taskList;
-    }
-
     /**
      * Calls the next {@link Task} in the {@link TaskMan} queue (if it exists).
      *
@@ -225,9 +210,9 @@ public final class TaskMan {
      * Restarts the Task Manager loop
      */
     private void restartLoop() {
-        if (!ghostQueue.isEmpty()) {
+        if (!backupQueue.isEmpty()) {
             // reset the queue by loading a copy of the last queue
-            queue.addAll(ghostQueue);
+            queue.addAll(backupQueue);
             // go back to the start of the loop
             currentIndex = 0;
         } else throw new RuntimeException("Unable to restart task! No ghost queue was found...");
@@ -238,7 +223,7 @@ public final class TaskMan {
      */
     private void update() {
         // clear the backup queue and add the current queue
-        ghostQueue.clear();
-        ghostQueue.addAll(queue);
+        backupQueue.clear();
+        backupQueue.addAll(queue);
     }
 }

@@ -2,7 +2,6 @@ package main.tools;
 
 import main.BotMan;
 
-import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -33,7 +32,7 @@ public class GraphicsMan {
         this.bot = bot;
     }
 
-    public void draw(Graphics2D g) {
+    public void drawMainOverlay(Graphics2D g) {
         if (bot == null)
             return;
 
@@ -49,16 +48,16 @@ public class GraphicsMan {
         g.setFont(this.DEFAULT_FONT_TITLE);
 
         // draw bot script name and version as overlay title
-        drawTextMain(g, bot.getName() + " v" + bot.getVersion());
+        drawMainMenuText(g, bot.getName() + " v" + bot.getVersion());
 
         // set text properties back to normal font
         g.setFont(this.DEFAULT_FONT_NORMAL);
 
         // draw current task
-        drawTextMain(g,"Player status: " + bot.getStatus());
-        drawTextMain(g, ("  Progress: " + bot.getTaskProgress() + "%"));
+        drawMainMenuText(g,"Player status: " + bot.getStatus());
+        drawMainMenuText(g, ("  Progress: " + bot.getTaskProgress() + "%"));
         // draw the bots status
-        drawTextMain(g, "Bot status: " + bot.getBotStatus());
+        drawMainMenuText(g, "Bot status: " + bot.getBotStatus());
 //
 //        //TODO: patch up afk timer or implement new one
 ////        // draw current status or wait time
@@ -99,7 +98,7 @@ public class GraphicsMan {
         g.fillRoundRect(START_X, START_Y, 650, currentY, 30, 30);
     }
 
-    private void drawTextMain(Graphics2D g, String text) {
+    public final void drawMainMenuText(Graphics2D g, String text) {
         // draw the passed string to the client screen
         g.drawString(text, currentX + DEFAULT_PADDING, currentY + DEFAULT_PADDING);
         // add this line to the top-left lines list (TL)

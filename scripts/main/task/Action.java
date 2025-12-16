@@ -17,28 +17,34 @@ import org.osbot.rs07.api.map.Position;
 import java.util.function.Function;
 
 /**
- * Defines all the preset task types available to the bot.
+ * Defines all the {@link Action}s this bot can execute. These can be joined together to create a {@link Task} which can
+ * then be submitted to {@link main.managers.TaskMan} for execution.
+ * <n>
+ * An action is the simplest section that can be extracted from a {@link Task}. Actions can be executed for testing via
+ * the BotMenu. Actions only ever take 0 or 1 parameter and automatically called the correct function using that type.
+ * <n>
  * Each enum constant knows:
  * <pre>
- *  1. What kind of target object it expects (NPC, RS2Object, Area, or none).
+ *  1. What kind of target object it expects (NPC, RS2Object, Area, or none, etc.).
  *  2. How to construct the matching Task based on the action being called.
  *
  * </pre>
  */
-public enum TaskType {
+public enum Action {
 //    ACTION(Function.class, target -> new Action((Function<BotMan, Boolean>) target)), // placeholder
 //    MINE(RS2Object.class, target -> new Mine((RS2Object) target)),
 //    WALK_TO(Area.class, target -> new WalkTo((Area) target)),
 //    ATTACK(NPC.class, target -> new Attack((NPC) target)),
 //    TALK_TO(NPC.class, target -> new TalkTo((NPC) target)),
     WAIT(Void.class, target -> new Wait()),
-    WAIT_AT(Position.class, target -> new Wait((Position) target)),
+    WAIT_AT(Position.class, target -> new Wait().at((Position) target)),
+    WAIT_AROUND(Area.class, target -> new Wait().around((Area) target)),
     //WAIT_AROUND(Area.class, target -> new Wait((Area) target)),
     // WAIT_FOR // wait a certain number of ticks, or for an npc to be in range
     DIG(Void.class, target -> new Dig()),
     DIG_AT(Position.class, target -> new Dig().at((Position) target)),
     DIG_AROUND(Area.class, target -> new Dig().around((Area) target));
-    //Fetch(Bank., target -> new Fetch(TargetType.Bank)); // doesn’t need a
+    //Fetch(Bank., target -> new Fetch(TargetType.Bank));
     //SOLVE(String.class, target -> new Solve((String) target));
 
     ////    //    MINE(), FISH(), SOL1VE(), KILL(), CRY(), CRAFT(), WALK(), CAST(), PERFORM(), COMPLETE(), READ(), WRITE(), WAIT(),
@@ -52,13 +58,13 @@ public enum TaskType {
     private final Class<?> targetClass;
     private final Function<Object, Task> task;
 
-    TaskType(Class<?> targetClass, Function<Object, Task> task) {
+    Action(Class<?> targetClass, Function<Object, Task> task) {
         this.targetClass = targetClass;
         this.task = task;
     }
 
     /**
-     * Factory method to create a task from this type.
+     * Factory method to create a task using the passed object.
      */
     public Task create(Object target) {
         if (target == null && targetClass == Void.class) {
@@ -71,6 +77,33 @@ public enum TaskType {
         }
         return task.apply(target);
     }
+
+    public Task create() {
+        if (targetClass != Void.class)
+            throw new IllegalStateException(this + " requires target " + targetClass.getSimpleName());
+        return task.apply(null);
+    }
+
+    ///
+    ///  Getters/setters //TODO double check usage of these getters, delete if not needed
+    ///
+    public Class<?> getTargetClass() {
+        return targetClass;
+    }
+
+    public boolean requiresTarget() {
+        return targetClass != Void.class;
+    }
+
+    public boolean isTargetTypePosition() {
+        return targetClass == Position.class;
+    }
+
+    public boolean isTargetTypeArea() {
+        return targetClass == Area.class;
+    }
+
+
 
 //    // --- Sugar methods live here ---
 //    public Task anyNearby(BotMan bot, Object... params) {
