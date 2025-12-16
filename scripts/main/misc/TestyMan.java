@@ -24,7 +24,7 @@ public class TestyMan extends BotMan {
      */
     @Override
     public boolean onLoad() {
-        return taskMan.add(Dig.getTests());
+        taskMan.add(Dig.getTests());
+        return true;
     }
-
 }

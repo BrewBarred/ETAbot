@@ -41,7 +41,7 @@ public final class TaskMan {
      *
      * @param tasks The {@link Task task(s)} to submit to the task queue.
      */
-    private void add(Task... tasks) {
+    public void add(Task... tasks) {
         // ensure all tasks submitted to task man are also stored in the task library for later
         BotMenu.updateTaskLibrary(tasks);
 
@@ -92,7 +92,7 @@ public final class TaskMan {
     }
 
     public Task getHead() {
-        return peekAt(currentIndex);
+        return peekAt(getIndex());
     }
 
     /**
@@ -121,12 +121,21 @@ public final class TaskMan {
     }
 
     public int getRemainingTaskCount() {
-        return queue.size() - currentIndex;
+        return queue.size() - getIndex();
     }
 
     public int getIndex() {
         return currentIndex;
     }
+
+    public void setIndex(int index) {
+        //
+        if (index == -1 && currentIndex >= 1)
+            currentIndex--;
+        else
+            setIndex(index);
+    }
+
 
     /**
      * Return a list containing all the remaining tasks to be executed in the current loop cycle.
