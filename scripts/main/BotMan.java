@@ -446,7 +446,7 @@ public abstract class BotMan extends Script {
 
     public final float getTaskProgress() {
         if (taskMan.hasTasks())
-            if (taskMan.getTasksRemaining() != null)
+            if (taskMan.getHead() != null)
                 return taskMan.getHead().getTaskProgress();
         return 0;
     }

@@ -27,6 +27,9 @@ import java.util.List;
 public final class TaskMan {
     private final DefaultListModel<Task> queue = new DefaultListModel<>();
     private final DefaultListModel<Task> backupQueue = new DefaultListModel<>();
+    private final int MAX_LOOPS = 100;
+    private int loops = 1;
+    private int current_loop = 0;
     /**
      * This index value is provided for testing purposes only and not intended for normal use-cases. The TaskManager
      * usually only tackles the first task at all times, and removes it on completion, ready to start the next task.
@@ -41,7 +44,8 @@ public final class TaskMan {
     private void add(Task... tasks) {
         // ensure all tasks submitted to task man are also stored in the task library for later
         BotMenu.updateTaskLibrary(tasks);
-        // ensure every executed task is inside the task library
+
+        // add each task to the task list based on their priority levels
         for (Task task : tasks) {
             if (task.isUrgent)
                 queue.add(1, task);
@@ -51,23 +55,12 @@ public final class TaskMan {
     }
 
     /**
-     * Add the passed tasks to the start of the queue.
-     *
-     * @param tasks The {@link Task task(s)} to add to the queue.
-     * @return True if the tasks are successfully added to the queue.
-     */
-    public boolean addUrgent(Task... tasks) {
-        return add(tasks);
-    }
-
-    /**
      * Removes the passed task from the queue.
      *
      * @param task The task to remove from the queue.
      */
     boolean removeTask(Task task) {
-        backupQueue.remove(task);
-        return queue.remove(task);
+        return queue.removeElement(task);
     }
 
     /**
@@ -98,36 +91,19 @@ public final class TaskMan {
         return queue.get(index);
     }
 
-    /**
-     * Returns the {@link Task} at the head of the queue and moves the queue pointer right.
-     * <p>
-     * Note: Items are not removed from the list until a full cycle is completed to safe the hassle of creating locks.
-     *
-     * @return A {@link Task} object that can be executed by a bot instance to complete a (or a series of) actions.
-     */
     public Task getHead() {
         return peekAt(currentIndex);
     }
 
     /**
-     * Fetch a safe-copy of the list of tasks for display on the client.
-     *
-     * @return A list replicating the remaining items in the queue.
-     */
-    public List<Task> getTasksRemaining() {
-        // return if the queue is empty
-        if (queue.isEmpty())
-            return queue;
-
-        // returns a copy of the remaining tasks to complete in the queue
-        return new ArrayList<>(queue).subList(currentIndex, queue.size() - 1);
-    }
-
-    /**
      * @return {@link Boolean true} if this task still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
-    public boolean isLooping() {
+    public boolean isTaskLooping() {
         return getHead() != null && getHead().getLoops() > 0;
+    }
+
+    public boolean isManagerLooping() {
+        return getHead() != null && this.current_loop < this.loops;
     }
 
     /**
@@ -178,20 +154,18 @@ public final class TaskMan {
 
         // if the queue has reached the end
         if (currentIndex >= queue.size()) {
-            // clear the queue
-            queue.clear();
             // if looping is enabled and a copy of the queue exists
-            if (isLooping()) {
-                restartLoop();
-                bot.setStatus("[Task Manager] Loops remaining for this task: " + getHead().getLoops() + "x " + bot.getStatus());
+            if (isTaskLooping()) {
+                restartManagerLoop();
+                bot.setBotStatus("[Task Manager] Loops remaining for this task: " + getHead().getLoops() + "x " + bot.getStatus());
             } else {
-                return bot.setStatus("[Task Manager] All tasks complete!");
+                return bot.setBotStatus("[Task Manager] All tasks complete!");
             }
         }
 
         // get the bot to do some work - either complete a stage or prepare the next task
         if (work(bot))
-            bot.setStatus("[Task Manager] Task Complete!");
+            bot.setBotStatus("[Task Manager] Task Complete!");
 
         return getHead().isCompleted();
     }
@@ -201,9 +175,11 @@ public final class TaskMan {
         Task task = getHead();
 
         // if the task is done, prepare the next task
-        if (task != null && task.run(bot))
-            // remove the current task from the queue
-            return queue.remove(task);
+        if (task != null && task.run(bot)) {
+            // move pointer to the next item in the queue
+            currentIndex++;
+            return true;
+        }
 
         return false;
     }
@@ -211,21 +187,15 @@ public final class TaskMan {
     /**
      * Restarts the Task Manager loop
      */
-    private void restartLoop() {
-        if (!backupQueue.isEmpty()) {
-            // reset the queue by loading a copy of the last queue
-            queue.addAll(backupQueue);
-            // go back to the start of the loop
-            currentIndex = 0;
-        } else throw new RuntimeException("Unable to restart task! No ghost queue was found...");
-    }
+    private void restartManagerLoop() {
+        // increment loops
+        current_loop++;
 
-    /**
-     * Replaces the back-up queue with the current queue to enable the repetition of the current {@link Task} set.
-     */
-    public void backup() {
-        // clear the backup queue and add the current queue
-        backupQueue.clear();
-        backupQueue.addAll((Collection<? extends Task>) queue);
+        // return early if max loops have been exceeded
+        if (current_loop >= loops || current_loop >= MAX_LOOPS)
+            return;
+
+        // go back to the start of the loop
+        currentIndex = 0;
     }
 }
