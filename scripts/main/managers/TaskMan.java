@@ -4,6 +4,7 @@ import main.BotMan;
 import main.BotMenu;
 import main.task.Task;
 
+import javax.swing.*;
 import java.util.*;
 import java.util.List;
 
@@ -24,29 +25,29 @@ import java.util.List;
  *}</pre>
  */
 public final class TaskMan {
-    private final List<Task> queue = new ArrayList<>();
-    private final List<Task> backupQueue = new ArrayList<>();
+    private final DefaultListModel<Task> queue = new DefaultListModel<>();
+    private final DefaultListModel<Task> backupQueue = new DefaultListModel<>();
     /**
      * This index value is provided for testing purposes only and not intended for normal use-cases. The TaskManager
      * usually only tackles the first task at all times, and removes it on completion, ready to start the next task.
      */
     private int currentIndex = 0;
 
-    private boolean add(boolean urgent, Task... tasks) {
+    /**
+     * Add the passed tasks to the queue based on their priority level.
+     *
+     * @param tasks The {@link Task task(s)} to submit to the task queue.
+     */
+    private void add(Task... tasks) {
         // ensure all tasks submitted to task man are also stored in the task library for later
         BotMenu.updateTaskLibrary(tasks);
         // ensure every executed task is inside the task library
-        backupQueue.addAll((urgent ? 1 : queue.size()), Arrays.asList(tasks));
-        return queue.addAll((urgent ? 1 : queue.size()), Arrays.asList(tasks));
-    }
-    /**
-     * Add the passed tasks to end of the queue.
-     *
-     * @param tasks The {@link Task task(s)} to add to the queue.
-     * @return True if the tasks are successfully added to the queue.
-     */
-    public boolean add(Task... tasks) {
-        return add(false, tasks);
+        for (Task task : tasks) {
+            if (task.isUrgent)
+                queue.add(1, task);
+            else
+                queue.addElement(task);
+        }
     }
 
     /**
@@ -56,7 +57,7 @@ public final class TaskMan {
      * @return True if the tasks are successfully added to the queue.
      */
     public boolean addUrgent(Task... tasks) {
-        return add(true, tasks);
+        return add(tasks);
     }
 
     /**
@@ -76,8 +77,9 @@ public final class TaskMan {
      * @return The {@link Task task} object that was previously in the queue. This allows for easier rearrangement of queues, if needed.
      */
     public Task removeTask(int index) {
-        if (index >= 0 && index < queue.size())
+        if (index >= 0 && index < queue.size()) {
             return queue.remove(index);
+        }
         return null;
     }
 
@@ -155,7 +157,7 @@ public final class TaskMan {
      *
      * @return A {@link List<Task>} containing all the remaining tasks to be executed in this cycle.
      */
-    public List<Task> getTasks() {
+    public DefaultListModel<Task> getDefaultListModel() {
         return queue;
     }
 
@@ -221,9 +223,9 @@ public final class TaskMan {
     /**
      * Replaces the back-up queue with the current queue to enable the repetition of the current {@link Task} set.
      */
-    private void update() {
+    public void backup() {
         // clear the backup queue and add the current queue
         backupQueue.clear();
-        backupQueue.addAll(queue);
+        backupQueue.addAll((Collection<? extends Task>) queue);
     }
 }

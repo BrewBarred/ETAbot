@@ -61,6 +61,7 @@ public abstract class Task {
      * the stages value, the Task must have been executed successfully.
      */
     public int stages = 1;
+    public boolean isUrgent = false;
 
     /**
      * Every task has a type and a description for on-screen overlays. The task type helps describe the status of the

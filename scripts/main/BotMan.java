@@ -245,7 +245,6 @@ public abstract class BotMan extends Script {
         // check runtime below preset/maximum
         // logout for a period of time if so
         // draw extra things here, like penises.
-        botMenu.update();
 
         return true;
     }
