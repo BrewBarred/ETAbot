@@ -130,7 +130,7 @@ public abstract class Task {
      *
      * @return The loop count as an int.
      */
-    public final int getCompletedTaskLoops() {
+    public final int getRemainingTaskLoops() {
         return getTaskLoops() - getCurrentTaskLoop();
     }
 
@@ -229,10 +229,10 @@ public abstract class Task {
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
         bot.setBotStatus("Task: " + getDescription()
-                + "\n    Stage:  " + stage + "/" + stages
+                + "   |   Stage:  " + stage + "/" + stages
                 + "   |   Task: " + bot.getRemainingTaskCount()
                 + "   |   Progress:  " + getTaskProgress()
-                + "   |   Loops: " + getCompletedTaskLoops()
+                + "   |   Loops: " + getRemainingTaskLoops()
                 + "   |   Attempts: " + bot.getRemainingAttemptsString());
 
         return isCompleted();

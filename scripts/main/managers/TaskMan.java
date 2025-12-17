@@ -4,6 +4,8 @@ import main.BotMan;
 import main.task.Task;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -21,18 +23,110 @@ import javax.swing.*;
  *  2. Running tasks
  *}</pre>
  */
+
 public final class TaskMan {
     // create list/model pair to dynamically display task list in bot menu
     private final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
-    private JList<Task> taskList = new JList<>(taskListModel);
+    private final JList<Task> taskList = new JList<>(taskListModel);
 
     private final int MAX_SCRIPT_LOOPS = 100;
+    /**
+     * The current loop for this script.
+     */
+    private int scriptLoop = 0;
     private int scriptLoops = 1;
     /**
      * The current index of the task list being executed. This is separated otherwise iterating the menu would force
      * the bot do tasks prematurely.
      */
     private int scriptIndex = 0;
+
+//
+//    /**
+//     * Attach listeners to the task list/model
+//     */
+//    private void setupLibraryListListeners() {
+//        // update bot menu whenever the user iterates the task list (helps keep index up to date)
+//        taskList.addListSelectionListener(e -> {
+//            if (e.getValueIsAdjusting())
+//                return;
+//            refresh();
+//        });
+//
+//        // refresh the bot menu task list whenever the list is changed, added to, or removed from
+//        taskList.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
+//            @Override
+//            public void intervalAdded(javax.swing.event.ListDataEvent e) {
+//                setBotStatus("Added task! (interval)");
+//                refresh();
+//            }
+//
+//            @Override
+//            public void intervalRemoved(javax.swing.event.ListDataEvent e) {
+//                setBotStatus("Removed task! (interval)");
+//                refresh();
+//            }
+//
+//            @Override
+//            public void contentsChanged(javax.swing.event.ListDataEvent e) {
+//                setBotStatus("Changed task! (interval)");
+//                refresh();
+//            }
+//        });
+//    }
+
+    public JPanel buildDashMenuTasks(JLabel label) {
+        // configure list once
+        taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+
+        JButton remove = new JButton("Remove");
+        remove.addActionListener(e -> {
+            int index = getSelectedIndex();
+
+            if (index >= 0 && index < getTaskList().size()) {
+                removeTask(index);
+                setScriptIndex(-1);
+            }
+        });
+
+        //TODO consider adding these buttons to iterate list
+        //        JButton btnPrev = new JButton("◀ Prev");
+//        JButton btnNext = new JButton("Next ▶");
+        //TODO if buttons added, turn these listeners into their own function only keeping -1 +1 changes
+//        btnPrev.addActionListener(e -> {
+//            bot.setScriptIndex(bot.getScriptIndex() - 1);
+
+//            spinner.setValue(bot.getScriptIndex());
+//            bot.setScriptIndex(Math.max(0, bot.getScriptIndex()));
+//            vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
+//            bot.getBotMenu().refresh();
+//        });
+//
+//        btnNext.addActionListener(e -> {
+//            bot.setScriptIndex(bot.getScriptIndex() + 1);
+
+//            spinner.setValue(bot.getScriptIndex());
+//            bot.setScriptIndex(Math.max(0, bot.getScriptIndex()));
+//            vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
+//            bot.getBotMenu().refresh();
+//        });
+
+        /// create a task panel to store all these controls
+
+        // create buttons panel
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        buttons.add(remove);
+
+        // create task panel
+        JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
+        taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
+        taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
+        taskPanel.add(buttons, BorderLayout.SOUTH);
+        taskPanel.add(label, BorderLayout.NORTH);
+
+        // return the created task panel
+        return taskPanel;
+    }
 
     /**
      * Add the passed tasks to the queue based on their priority level.
@@ -64,7 +158,7 @@ public final class TaskMan {
      * @param index The index position in the queue to extract.
      */
     public void removeTask(int index) {
-        if (index >= 0 && index < taskListModel.size())
+        if (index >= 0 && index < size())
             taskListModel.remove(index);
     }
 
@@ -76,7 +170,7 @@ public final class TaskMan {
      */
     public Task peekAt(int index) {
         // validate index boundary
-        if (index < 0 || index >= taskListModel.size())
+        if (index < 0 || index >= size())
             return null;
 
         // return the element at the passed index
@@ -94,8 +188,12 @@ public final class TaskMan {
         return getHead() != null && getHead().isLooping();
     }
 
+    /**
+     * @return {@link Boolean true} if this script still has at least 1 loop remaining, else returns {@link Boolean false}.
+     */
     public boolean isManagerLooping() {
-        return getHead() != null && scriptIndex < scriptLoops;
+        // restart script loop if the task list has tasks & script index reaches end of queue & there are more script loops to execute.
+        return hasTasks() && scriptIndex > taskListModel.getSize() && scriptLoop < scriptLoops;
     }
 
     /**
@@ -105,7 +203,9 @@ public final class TaskMan {
         return !taskListModel.isEmpty();
     }
 
-
+    public int size() {
+        return taskListModel.size();
+    }
 
     /**
      * Calls the next {@link Task} in the {@link TaskMan} queue (if it exists).
@@ -113,31 +213,35 @@ public final class TaskMan {
      * @param bot The {@link BotMan} instance responsible for completing the task.
      * @return true if a task returns successful or if there are no tasks to complete in the last, else returns false.
      */
-    public boolean call(BotMan bot) throws InterruptedException{
+    public boolean call(BotMan bot) throws InterruptedException {
+        bot.setStatus("Calling task...");
         // can't do a nothing!
         if (!hasTasks())
             return !bot.setBotStatus("[TaskMan] No tasks to execute!");
 
         // update statuses
-        bot.setStatus("Calling task...");
-        bot.setBotStatus("   Executing task: " + getHead().getDescription() + "   |   Attempt: " + bot.getRemainingAttemptsString());
+        bot.setBotStatus("Executing task: " + getHead().getDescription() + "   |   Attempt: " + bot.getRemainingAttemptsString());
 
         // if the queue has reached the end
-        if (getScriptIndex() >= taskListModel.size()) {
+        if (getScriptIndex() >= size()) {
             // if looping is enabled and a copy of the queue exists
             if (isTaskLooping()) {
+                ///  logic executed between each task loop
                 restartTaskLoop();
-                bot.setBotStatus("[Task Manager] Remaining loops: script = " + getCompletedScriptLoops() + " task = " + getHead().getCompletedTaskLoops());
+                bot.setBotStatus("[Task Manager] Task loops: " + getRemainingScriptLoops() + "   |    Script loops: " + getHead().getRemainingTaskLoops());
             } else if (isManagerLooping()) {
                 restartManagerLoop();
+                bot.setBotStatus("[Task Manager] Script loops: = " + getHead().getRemainingTaskLoops() + "   |   Task loops" + getRemainingScriptLoops());
             } else {
                 return bot.setBotStatus("[Task Manager] All tasks complete!");
             }
         }
 
         // get the bot to do some work - either complete a stage or prepare the next task
-        if (work(bot))
+        if (work(bot)) {
+            bot.setStatus("Looking for more tasks...");
             bot.setBotStatus("[Task Manager] Task Complete!");
+        }
 
         return getHead().isCompleted();
     }
@@ -163,7 +267,7 @@ public final class TaskMan {
      */
     public Task getTask(int index) {
         if (hasTasks())
-            if (index > 0 && index < taskListModel.size())
+            if (index > 0 && index < size())
                 return taskListModel.get(index);
             else throw new RuntimeException("Invalid task list index passed!");
 
@@ -174,7 +278,7 @@ public final class TaskMan {
      * Returns the previous {@link Task} in the task list, based on the current {@link #scriptIndex}.
      */
     public Task getPreviousTask() {
-        return hasTasks() ? taskListModel.get(taskListModel.size() - 1) : null;
+        return hasTasks() ? taskListModel.get(size() - 1) : null;
     }
 
     /**
@@ -191,8 +295,8 @@ public final class TaskMan {
      *
      * @return The loop count as an int.
      */
-    public int getCompletedScriptLoops() {
-        return scriptLoops - scriptIndex;
+    public int getRemainingScriptLoops() {
+        return scriptLoops - scriptLoop;
     }
 
     /**
@@ -202,9 +306,14 @@ public final class TaskMan {
         return getTaskList().size();
     }
 
-    public int getRemainingTaskCount() {
+    public int getRemainingTaskCountLoop() {
         // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
         return getTotalTaskCount() - getScriptIndex();
+    }
+
+    public int getRemainingTaskCountScript() {
+        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
+        return getTotalTaskCount() - scriptLoop;
     }
 
     /**
@@ -228,12 +337,11 @@ public final class TaskMan {
      * @param index The task list index to set.
      */
     public void setScriptIndex(int index) {
-        if (index >= 0 && index < getTaskList().getSize())
-            // update index
-            scriptIndex = index;
-        else
-            // default to the start
+        if (index < 0)
             scriptIndex = 0;
+        else if (index >= size())
+            scriptIndex = size() - 1;
+        else scriptIndex = index;
     }
     public int getScriptIndex() {
         return scriptIndex;

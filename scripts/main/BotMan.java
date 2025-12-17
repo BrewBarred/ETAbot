@@ -14,8 +14,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -202,7 +200,7 @@ public abstract class BotMan extends Script {
             setStatus("Checking tasks...");
             // if a task was found, attempt to complete it
             if (taskMan.hasTasks()) {
-                setStatus("Found " + taskMan.getRemainingTaskCount() + " tasks to complete.");
+                setStatus("Found " + taskMan.getRemainingTaskCountLoop() + " tasks to complete.");
                 // return the result of the task as a delay
                 return attempt();
             }
@@ -252,7 +250,7 @@ public abstract class BotMan extends Script {
     }
 
     public int getRemainingTaskCount() {
-        return taskMan.getRemainingTaskCount();
+        return taskMan.getRemainingTaskCountLoop();
     }
 
     protected int checkAttempts() throws InterruptedException {
@@ -403,16 +401,20 @@ public abstract class BotMan extends Script {
     /**
      *  Returns the current {@link BotMenu} instance associated with this {@link BotMan}
      */
-    public BotMenu getBotMenu() {
+    public final BotMenu getBotMenu() {
         return this.botMenu;
     }
 
     /**
      * Returns a short, broad description of what the bot is currently attempting to do.
      */
-    public String getStatus() { return status; }
+    public final String getStatus() { return status; }
 
-    public String getBotStatus() { return botStatus; }
+    public final String getBotStatus() { return botStatus; }
+
+    public final JPanel getDashMenuTasks(JLabel label) {
+        return taskMan.buildDashMenuTasks(label);
+    }
 
     public final Task getNextTask() {
         return taskMan.getNextTask();

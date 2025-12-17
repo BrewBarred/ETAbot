@@ -102,7 +102,7 @@ public final class SettingsPanel extends JPanel {
         tm.setLayout(new GridLayout(0, 2, 8, 8));
 
         JLabel lblIdx = new JLabel("Current index:");
-        JSpinner spIndex = new JSpinner(new SpinnerNumberModel(
+        JSpinner spinner = new JSpinner(new SpinnerNumberModel(
                 bot.getScriptIndex(), -1, 9999, 1
         ));
         JButton btnApplyIndex = new JButton("Apply index");
@@ -111,40 +111,20 @@ public final class SettingsPanel extends JPanel {
         JLabel vRemain = new JLabel(String.valueOf(bot.getRemainingTaskCount()));
 
         btnApplyIndex.addActionListener(e -> {
-            int index = (Integer) spIndex.getValue();
+            int index = (Integer) spinner.getValue();
             bot.setScriptIndex(index);
             // keep UI in sync
-            bot.getBotMenu().taskList.setSelectedIndex(Math.max(0, bot.getScriptIndex()));
-            bot.getBotMenu().refresh();
+            bot.setScriptIndex(Math.max(0, bot.getScriptIndex()));
             vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
             bot.setBotStatus("TaskMan index set to: " + bot.getScriptIndex());
-        });
-
-        JButton btnPrev = new JButton("◀ Prev");
-        JButton btnNext = new JButton("Next ▶");
-
-        btnPrev.addActionListener(e -> {
-            bot.setScriptIndex(-1); // your special decrement behavior
-            spIndex.setValue(bot.getScriptIndex());
-            bot.getBotMenu().taskList.setSelectedIndex(Math.max(0, bot.getScriptIndex()));
             bot.getBotMenu().refresh();
-            vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
-        });
-
-        btnNext.addActionListener(e -> {
-            bot.setScriptIndex(bot.getScriptIndex() + 1);
-            spIndex.setValue(bot.getScriptIndex());
-            bot.getBotMenu().taskList.setSelectedIndex(Math.max(0, bot.getScriptIndex()));
-            bot.getBotMenu().refresh();
-            vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
         });
 
         tm.add(lblIdx);
-        tm.add(spIndex);
+        tm.add(spinner);
         tm.add(new JLabel(""));
         tm.add(btnApplyIndex);
         tm.add(new JLabel(""));
-        tm.add(row(btnPrev, btnNext));
         tm.add(lblRemain);
         tm.add(vRemain);
 

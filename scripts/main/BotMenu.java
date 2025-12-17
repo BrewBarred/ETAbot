@@ -12,6 +12,7 @@ import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class BotMenu extends JFrame {
     /// Task Library
@@ -63,7 +64,7 @@ public class BotMenu extends JFrame {
 
 
 
-    private final java.util.List<LogEntry> logBuffer = new java.util.ArrayList<>();
+    private final java.util.List<LogEntry> logList = new CopyOnWriteArrayList<>();
     private boolean logPaused = false;
     private static final int LOG_BUFFER = 214700;
 
@@ -75,26 +76,20 @@ public class BotMenu extends JFrame {
     private JTextField tfSearch;
     private JCheckBox chkCaseSensitive;
     private JToggleButton btnPause;
+    /**
+     *
+     */
+    JPanel scriptPanel = new JPanel();
+    JButton btnExecutionToggle = new JButton("Play");
+    JButton btnStop = new JButton("Stop");
 
 
     /**
      * A reference to the {@link BotMan} object that this {@link BotMenu} interacts with.
      */
     public BotMan bot;
-    /**
-     * The main frame (window) of the BotMenu, in which all controls are located.
-     */
-    protected JFrame main;
-    /**
-     *
-     */
-    protected JPanel scriptPanel;
-    protected JButton btnExecution;
 
     protected boolean isHidingOnExit;
-
-    // task list (only a view, not a major risk, can only make players THINK something is happening when it is not, so MED risk). e.g. Think the player is eating food then dead.
-    public JList<Task> taskList;
 
     private static final DefaultListModel<Task> libraryModel = new DefaultListModel<>();
     private static final JList<Task> libraryList = new JList<>(libraryModel);
@@ -172,17 +167,13 @@ public class BotMenu extends JFrame {
         // link the passed bot with this menu for control e.g., schedule tasks, change script settings via menu
         this.bot = bot;
 
-        // initialize fields //TODO: check if needed?
-        this.scriptPanel = new JPanel();
-        this.btnExecution = new JButton("Play");
-
         SwingUtilities.invokeLater(() -> {
             // create bot menu
             createMenu();
             // set default settings
             setDefaults();
             // setup listeners
-            setupListeners();
+            setupLibraryListListeners();
             // display the menu
             this.showMenu();
             // refresh the bot menu to reflect all changes
@@ -438,42 +429,14 @@ public class BotMenu extends JFrame {
     }
 
     /**
-     * Attach listeners to the task list/model
+     * Attach listeners to the task library to keep it updated whenever the user iterates/manipulates it.
      */
-    private void setupListeners() {
-        // update bot menu whenever the user iterates the task list (helps keep index up to date)
-        taskList.addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting())
-                return;
-            refresh();
-        });
-
+    private void setupLibraryListListeners() {
         // update the bot menu whenever the user iterates the library list (helps keep index up to date)
         libraryList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting())
                 return;
             refresh();
-        });
-
-        // refresh the bot menu task list whenever the list is changed, added to, or removed from
-        taskList.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
-            @Override
-            public void intervalAdded(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Added task! (interval)");
-                refresh();
-            }
-
-            @Override
-            public void intervalRemoved(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Removed task! (interval)");
-                refresh();
-            }
-
-            @Override
-            public void contentsChanged(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Changed task! (interval)");
-                refresh();
-            }
         });
 
         // refresh the bot menu library list whenever the list is changed, added to, or removed from
@@ -608,36 +571,8 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildDashMenuTasks() {
-        // configure list once
-        taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-
-        JButton remove = new JButton("Remove");
-        remove.addActionListener(e -> {
-            int index = taskList.getSelectedIndex();
-
-            if (index >= 0 && index < taskList.getModel().getSize()) {
-                bot.removeTask(index);
-                bot.setScriptIndex(-1);
-            } else {
-                setStatus("Unable to remove task!");
-            }
-        });
-
-        /// create a task panel to store all these controls
-
-        // create buttons panel
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.add(remove);
-
-        // create task panel
-        JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
-        taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
-        taskPanel.add(titleTaskList, BorderLayout.NORTH);
-        taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
-        taskPanel.add(buttons, BorderLayout.SOUTH);
-
-        // return the created task panel
-        return taskPanel;
+        // use task manager to build this menu since the main components are there
+        return bot.getDashMenuTasks(titleTaskList);
     }
 
     /**
@@ -653,7 +588,7 @@ public class BotMenu extends JFrame {
         grid.add(statCard("Status", bot.getStatus(), bot.getBotStatus()));
         grid.add(statCard("Uptime", "01:42:13", "Since last restart"));
         grid.add(statCard("Profit/hr", "?", "?"));
-        grid.add(statCard("Tasks", taskList.getSelectedIndex() + "/" + taskList.getModel().getSize(), "?"));
+        grid.add(statCard("Tasks", bot.getSelectedTaskIndex() + "/" + bot.getTasks().size(), bot.getTaskProgress() + "%"));
 
         ///  add a text area to display extra notes at the bottom of the status menu
 
@@ -1119,7 +1054,7 @@ public class BotMenu extends JFrame {
 
         /// Clear all stored logs and wipe the visible document.
         btnClear.addActionListener(e -> {
-            logBuffer.clear();
+            SwingUtilities.invokeLater(logList::clear);
             clearLogDocument();
         });
 
@@ -1198,7 +1133,7 @@ public class BotMenu extends JFrame {
         try (java.io.PrintWriter out = new java.io.PrintWriter(
                 new java.io.OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
 
-            for (LogEntry e : logBuffer) {
+            for (LogEntry e : logList) {
                 out.println("[" + formatTime(e.timeMillis) + "] " + e.source + " " + e.message);
             }
             setStatus("Saved logs to: " + file.getAbsolutePath());
@@ -1231,8 +1166,9 @@ public class BotMenu extends JFrame {
             try {
                 logDoc.remove(0, logDoc.getLength());
 
-                for (LogEntry e : logBuffer) {
-                    if (!matchesFilter(e, sourceFilter, search, caseSensitive)) continue;
+                for (LogEntry e : logList) {
+                    if (!matchesFilter(e, sourceFilter, search, caseSensitive))
+                        continue;
 
                     // time prefix
                     logDoc.insertString(logDoc.getLength(),
@@ -1269,12 +1205,12 @@ public class BotMenu extends JFrame {
 
     protected final void onResume() {
         setStatus("Function called: onResume()");
-        btnExecution.setText("Pause");
+        btnExecutionToggle.setText("Pause");
     }
 
     protected final void onPause() {
         setStatus("Function called: onPause()");
-        btnExecution.setText("Play");
+        btnExecutionToggle.setText("Play");
     }
 
     /**
@@ -1483,11 +1419,11 @@ public class BotMenu extends JFrame {
             return;
 
         // log entries not only to track them but also to limit the entries (buffer)
-        logBuffer.add(entry);
-        if (logBuffer.size() > LOG_BUFFER) {
-            int overflow = logBuffer.size() - LOG_BUFFER;
+        SwingUtilities.invokeLater(() -> logList.add(entry));
+        if (logList.size() > LOG_BUFFER) {
+            int overflow = logList.size() - LOG_BUFFER;
             // drop oldest messages
-            logBuffer.subList(0, overflow).clear();
+            SwingUtilities.invokeLater(() -> logList.subList(0, overflow).clear());
         }
 
         // update view (respects current filter/search)
