@@ -1,8 +1,8 @@
 package main;
 
 import main.managers.TaskMan;
-import main.task.Task;
 import main.task.Action;
+import main.task.Task;
 import main.tools.ETARandom;
 import main.managers.GraphicsMan;
 import org.osbot.rs07.api.map.Area;
@@ -12,6 +12,7 @@ import org.osbot.rs07.event.ScriptExecutor;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
+import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -123,7 +124,7 @@ public abstract class BotMan extends Script {
      * Constructs a bot instance (without a bot menu) which can be used to execute pre-written or task-based scripts, or
      * for testing purposes.
      *
-     * @see Task
+     * @see
      * @see TaskMan
      */
     public BotMan() {}
@@ -453,8 +454,8 @@ public abstract class BotMan extends Script {
 
     ///  Tasks
 
-    public ArrayList<Task> getTasks() {
-        return Collections.list(taskMan.getTaskListModel.elements());
+    public DefaultListModel<Task> getTasks() {
+        return taskMan.getTaskList();
     }
 
     public final void setTaskDescription(String description) {
@@ -524,8 +525,11 @@ public abstract class BotMan extends Script {
     /**
      * Submits a task to the {@link TaskMan task manager} for execution.
      */
-    public final void addTask(Task task) {
-        taskMan.add(task);
+    public final void addTask(Task... tasks) {
+        if (tasks == null)
+            return;
+
+        taskMan.add(tasks);
     }
 
     /**
@@ -536,7 +540,7 @@ public abstract class BotMan extends Script {
     }
 
     /**
-     * Fetches the index of the {@link Task} currently selected in the task list in the bot menus "tasks" sub-menu.     *
+     * Fetches the index of the {@link } currently selected in the task list in the bot menus "tasks" sub-menu.     *
      *
      * @return An {@link Integer} value representing the selected index of the task list.
      */
