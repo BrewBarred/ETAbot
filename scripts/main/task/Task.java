@@ -234,10 +234,11 @@ public abstract class Task {
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
         bot.setBotStatus("Task: " + getTaskDescription()
-                + "\n Stage:  " + stage + "/" + stages
-                + "  |  Progress:  " + getTaskProgress()
-                + "  |  Loops: " + getLoops()
-                + "  |  Attempts: " + bot.getRemainingAttemptsString());
+                + "\n    Stage:  " + stage + "/" + stages
+                + "   |   Task: " + bot.getRemainingTaskCount()
+                + "   |   Progress:  " + getTaskProgress()
+                + "   |   Loops: " + getLoops()
+                + "   |   Attempts: " + bot.getRemainingAttemptsString());
 
         return isCompleted();
     }

@@ -197,23 +197,18 @@ public abstract class BotMan extends Script {
                 throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
 
             setStatus("Checking tasks...");
-            // fetch the next task from the task manager
-            Task task = taskMan.getHead();
             // if a task was found, attempt to complete it
-            if (task != null) {
+            if (taskMan.hasTasks()) {
                 setStatus("Found " + taskMan.getRemainingTaskCount() + " tasks to complete.");
-                if (!setStatus("Executing task: " + task.getTaskDescription()))
-                    throw new RuntimeException("Failed to set status!");
-
                 // return the result of the task as a delay
-                return attempt(task);
+                return attempt();
             }
 
             // throw an error if there are no tasks to complete to prevent infinite looping until a task is submitted
             throw new RuntimeException("No tasks to complete! TaskMan index: " + taskMan.getIndex());
 
         } catch (RuntimeException i) {
-            setStatus("[ERROR] " + i.getMessage());
+            setStatus(i.getMessage());
             return checkAttempts();
         }
     }
@@ -242,7 +237,7 @@ public abstract class BotMan extends Script {
         return true;
     }
 
-    protected int attempt(Task task) throws InterruptedException {
+    protected int attempt() throws InterruptedException {
         // attempt to complete the next stage of this task
         if (taskMan.call(this))
             // if the task returns as completed, set a standard delay
@@ -266,19 +261,23 @@ public abstract class BotMan extends Script {
         return this.currentAttempt;
     }
 
-    public String getRemainingAttemptsString() {
-        return getCurrentAttempt() + "/" + getMaxAttempts();
-    }
-
     /**
      * Return the remaining attempts by subtracting the current {@link BotMan#currentAttempt} from the
      * {@link BotMan#MAX_ATTEMPTS}.
      *
      * @return An {@link Integer} value denoting the remaining {@link BotMan#currentAttempt} for this cycle.
      */
-    public int getRemainingAttemptCount() {
+    public int getRemainingAttempts() {
         // add 1 to the result because all attempts are pre-incremented
         return (getMaxAttempts() - getCurrentAttempt()) + 1;
+    }
+
+    public String getRemainingAttemptsString() {
+        return getCurrentAttempt() + "/" + getMaxAttempts();
+    }
+
+    public int getRemainingTaskCount() {
+        return taskMan.getRemainingTaskCount();
     }
 
     protected int checkAttempts() throws InterruptedException {
@@ -476,9 +475,13 @@ public abstract class BotMan extends Script {
 
         // update on-screen status via GraphicsMan
         this.status = status;
-        // update console log
-        log(status);
 
+        if (botMenu != null)
+            // update bot menu console log
+            botMenu.logStatus(status);
+
+        // update main console log
+        log(status);
         // always return true for one-line return statements
         return true;
     }
@@ -490,9 +493,13 @@ public abstract class BotMan extends Script {
 
         // update on-screen bot status via GraphicsMan
         this.botStatus = status;
-        // update console log
-        log(status);
 
+        if (botMenu != null)
+            // update bot menu console log
+            botMenu.logBotStatus(status);
+
+        // update main console log
+        log(status);
         // always return true for one-line return statements
         return true;
     }

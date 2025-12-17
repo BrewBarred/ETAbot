@@ -52,8 +52,8 @@ public class menu2 extends JFrame {
         tabs.addTab("Tasks", buildTasksTab());
         tabs.addTab("Builder", buildBuilderTab());
         tabs.addTab("Status", buildStatusTab());
-        tabs.addTab("Logs", buildLogsTab());
         tabs.addTab("Settings", buildSettingsTab());
+        tabs.addTab("Logs", buildLogsTab());
         tabs.addTab("About", buildAboutTab());
 
         root.add(tabs, BorderLayout.CENTER);

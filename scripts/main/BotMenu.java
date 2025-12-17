@@ -8,7 +8,9 @@ import main.task.Task;
 import main.task.Action;
 
 import java.awt.*;
-import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.ArrayList;
 
 public class BotMenu extends JFrame {
     /**
@@ -24,6 +26,52 @@ public class BotMenu extends JFrame {
     // dynamic bot menu labels updated in refresh()
     JLabel titleTaskList = new JLabel();
     JLabel titleLibraryList = new JLabel();
+
+
+
+
+    ///  LOGGING STUFF - NEED TO FILTER AND TIDY UP
+
+
+
+    // ---- LOGGING ----
+    private enum LogSource { ALL, STATUS, BOT_STATUS }
+
+    private static class LogEntry {
+        final long timeMillis;
+        final LogSource source;
+        final String message;
+
+        LogEntry(LogSource source, String message) {
+            this.timeMillis = System.currentTimeMillis();
+            this.source = source;
+            this.message = message;
+        }
+    }
+
+    private final java.util.List<LogEntry> logBuffer = new java.util.ArrayList<>();
+    private boolean logPaused = false;
+    private static final int MAX_LOG_LINES = 2000;
+
+    // UI
+    private JTextPane logPane;
+    private javax.swing.text.StyledDocument logDoc;
+
+    private JComboBox<LogSource> cbSource;
+    private JTextField tfSearch;
+    private JCheckBox chkCaseSensitive;
+    private JToggleButton btnPause;
+    private JButton btnClear;
+    private JButton btnSave;
+
+
+
+
+
+
+
+
+
 
     /**
      * A reference to the {@link BotMan} object that this {@link BotMenu} interacts with.
@@ -41,7 +89,8 @@ public class BotMenu extends JFrame {
 
     protected boolean isHidingOnExit;
 
-    public final JList<Task> taskList;
+    // task list (only a view, not a major risk, can only make players THINK something is happening when it is not, so MED risk). e.g. Think the player is eating food then dead.
+    public JList<Task> taskList = new JList<>();
 
     private static final DefaultListModel<Task> libraryModel = new DefaultListModel<>();
     private static final JList<Task> libraryList = new JList<>(libraryModel);
@@ -220,9 +269,8 @@ public class BotMenu extends JFrame {
             tabs.addTab("Dashboard", buildTabDashboard());
             tabs.addTab("Task Library", buildTabTaskLibrary());
             tabs.addTab("Task Builder", buildTabTaskBuilder());
-            tabs.addTab("Walk Man", buildTabSettings());
+            tabs.addTab("Travel Manager", buildTabSettings());
             tabs.addTab("Settings", buildTabSettings());
-            tabs.addTab("Logs", buildTabSettings());
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
             tabs.setSelectedIndex(0);
 
@@ -242,33 +290,33 @@ public class BotMenu extends JFrame {
         taskList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting())
                 return;
-            this.refresh();
+            refresh();
         });
 
         // update the bot menu whenever the user iterates the library list (helps keep index up to date)
         libraryList.addListSelectionListener(e -> {
             if (e.getValueIsAdjusting())
                 return;
-            this.refresh();
+            refresh();
         });
 
         // refresh the bot menu task list whenever the list is changed, added to, or removed from
         taskList.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
             @Override
             public void intervalAdded(javax.swing.event.ListDataEvent e) {
-                setStatus("Added task! (interval)");
+                setBotStatus("Added task! (interval)");
                 refresh();
             }
 
             @Override
             public void intervalRemoved(javax.swing.event.ListDataEvent e) {
-                setStatus("Removed task! (interval)");
+                setBotStatus("Removed task! (interval)");
                 refresh();
             }
 
             @Override
             public void contentsChanged(javax.swing.event.ListDataEvent e) {
-                setStatus("Changed task! (interval)");
+                setBotStatus("Changed task! (interval)");
                 refresh();
             }
         });
@@ -277,19 +325,19 @@ public class BotMenu extends JFrame {
         libraryList.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
             @Override
             public void intervalAdded(ListDataEvent e) {
-                setStatus("Added task! (interval)");
+                setBotStatus("Added task! (interval)");
                 refresh();
             }
 
             @Override
             public void intervalRemoved(ListDataEvent e) {
-                setStatus("Removed task! (interval)");
+                setBotStatus("Removed task! (interval)");
                 refresh();
             }
 
             @Override
             public void contentsChanged(ListDataEvent e) {
-                setStatus("Changed task! (interval)");
+                setBotStatus("Changed task! (interval)");
                 refresh();
             }
         });
@@ -369,6 +417,7 @@ public class BotMenu extends JFrame {
         cardPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
         cardPanel.add(buildDashMenuDevConsole(), "Dev Console"); //TODO build player console menu
         cardPanel.add(buildDashMenuAbout(), "About");
+        cardPanel.add(buildDashMenuLogs(), "Logs");
 
         ///  create a
         DefaultListModel<String> model = new DefaultListModel<>();
@@ -380,6 +429,7 @@ public class BotMenu extends JFrame {
             model.addElement("Reference Manual");
             model.addElement("Dev Console");
             model.addElement("About");
+            model.addElement("Logs");
 
         // make a list using the default list model
         JList<String> navList = new JList<>(model);
@@ -445,10 +495,10 @@ public class BotMenu extends JFrame {
         ///  create a 2x2 grid using GridLayout, adding 4x statCards()
         //TODO update status displays as these are just placeholders for now
         JPanel grid = new JPanel(new GridLayout(2, 2, 12, 12));
-        grid.add(statCard("Status", "Running", "All systems nominal"));
+        grid.add(statCard("Status", bot.getStatus(), bot.getBotStatus()));
         grid.add(statCard("Uptime", "01:42:13", "Since last restart"));
-        grid.add(statCard("Profit/hr", "132k", "Estimate"));
-        grid.add(statCard("Tasks", "3 active", "Queue is healthy"));
+        grid.add(statCard("Profit/hr", "?", "?"));
+        grid.add(statCard("Tasks", taskList.getSelectedIndex() + "/" + taskList.getModel().getSize(), "?"));
 
         ///  add a text area to display extra notes at the bottom of the status menu
 
@@ -763,6 +813,293 @@ public class BotMenu extends JFrame {
     }
 
     /**
+     * Builds the "Logs" dashboard submenu UI.
+     * <n>
+     * Purpose:
+     * - Displays an on-menu log console (monospace, scrollable).
+     * - Provides controls to:
+     *   - Filter by log source (ALL / STATUS / BOT_STATUS)
+     *   - Search the logs (with case sensitivity toggle)
+     *   - Pause/resume live logging (drops logs while paused)
+     *   - Clear logs
+     *   - Save logs to a text file (may be blocked by OSBot SecurityManager)
+     * <n>
+     * Returns:
+     * - A fully assembled Swing component (root panel) that can be mounted into a tab/card.
+     * <n>
+     * Dependencies (fields/methods this function assumes exist):
+     * - JComboBox<LogSource> cbSource
+     * - JTextField tfSearch
+     * - JCheckBox chkCaseSensitive
+     * - JToggleButton btnPause
+     * - JButton btnClear, btnSave
+     * - JTextPane logPane
+     * - StyledDocument logDoc
+     * - List<LogEntry> logBuffer
+     * - boolean logPaused
+     * - ensureLogStyles(StyledDocument doc)
+     * - refreshLogView()
+     * - clearLogDocument()
+     * - saveLogsToFile()
+     */
+    public JComponent buildDashMenuLogs() {
+
+        ///
+        /// TOP BAR CONTROLS (FILTERS + ACTION BUTTONS)
+        ///
+
+        /// add a dropdown filter showing which log source to display, use LogSource enums to filter
+        cbSource = new JComboBox<>(LogSource.values());
+        cbSource.setSelectedItem(LogSource.ALL);
+
+        // add a text field used to search/filter logs by substring match
+        tfSearch = new JTextField();
+        // add a checkbox to toggle whether the search is case-sensitive or not.
+        chkCaseSensitive = new JCheckBox("Case sensitive");
+        chkCaseSensitive.setSelected(false);
+
+        // add toggle button to pause/resume logging.
+        btnPause = new JToggleButton("Pause");
+
+        // clears the stored log buffer and the visible log document.
+        btnClear = new JButton("Clear");
+
+        // attempts to save logs to a text file using a file chooser. may be blocked by OSBot's SecurityManager.
+        btnSave = new JButton("Save");
+
+        /// Top bar container holding left-side filters and right-side actions.
+
+        // BorderLayout keeps filters left and buttons right.
+        JPanel top = new JPanel(new BorderLayout(8, 8));
+
+        /// Top bar: left side
+        ///  - Show, source combo-box, search
+
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        left.add(new JLabel("Show:"));
+        left.add(cbSource);
+        left.add(new JLabel("Search:"));
+
+        // give the search field a consistent width to avoid layout jitter.
+        tfSearch.setPreferredSize(new Dimension(220, 24));
+        left.add(tfSearch);
+        left.add(chkCaseSensitive);
+
+        /// Top bar: right side
+        /// - Pause/Resume, clear, save
+
+        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        right.add(btnPause);
+        right.add(btnClear);
+        right.add(btnSave);
+
+        /// Complete the top bar construction
+
+        top.add(left, BorderLayout.WEST);
+        top.add(right, BorderLayout.EAST);
+
+        ///
+        /// LOG CONSOLE (TEXTPANE + STYLED DOCUMENT)
+        ///
+
+        // JTextPane is used instead of JTextArea so we can apply styles/colors.
+        logPane = new JTextPane();
+        // Make the log console read-only.
+        logPane.setEditable(false);
+        // Use a monospace font to mimic a real console.
+        logPane.setFont(new Font("Consolas", Font.PLAIN, 13));
+        // Add padding so text is not flush against the edges.
+        logPane.setMargin(new Insets(8, 8, 8, 8));
+        // Cache the StyledDocument backing the JTextPane. All styled log output is written to this document.
+        logDoc = logPane.getStyledDocument();
+
+        // Register named styles (TIME, STATUS, BOT_STATUS, NORMAL).
+        ensureLogStyles(logDoc);
+        // Wrap the log pane in a scroll pane for overflow.
+        JScrollPane scroll = new JScrollPane(logPane);
+        // Remove default scroll borders for a cleaner look.
+        scroll.setBorder(BorderFactory.createEmptyBorder());
+
+        ///
+        /// LOG PANEL (FINAL ASSEMBLY)
+        ///
+
+        /// Log panel:
+        /// - NORTH: filter + action bar
+        /// - CENTER: scrollable log console
+        JPanel logPanel = new JPanel(new BorderLayout(12, 12));
+            // add outer padding around the entire log panel.
+            logPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
+            // mount the top bar and log console
+            logPanel.add(top, BorderLayout.NORTH);
+            logPanel.add(scroll, BorderLayout.CENTER);
+
+        ///
+        /// LISTENERS (HOOK UI CONTROLS INTO LOG VIEW)
+        ///
+
+        /// Refresh the log view when the source filter changes.
+        cbSource.addActionListener(e -> refresh());
+
+        /// DocumentListener reacts to live changes in the search field.
+        /// Any keystroke triggers a refresh of the filtered log view.
+        javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
+        };
+
+        /// Attach the document listener to the search field.
+        tfSearch.getDocument().addDocumentListener(dl);
+
+        /// Refresh the view when case sensitivity is toggled.
+        chkCaseSensitive.addActionListener(e -> refresh());
+
+        /// Pause/resume logging.
+        /// When paused, new logs are ignored until resumed.
+        btnPause.addActionListener(e -> {
+            logPaused = btnPause.isSelected();
+            btnPause.setText(logPaused ? "Resume" : "Pause");
+        });
+
+        /// Clear all stored logs and wipe the visible document.
+        btnClear.addActionListener(e -> {
+            logBuffer.clear();
+            clearLogDocument();
+        });
+
+        /// Save logs to disk (if permitted by the runtime environment).
+        btnSave.addActionListener(e -> saveLogsToFile());
+
+
+        ///
+        /// 5) RETURN FINAL COMPONENT
+        ///
+
+        /// Return the fully assembled log panel.
+        return logPanel;
+    }
+
+    private void ensureLogStyles(javax.swing.text.StyledDocument doc) {
+        javax.swing.text.Style def = javax.swing.text.StyleContext.getDefaultStyleContext()
+                .getStyle(javax.swing.text.StyleContext.DEFAULT_STYLE);
+
+        javax.swing.text.Style normal = doc.addStyle("NORMAL", def);
+        javax.swing.text.StyleConstants.setForeground(normal, Color.DARK_GRAY);
+
+        javax.swing.text.Style status = doc.addStyle("STATUS", def);
+        javax.swing.text.StyleConstants.setForeground(status, new Color(30, 90, 200));
+
+        javax.swing.text.Style botStatus = doc.addStyle("BOT_STATUS", def);
+        javax.swing.text.StyleConstants.setForeground(botStatus, new Color(0, 120, 70));
+
+        javax.swing.text.Style time = doc.addStyle("TIME", def);
+        javax.swing.text.StyleConstants.setForeground(time, new Color(120, 120, 120));
+    }
+
+    private void clearLogDocument() {
+        Runnable r = () -> {
+            try {
+                logDoc.remove(0, logDoc.getLength());
+            } catch (javax.swing.text.BadLocationException ignored) {}
+        };
+        if (SwingUtilities.isEventDispatchThread()) r.run();
+        else SwingUtilities.invokeLater(r);
+    }
+
+    private String formatTime(long millis) {
+        java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss");
+        return sdf.format(new java.util.Date(millis));
+    }
+
+    private boolean matchesFilter(LogEntry e, LogSource sourceFilter, String search, boolean caseSensitive) {
+        if (sourceFilter != LogSource.ALL && e.source != sourceFilter) return false;
+
+        if (search == null || search.isEmpty()) return true;
+
+        String msg = e.message == null ? "" : e.message;
+        if (!caseSensitive) {
+            msg = msg.toLowerCase();
+            search = search.toLowerCase();
+        }
+        return msg.contains(search);
+    }
+
+    /**
+     * Save the console logs for this session (only what is currently viewable, any content missed due to track
+     * manipulation/deletion is not restored).
+     */
+    private void saveLogsToFile() {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Save logs");
+        fc.setSelectedFile(new java.io.File("botman_logs.txt"));
+
+        int res = fc.showSaveDialog(this);
+        if (res != JFileChooser.APPROVE_OPTION) return;
+
+        java.io.File file = fc.getSelectedFile();
+
+        try (java.io.PrintWriter out = new java.io.PrintWriter(
+                new java.io.OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
+
+            for (LogEntry e : logBuffer) {
+                out.println("[" + formatTime(e.timeMillis) + "] " + e.source + " " + e.message);
+            }
+            setStatus("Saved logs to: " + file.getAbsolutePath());
+        } catch (SecurityException se) {
+            setStatus("Save blocked by security manager (OSBot).");
+        } catch (Exception ex) {
+            setStatus("Failed to save logs: " + ex.getMessage());
+        }
+    }
+
+
+    private Runnable refreshDashMenuTasks() {
+        return () -> {
+            // update task list title with dynamic attributes
+            titleTaskList.setText("Task List:    |    Total: " + taskList.getModel().getSize() + "     |     Index:    " + taskList.getSelectedIndex());
+        };
+    }
+    private Runnable refreshLogView() {
+        return () -> {
+            if (logDoc == null) return;
+
+            LogSource sourceFilter = (LogSource) cbSource.getSelectedItem();
+            String search = tfSearch.getText();
+            boolean caseSensitive = chkCaseSensitive.isSelected();
+
+            try {
+                logDoc.remove(0, logDoc.getLength());
+
+                for (LogEntry e : logBuffer) {
+                    if (!matchesFilter(e, sourceFilter, search, caseSensitive)) continue;
+
+                    // time prefix
+                    logDoc.insertString(logDoc.getLength(),
+                            "[" + formatTime(e.timeMillis) + "] ",
+                            logDoc.getStyle("TIME"));
+
+                    // source + message
+                    String srcLabel = e.source == LogSource.STATUS ? "STATUS " :
+                            e.source == LogSource.BOT_STATUS ? "BOT    " : "LOG    ";
+
+                    javax.swing.text.Style st =
+                            e.source == LogSource.STATUS ? logDoc.getStyle("STATUS") :
+                                    e.source == LogSource.BOT_STATUS ? logDoc.getStyle("BOT_STATUS") :
+                                            logDoc.getStyle("NORMAL");
+
+                    logDoc.insertString(logDoc.getLength(), srcLabel, st);
+                    logDoc.insertString(logDoc.getLength(), e.message + "\n", st);
+                }
+
+                // auto-scroll to bottom
+                logPane.setCaretPosition(logDoc.getLength());
+            } catch (javax.swing.text.BadLocationException ignored) {}
+        };
+    }
+
+
+    /**
      * Sets the default close operation for this {@link BotMenu}. Set to true to hide the menu on close, else false to
      * exit the menu instead.
      *
@@ -993,18 +1330,25 @@ public class BotMenu extends JFrame {
         if (bot == null || bot.taskMan == null)
             return;
 
+        ArrayList<Runnable> runnables = new ArrayList<Runnable>();
+
         Runnable r = () -> {
-            bot.setBotStatus("Refreshing bot menu...");
+            setBotStatus("Refreshing bot menu...");
             // update library list title with dynamic attributes
             titleLibraryList.setText("Task Library:    |    Total: " + libraryModel.size() + "     |     Index:    " + libraryList.getSelectedIndex());
-            // update task list title with dynamic attributes
-            titleTaskList.setText("Task List:    |    Total: " + taskList.getModel().getSize() + "     |     Index:    " + taskList.getSelectedIndex());
         };
 
-        if (SwingUtilities.isEventDispatchThread())
-            r.run();
-        else
-            SwingUtilities.invokeLater(r);
+
+        runnables.add(r);
+        // add refresh bot menu log dash menu task
+        runnables.add(refreshLogView());
+
+        // only refresh the sections of the bot menu that were added to the runnables list
+        for (Runnable refreshTask : runnables)
+            if (SwingUtilities.isEventDispatchThread())
+                refreshTask.run();
+            else
+                SwingUtilities.invokeLater(refreshTask);
     }
 
     /**
@@ -1012,8 +1356,37 @@ public class BotMenu extends JFrame {
      *
      * @param status The status to display on-screen (if enabled) and in the {@link BotMenu}
      */
-    public void setStatus(String status) {
+    private void setStatus(String status) {
         if (bot != null)
             bot.setStatus("[BotMenu] " + status);
+    }
+
+    private void setBotStatus(String status) {
+        if (bot != null)
+            bot.setBotStatus("[BotMenu] " + status);
+    }
+
+    public void logStatus(String msg) {
+        appendLog(new LogEntry(LogSource.STATUS, msg));
+    }
+
+    public void logBotStatus(String msg) {
+        appendLog(new LogEntry(LogSource.BOT_STATUS, msg));
+    }
+
+    private void appendLog(LogEntry entry) {
+        if (entry == null) return;
+        if (logPaused) return;
+
+        // buffer
+        logBuffer.add(entry);
+        if (logBuffer.size() > MAX_LOG_LINES) {
+            int overflow = logBuffer.size() - MAX_LOG_LINES;
+            // drop oldest
+            for (int i = 0; i < overflow; i++) logBuffer.remove(0);
+        }
+
+        // update view (respects current filter/search)
+        refreshLogView();
     }
 }

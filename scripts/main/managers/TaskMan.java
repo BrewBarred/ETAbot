@@ -26,7 +26,6 @@ import java.util.List;
  */
 public final class TaskMan {
     private final DefaultListModel<Task> queue = new DefaultListModel<>();
-    private final DefaultListModel<Task> backupQueue = new DefaultListModel<>();
     private final int MAX_LOOPS = 100;
     private int loops = 1;
     private int current_loop = 0;
@@ -42,9 +41,6 @@ public final class TaskMan {
      * @param tasks The {@link Task task(s)} to submit to the task queue.
      */
     public void add(Task... tasks) {
-        // ensure all tasks submitted to task man are also stored in the task library for later
-        BotMenu.updateTaskLibrary(tasks);
-
         // add each task to the task list based on their priority levels
         for (Task task : tasks) {
             if (task.isUrgent)
@@ -121,6 +117,7 @@ public final class TaskMan {
     }
 
     public int getRemainingTaskCount() {
+        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
         return queue.size() - getIndex();
     }
 
@@ -158,7 +155,7 @@ public final class TaskMan {
             return false;
 
         // update status
-        bot.setStatus(getHead().getTaskDescription());
+        bot.setStatus("Executing task: " + getHead().getTaskDescription() + "\n  Attempt: " + bot.getRemainingAttemptsString());
 
         // if the queue has reached the end
         if (currentIndex >= queue.size()) {
@@ -166,6 +163,8 @@ public final class TaskMan {
             if (isTaskLooping()) {
                 restartManagerLoop();
                 bot.setBotStatus("[Task Manager] Loops remaining for this task: " + getHead().getLoops() + "x " + bot.getStatus());
+            } else if (isManagerLooping()) {
+
             } else {
                 return bot.setBotStatus("[Task Manager] All tasks complete!");
             }
@@ -186,6 +185,7 @@ public final class TaskMan {
         if (task != null && task.run(bot)) {
             // move pointer to the next item in the queue
             currentIndex++;
+            bot.getBotMenu().taskList.setSelectedIndex(currentIndex);
             return true;
         }
 
@@ -201,7 +201,7 @@ public final class TaskMan {
 
         // return early if max loops have been exceeded
         if (current_loop >= loops || current_loop >= MAX_LOOPS)
-            return;
+            throw new RuntimeException("[TaskMan] Maximum loops exceeded!");
 
         // go back to the start of the loop
         currentIndex = 0;

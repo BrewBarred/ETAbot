@@ -24,6 +24,7 @@ public class TestyMan extends BotMan {
      */
     @Override
     public boolean onLoad() {
+        ///  start running basic tests
         taskMan.add(Dig.getTests());
         return true;
     }
