@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 
 public class BotMenu extends JFrame {
+    /// Task Library
     /**
      * Provide a static way to update the task library to ensure all tasks are automatically found through creation or
      * execution and added to this list. Later this will be exportable and reusable.
@@ -21,6 +22,18 @@ public class BotMenu extends JFrame {
         for (Task task : tasks)
             if (!libraryModel.contains(task))
                 libraryModel.addElement(task);
+    }
+    /// Bot menu log handler
+    private static class LogEntry {
+        final long timeMillis;
+        final LogSource source;
+        final String message;
+
+        LogEntry(LogSource source, String message) {
+            this.timeMillis = System.currentTimeMillis();
+            this.source = source;
+            this.message = message;
+        }
     }
 
     // dynamic bot menu labels updated in refresh()
@@ -37,21 +50,11 @@ public class BotMenu extends JFrame {
     // ---- LOGGING ----
     private enum LogSource { ALL, STATUS, BOT_STATUS }
 
-    private static class LogEntry {
-        final long timeMillis;
-        final LogSource source;
-        final String message;
 
-        LogEntry(LogSource source, String message) {
-            this.timeMillis = System.currentTimeMillis();
-            this.source = source;
-            this.message = message;
-        }
-    }
 
     private final java.util.List<LogEntry> logBuffer = new java.util.ArrayList<>();
     private boolean logPaused = false;
-    private static final int MAX_LOG_LINES = 2000;
+    private static final int LOG_BUFFER = 214700;
 
     // UI
     private JTextPane logPane;
@@ -61,16 +64,6 @@ public class BotMenu extends JFrame {
     private JTextField tfSearch;
     private JCheckBox chkCaseSensitive;
     private JToggleButton btnPause;
-    private JButton btnClear;
-    private JButton btnSave;
-
-
-
-
-
-
-
-
 
 
     /**
@@ -862,10 +855,10 @@ public class BotMenu extends JFrame {
         btnPause = new JToggleButton("Pause");
 
         // clears the stored log buffer and the visible log document.
-        btnClear = new JButton("Clear");
+        JButton btnClear = new JButton("Clear");
 
         // attempts to save logs to a text file using a file chooser. may be blocked by OSBot's SecurityManager.
-        btnSave = new JButton("Save");
+        JButton btnSave = new JButton("Save");
 
         /// Top bar container holding left-side filters and right-side actions.
 
@@ -1030,6 +1023,7 @@ public class BotMenu extends JFrame {
      * manipulation/deletion is not restored).
      */
     private void saveLogsToFile() {
+        setBotStatus("Saving bot menu logs...");
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle("Save logs");
         fc.setSelectedFile(new java.io.File("botman_logs.txt"));
@@ -1060,9 +1054,10 @@ public class BotMenu extends JFrame {
             titleTaskList.setText("Task List:    |    Total: " + taskList.getModel().getSize() + "     |     Index:    " + taskList.getSelectedIndex());
         };
     }
-    private Runnable refreshLogView() {
+    private Runnable refreshDashMenuLog() {
         return () -> {
-            if (logDoc == null) return;
+            if (logDoc == null)
+                return;
 
             LogSource sourceFilter = (LogSource) cbSource.getSelectedItem();
             String search = tfSearch.getText();
@@ -1098,6 +1093,13 @@ public class BotMenu extends JFrame {
         };
     }
 
+
+    private Runnable refreshTabTaskLibrary() {
+        return () -> {
+            // update library list title with dynamic attributes
+            titleLibraryList.setText("Task Library:    |    Total: " + libraryModel.size() + "     |     Index:    " + libraryList.getSelectedIndex());
+        };
+    }
 
     /**
      * Sets the default close operation for this {@link BotMenu}. Set to true to hide the menu on close, else false to
@@ -1330,18 +1332,15 @@ public class BotMenu extends JFrame {
         if (bot == null || bot.taskMan == null)
             return;
 
-        ArrayList<Runnable> runnables = new ArrayList<Runnable>();
-
-        Runnable r = () -> {
-            setBotStatus("Refreshing bot menu...");
-            // update library list title with dynamic attributes
-            titleLibraryList.setText("Task Library:    |    Total: " + libraryModel.size() + "     |     Index:    " + libraryList.getSelectedIndex());
-        };
+        ///  NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!
 
 
-        runnables.add(r);
+        // TODO: extract these into their own function and call it on start later
+        ArrayList<Runnable> runnables = new ArrayList<>();
+        runnables.add(refreshDashMenuTasks());
+        runnables.add(refreshTabTaskLibrary());
         // add refresh bot menu log dash menu task
-        runnables.add(refreshLogView());
+        runnables.add(refreshDashMenuLog());
 
         // only refresh the sections of the bot menu that were added to the runnables list
         for (Runnable refreshTask : runnables)
@@ -1375,18 +1374,18 @@ public class BotMenu extends JFrame {
     }
 
     private void appendLog(LogEntry entry) {
-        if (entry == null) return;
-        if (logPaused) return;
+        if (entry == null || logPaused) //TODO: ensure this field is near bot menu settings
+            return;
 
-        // buffer
+        // log entries not only to track them but also to limit the entries (buffer)
         logBuffer.add(entry);
-        if (logBuffer.size() > MAX_LOG_LINES) {
-            int overflow = logBuffer.size() - MAX_LOG_LINES;
-            // drop oldest
-            for (int i = 0; i < overflow; i++) logBuffer.remove(0);
+        if (logBuffer.size() > LOG_BUFFER) {
+            int overflow = logBuffer.size() - LOG_BUFFER;
+            // drop oldest messages
+            logBuffer.subList(0, overflow).clear();
         }
 
         // update view (respects current filter/search)
-        refreshLogView();
+        refresh();
     }
 }

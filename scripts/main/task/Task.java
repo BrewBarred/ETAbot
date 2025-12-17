@@ -39,7 +39,7 @@ public abstract class Task {
     protected Position position;
 
     // menu items
-    private int maxLoops = 1;
+    private int taskLoops = 1;
     private int currentLoop = 0;
 
     /**
@@ -112,12 +112,12 @@ public abstract class Task {
             throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_LOOPS + ") exceeded!");
 
         // update loop count/reset current loop to start loop count again
-        this.maxLoops = loops;
+        this.taskLoops = loops;
         this.currentLoop = 0;
     }
 
-    public final int getMaxLoops() {
-        return maxLoops;
+    public final int getTaskLoops() {
+        return taskLoops;
     }
 
     public final int getCurrentLoop() {
@@ -130,15 +130,23 @@ public abstract class Task {
      * @return The loop count as an int.
      */
     public final int getLoops() {
-        return getMaxLoops() - getCurrentLoop();
+        return getTaskLoops() - getCurrentLoop();
     }
 
     /**
      * @return True if this task has completed all of its loops or if the completion condition has been met.
      */
     public final boolean isCompleted() {
-        // automatically flag as completed if the max loops are exceeded or finish condition is true
-        return (getCurrentLoop() >= getMaxLoops()) || getCondition() != null && getCondition().getAsBoolean();
+        // automatically flag as completed if the max loops are exceeded or end conditions have been met (return true)
+        return hasFinishedTaskLoops() || hasMetEndCondition();
+    }
+
+    public final boolean hasFinishedTaskLoops() {
+        return getCurrentLoop() >= getTaskLoops();
+    }
+
+    public final boolean hasMetEndCondition() {
+        return getCondition() != null && getCondition().getAsBoolean();
     }
 
     /**

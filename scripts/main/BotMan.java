@@ -486,20 +486,20 @@ public abstract class BotMan extends Script {
         return true;
     }
 
-    public boolean setBotStatus(String status) {
+    public boolean setBotStatus(String botStatus) {
         // no point in printing nothing!
-        if (status.isEmpty())
+        if (botStatus.isEmpty())
             return false;
 
         // update on-screen bot status via GraphicsMan
-        this.botStatus = status;
+        this.botStatus = botStatus;
 
         if (botMenu != null)
             // update bot menu console log
-            botMenu.logBotStatus(status);
+            botMenu.logBotStatus(botStatus);
 
         // update main console log
-        log(status);
+        log(botStatus);
         // always return true for one-line return statements
         return true;
     }
