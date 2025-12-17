@@ -8,6 +8,7 @@ import main.task.Task;
 import main.task.Action;
 
 import java.awt.*;
+import java.lang.reflect.Method;
 
 public class BotMenu extends JFrame {
     /**
@@ -20,7 +21,7 @@ public class BotMenu extends JFrame {
                 libraryModel.addElement(task);
     }
 
-
+    // dynamic bot menu labels updated in refresh()
     JLabel titleTaskList = new JLabel();
     JLabel titleLibraryList = new JLabel();
 
@@ -40,7 +41,6 @@ public class BotMenu extends JFrame {
 
     protected boolean isHidingOnExit;
 
-    private DefaultListModel<Task> taskListModel;
     public final JList<Task> taskList;
 
     private static final DefaultListModel<Task> libraryModel = new DefaultListModel<>();
@@ -91,10 +91,8 @@ public class BotMenu extends JFrame {
         super("BotMan: BotMenu");
         // link the passed bot with this menu for control e.g., schedule tasks, change script settings via menu
         this.bot = bot;
-        // provide easier references to the task mans task list model
-        this.taskListModel = bot.taskMan.getDefaultListModel();
         // link task man's queue with the bot menu task list
-        this.taskList = new JList<>(this.taskListModel);
+        this.taskList = new JList<>(bot.taskMan.getDefaultListModel());
 
         // initialize fields //TODO: check if needed?
         this.scriptPanel = new JPanel();
@@ -255,7 +253,7 @@ public class BotMenu extends JFrame {
         });
 
         // refresh the bot menu task list whenever the list is changed, added to, or removed from
-        taskListModel.addListDataListener(new javax.swing.event.ListDataListener() {
+        taskList.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
             @Override
             public void intervalAdded(javax.swing.event.ListDataEvent e) {
                 setStatus("Added task! (interval)");
@@ -412,7 +410,7 @@ public class BotMenu extends JFrame {
         remove.addActionListener(e -> {
             int index = taskList.getSelectedIndex();
 
-            if (index >= 0 && index < taskListModel.getSize()) {
+            if (index >= 0 && index < taskList.getModel().getSize()) {
                 bot.taskMan.removeTask(index);
                 bot.taskMan.setIndex(-1);
             } else {
@@ -517,6 +515,12 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildDashMenuDevConsole() {
+        // this code might enable me to code while playing?
+//        String input = "run";
+//
+//        Method method = this.getClass().getDeclaredMethod(input);
+//        method.setAccessible(true);
+//        method.invoke(this);
         return getDefaultPanel();
     }
 
@@ -554,22 +558,18 @@ public class BotMenu extends JFrame {
 
         });
 
-        ///  create a button to delete any unwanted tasks from the task library
+        ///  create a button to remove any unwanted tasks from the task library
 
-        JButton btnDelete = new JButton("Delete");
-        btnDelete.addActionListener(e -> {
+        JButton btnRemove = new JButton("Remove");
+        btnRemove.addActionListener(e -> {
             int index = libraryList.getSelectedIndex();
-            if (libraryList.getModel().getSize() > 0 && index < libraryList.getModel().getSize() - 1) {
-                // remove from list first
-                libraryModel.removeElement(libraryList.getSelectedValue());
-                // remove from menu display second since it refreshes on removal anyway
-                libraryList.remove(libraryList.getSelectedIndex());
-                //TODO later, remove this and look at how it refreshes on delete automatically under the builddashmenutasks section
-                bot.botMenu.refresh();
+            if (index >= 0) {
+                libraryModel.remove(index);
+                refresh();
                 JOptionPane.showMessageDialog(this, "Item has been deleted!");
-                return;
+            } else {
+                JOptionPane.showMessageDialog(this, "No item selected!");
             }
-            JOptionPane.showMessageDialog(this, "No items to delete!");
         });
 
         //TODO add save/load buttons when menu is working
@@ -580,7 +580,7 @@ public class BotMenu extends JFrame {
             buttons.add(btnQueue);
             buttons.add(btnUp);
             buttons.add(btnDown);
-            buttons.add(btnDelete);
+            buttons.add(btnRemove);
 
         /// create a task panel to store all these controls
 
@@ -986,7 +986,9 @@ public class BotMenu extends JFrame {
         return p;
     }
 
-////
+    /**
+     * Refreshes the BotMenu which safely updates any dynamic labels, lists and displays.
+     */
     public void refresh() {
         if (bot == null || bot.taskMan == null)
             return;
@@ -995,11 +997,8 @@ public class BotMenu extends JFrame {
             bot.setBotStatus("Refreshing bot menu...");
             // update library list title with dynamic attributes
             titleLibraryList.setText("Task Library:    |    Total: " + libraryModel.size() + "     |     Index:    " + libraryList.getSelectedIndex());
-
             // update task list title with dynamic attributes
-            titleTaskList.setText("Task List:    |    Total: " + taskListModel.size() + "     |     Index:    " + taskList.getSelectedIndex());
-            // update model reference to reflect latest changes by TaskMan
-            taskListModel = bot.taskMan.getDefaultListModel();
+            titleTaskList.setText("Task List:    |    Total: " + taskList.getModel().getSize() + "     |     Index:    " + taskList.getSelectedIndex());
         };
 
         if (SwingUtilities.isEventDispatchThread())

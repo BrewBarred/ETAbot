@@ -1,6 +1,5 @@
 package main;
 
-import main.actions.Dig;
 import main.managers.TaskMan;
 import main.task.Task;
 import main.task.Action;
@@ -88,7 +87,7 @@ public abstract class BotMan extends Script {
      * True if the player is currently in developer mode, which will bypass the attempt counter and enable some extra
      * features while BotMan is running.
      */
-    private boolean isDevMode = true;
+    private boolean isDevMode = false;
     /**
      * The type of task currently being performed (if any).
      */
@@ -164,7 +163,7 @@ public abstract class BotMan extends Script {
             // (only load children after loading managers since children use managers)
             setBotStatus("Checking children...");
             if (!onLoad())
-                throw new RuntimeException("Failed BotMan.onStart()");
+                throw new RuntimeException("Failed to load child script!");
             setStatus("Successfully loaded children!");
 
             ///  setup menu items
@@ -172,8 +171,6 @@ public abstract class BotMan extends Script {
             logoutOnExit = false; // TODO setup checkbox in menu or constructor to change this value
             setStatus("Successfully loaded menu items!");
 
-            //TODO remove status/setupTest() after testing is complete
-            setupTest();
             setStatus("Initialization complete!");
 
         } catch (Throwable t) {
@@ -196,7 +193,8 @@ public abstract class BotMan extends Script {
             // track the attempts on every loop so the main loop cannot continue indefinitely under abnormal circumstances.
             currentAttempt++;
             // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
-            safetyCheck();
+            if (!isSafeToBot())
+                throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
 
             setStatus("Checking tasks...");
             // fetch the next task from the task manager
@@ -212,7 +210,7 @@ public abstract class BotMan extends Script {
             }
 
             // throw an error if there are no tasks to complete to prevent infinite looping until a task is submitted
-            throw new RuntimeException("No tasks to complete!");
+            throw new RuntimeException("No tasks to complete! TaskMan index: " + taskMan.getIndex());
 
         } catch (RuntimeException i) {
             setStatus("[ERROR] " + i.getMessage());
@@ -224,12 +222,7 @@ public abstract class BotMan extends Script {
     ///
     ///     MAIN FUNCTIONS
     ///
-    protected void setupTest() throws InterruptedException {
-        setStatus("Setting up tests...");
-        taskMan.add(Dig.getTests());
-    }
-
-    protected boolean safetyCheck() {
+    protected boolean isSafeToBot() {
         setBotStatus("Checking hp level...");
         // if player hp is below threshold && check hp enabled
         // heal
@@ -259,7 +252,6 @@ public abstract class BotMan extends Script {
 
         // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
         currentAttempt = 0;
-        setStatus("Task finished! Progress: " + task.getTaskProgress() + "/" + taskMan.getHead().stages);
         setStatus("Sleeping for: " + delay / 1000 + "s");
 
         return delay;
@@ -274,7 +266,7 @@ public abstract class BotMan extends Script {
         return this.currentAttempt;
     }
 
-    public String getRemainingAttempts() {
+    public String getRemainingAttemptsString() {
         return getCurrentAttempt() + "/" + getMaxAttempts();
     }
 
@@ -286,23 +278,24 @@ public abstract class BotMan extends Script {
      */
     public int getRemainingAttemptCount() {
         // add 1 to the result because all attempts are pre-incremented
-        return (MAX_ATTEMPTS - currentAttempt) + 1;
+        return (getMaxAttempts() - getCurrentAttempt()) + 1;
     }
 
     protected int checkAttempts() throws InterruptedException {
         // exit if attempt limit has been exceeded
-        if (currentAttempt >= MAX_ATTEMPTS) {
+        if (getCurrentAttempt() >= getMaxAttempts()) {
             if (isDevMode) {
                 setBotStatus("Developer mode enabled. Bypassed maximum attempts...");
                 currentAttempt--;
             } else {
-                setStatus("Maximum attempt limit has been reached! Exiting...");
+                setStatus("Maximum attempt limit reached!");
+                setBotStatus("Exiting...");
                 onExit();
             }
             return MIN_DELAY;
 
         // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
-        } else delay = LOOP_DELAY.get() * (currentAttempt * 2);
+        } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
 
         setStatus("Trying again after " + delay / 1000 + "s");
         return delay;
@@ -341,17 +334,10 @@ public abstract class BotMan extends Script {
      * @return True if the player's inventory currently contains the passed item.
      */
     public boolean hasInvItem(String itemName) {
-        return getInventory().getItem(itemName) != null;
-    }
+        if (itemName == null || itemName.isEmpty())
+            return false;
 
-    /**
-     * Fetch the passed item from the players inventory.
-     *
-     * @param itemName The name of the {@link Item} to fetch.
-     * @return The {@link Item} fetched from the players inventory.
-     */
-    public Item getInvItem(String itemName) {
-        return getInventory().getItem(itemName);
+        return getInventory().getItem(itemName) != null;
     }
 
     /**
@@ -365,6 +351,16 @@ public abstract class BotMan extends Script {
     }
 
     /**
+     * Fetch the passed item from the players inventory.
+     *
+     * @param itemName The name of the {@link Item} to fetch.
+     * @return The {@link Item} fetched from the players inventory.
+     */
+    public Item getInvItem(String itemName) {
+        return getInventory().getItem(itemName);
+    }
+
+    /**
      * Creates a custom exception to handle errors for better debugging. This will also allow me to create some
      * functions later which create new tasks to prevent failure, which I can then plugin to machine learning models to
      * self-train based on mistakes (with this being treated as the punishment/failure zone).
@@ -373,6 +369,7 @@ public abstract class BotMan extends Script {
         public TaskFailedException(BotMan bot, String message) {
             super(message);
             bot.setStatus(message);
+            bot.setBotStatus("Thinking...");
         }
     }
 
@@ -428,6 +425,13 @@ public abstract class BotMan extends Script {
     ///
     ///     GETTERS/SETTERS
     ///
+
+    /**
+     *  Returns the current {@link BotMenu} instance associated with this {@link BotMan}
+     */
+    public BotMenu getBotMenu() {
+        return this.botMenu;
+    }
 
     public final int getMaxAttempts() {
         return this.MAX_ATTEMPTS;

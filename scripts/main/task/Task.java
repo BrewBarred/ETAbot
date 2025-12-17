@@ -26,22 +26,17 @@ public abstract class Task {
      * A short description broadly describing the {@link Task} at hand.
      */
     private String description = "Loading task...";
-//    /**
-//     * A short description describing the current progress of this {@link Task} at any given {@link Task#stage},
-//     * used for the status.
-//     */
-//    private String botStatus = "Thinking...";
     /**
      * The target {@link Area} in which this {@link Task} should be performed.
      */
-    protected Area targetArea;
+    protected Area area;
     /**
      * The condition attached to this task, if this condition become true, the loop will be broken.
      */
     private BooleanSupplier condition;;
 
     // optional attributes adjusted by children
-    protected Position targetPosition;
+    protected Position position;
 
     // menu items
     private int maxLoops = 1;
@@ -71,7 +66,7 @@ public abstract class Task {
      * @param type The type of action being performed.
      * @param description An informative description of the action being performed.
      */
-    protected Task(Action type, String description, int... opt_loops) {
+    protected Task(Action type, String description) {
         ///  define default variables (bot menu settings)
         this.type = type;
         this.description = description;
@@ -84,15 +79,9 @@ public abstract class Task {
         // get taskProgress
         // get stage (action/index in the action list)
 
-        // if a loop count was passed
-        if (opt_loops.length > 0) {
-            // convert it to an integer (should only be 1 value in the array)
-            int loops = opt_loops[0];
-            // if the loop count is a valid integer
-            if (loops >= 0)
-                setLoops(opt_loops[0]);
-        }
         //TODO: (consider adding) this.stageOneLoops = loops[1]; // repeat stage one of a given task x amount of times
+
+        // make it impossible for the task library not to contain any created task until it is manually deleted for simple reference in the manual.
         BotMenu.updateTaskLibrary(this);
     }
 
@@ -111,15 +100,19 @@ public abstract class Task {
     /**
      * Set the remaining loop count for this {@link Task}.
      *
-     * @param maxLoops An {@link Integer} value denoting the number of times in which this task will be repeated.
+     * @param loops An {@link Integer} value denoting the number of times in which this task will be repeated.
      */
-    public final void setLoops(int maxLoops) {
-        // validate loop count
-        if (maxLoops < 0 || maxLoops > MAX_LOOPS)
-            return;
+    public final void setTaskLoops(int loops) {
+        // maximum loops must be set to at least one, because there is no point in adding something and doing it 0 times.
+        if (loops < 1)
+            throw new RuntimeException("[Task] Error setting task loops, value too low: " + loops);
+
+        // check loops less than max loop count
+        if (loops > MAX_LOOPS)
+            throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_LOOPS + ") exceeded!");
 
         // update loop count/reset current loop to start loop count again
-        this.maxLoops = maxLoops;
+        this.maxLoops = loops;
         this.currentLoop = 0;
     }
 
@@ -183,7 +176,7 @@ public abstract class Task {
 
     /** Repeat the task X times */
     public final Task loop(int times) {
-        this.setLoops(times);
+        this.setTaskLoops(times);
         return this;
     }
 
@@ -220,29 +213,32 @@ public abstract class Task {
             throw new RuntimeException("[Task] Error running bot!");
 
         // if a target area has been provided for this task, ensure the player is inside
-        if (this.targetArea != null && !this.targetArea.contains(bot.myPosition())) {
-            Position target = this.targetArea.getRandomPosition();
+        if (this.area != null && !this.area.contains(bot.myPosition())) {
+            Position target = this.area.getRandomPosition();
             bot.setBotStatus("Walking to " + target);
             bot.getWalking().webWalk(target);
         }
 
         // ensure the player is in the correct position before completing task.
-        if (this.targetPosition != null && !this.targetPosition.equals(bot.myPosition())) {
-            bot.setBotStatus("Positioning player at " + this.targetPosition);
-            bot.getWalking().webWalk(targetPosition.getArea(1));
+        if (this.position != null && !this.position.equals(bot.myPosition())) {
+            bot.setBotStatus("Positioning player at " + this.position);
+            bot.getWalking().webWalk(position.getArea(1));
         }
 
         // if this task has been fully executed
         if (execute(bot)) {
-            bot.setStatus("Executing task stage: " + stage
-                    + ", loops: " + getLoops()
-                    + ", attempts: " + bot.getRemainingAttempts());
             // tick over to the next loop, resetting task stage
             tick();
         }
-        else throw new RuntimeException(bot.getBotStatus());
 
-        bot.setBotStatus("Test passed: " + isCompleted());
+        // refresh botMenu to update any loop/attempt counters
+        bot.getBotMenu().refresh();
+        bot.setBotStatus("Task: " + getTaskDescription()
+                + "\n Stage:  " + stage + "/" + stages
+                + "  |  Progress:  " + getTaskProgress()
+                + "  |  Loops: " + getLoops()
+                + "  |  Attempts: " + bot.getRemainingAttemptsString());
+
         return isCompleted();
     }
 
@@ -253,8 +249,8 @@ public abstract class Task {
      * @return True if the task was completed successfully, else returns false
      */
     public Task at(Position position) {
-        targetArea = null;
-        targetPosition = position;
+        area = null;
+        this.position = position;
         return this;
     }
 
@@ -265,8 +261,8 @@ public abstract class Task {
      * @return True on successful execution, else returns false.
      */
     public Task around(Area area) {
-        targetArea = area;
-        targetPosition = null;
+        this.area = area;
+        position = null;
         return this;
     }
 
@@ -278,8 +274,8 @@ public abstract class Task {
      * @return True if this task is complete, else returns false.
      */
     public Task near(Position position, int radius) {
-        targetArea = position.getArea(radius);
-        targetPosition = null;
+        area = position.getArea(radius);
+        this.position = null;
         return this;
     }
 
@@ -303,13 +299,36 @@ public abstract class Task {
         return run(bot);
     }
 
+    ///
+    ///  Getters/setters
+    ///
+    ///
+
     /**
-     * Return information on this task instead of a meaningless reference.
+     * Manually set which stage this {@link Task} is up to, only intended for developers to test various parts of a
+     * function.
      */
-    public String toString() {
-        return getTaskDescription();
+    public Task setStage(int stage) {
+        this.stage = stage;
+        return this;
     }
 
+    /**
+     * Manually set which stage this {@link Task} is up to, only intended for developers to test various parts of a
+     * function.
+     */
+    public void setStage(int firstStage, int lastStage) {
+        this.stage = firstStage;
+        this.stages = lastStage;
+    }
+
+    public String getStageString() {
+        return stage + "/" + stages;
+    }
+
+    ///
+    ///  Abstract functions
+    ///
     /**
      * Forces children to provide the total stages for this {@link Task} for the progress bar calculations.
      */
@@ -326,6 +345,20 @@ public abstract class Task {
      */
     public abstract JPanel getTaskSettings();
 
+    /**
+     * Return information on this task instead of a meaningless reference.
+     */
+    public String toString() {
+        return getTaskDescription();
+    }
+
+    /**
+     * Define how to compare this object against other objects or itself.
+     *
+     * @param o   the reference object with which to compare.
+     *
+     * @return True or false based on the comparison evaluation. //TODO update this function and this comment
+     */
     @Override
     public final boolean equals(Object o) {
         if (this == o)
