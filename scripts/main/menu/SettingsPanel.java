@@ -154,12 +154,12 @@ public final class SettingsPanel extends JPanel {
 
             vTaskName.setText(head.getDescription());
             vStage.setText(head.getStageString());
-            vLoops.setText(head.getCurrentTaskLoop() + "/" + head.getTaskLoops());
+            vLoops.setText(head.getLoop() + "/" + head.getLoops());
 
             // populate spinners from real task state
             spStage.setValue(Math.max(1, head.getStage()));
             spStages.setValue(Math.max(1, head.getStages()));
-            spTaskLoops.setValue(Math.max(1, head.getTaskLoops()));
+            spTaskLoops.setValue(Math.max(1, head.getLoops()));
         });
 
         btnApply.addActionListener(e -> {
@@ -174,13 +174,13 @@ public final class SettingsPanel extends JPanel {
             head.betweenStages(newStage, newStages);
 
             // loops (uses existing validation)
-            head.setTaskLoops(newLoops);
+            head.setLoops(newLoops);
 
             // refresh UI
             vStage.setText(head.getStageString());
-            vLoops.setText(head.getCurrentTaskLoop() + "/" + head.getTaskLoops());
+            vLoops.setText(head.getLoop() + "/" + head.getLoops());
             bot.getBotMenu().refresh();
-            bot.setBotStatus("Updated task: stage=" + head.getStageString() + " loops=" + head.getTaskLoops());
+            bot.setBotStatus("Updated task: stage=" + head.getStageString() + " loops=" + head.getLoops());
         });
 
         task.add(new JLabel("Task:"));

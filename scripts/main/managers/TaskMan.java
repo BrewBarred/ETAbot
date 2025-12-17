@@ -6,6 +6,7 @@ import main.task.Task;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.Objects;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -33,13 +34,15 @@ public final class TaskMan {
     /**
      * The current loop for this script.
      */
-    private int scriptLoop = 0;
-    private int scriptLoops = 1;
-    /**
+    private int listLoop = 0;
+    private int listLoops = 1;    /**
      * The current index of the task list being executed. This is separated otherwise iterating the menu would force
      * the bot do tasks prematurely.
      */
-    private int scriptIndex = 0;
+    private int listIndex = 0;
+
+    private boolean isPausingOnScriptEnd = true;
+    private boolean isOpeningMenuOnScriptEnd = true;
 
 //
 //    /**
@@ -85,7 +88,7 @@ public final class TaskMan {
 
             if (index >= 0 && index < getTaskList().size()) {
                 removeTask(index);
-                setScriptIndex(-1);
+                decrementScriptIndex();
             }
         });
 
@@ -185,15 +188,19 @@ public final class TaskMan {
      * @return {@link Boolean true} if this task still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
     public boolean isTaskLooping() {
-        return getHead() != null && getHead().isLooping();
+        return getTask() != null && !getTask().isComplete();
     }
 
     /**
      * @return {@link Boolean true} if this script still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
-    public boolean isManagerLooping() {
+    public boolean isScriptLooping() {
         // restart script loop if the task list has tasks & script index reaches end of queue & there are more script loops to execute.
-        return hasTasks() && scriptIndex > taskListModel.getSize() && scriptLoop < scriptLoops;
+        return hasTasks() && hasLoopsLeft() && listIndex > size();
+    }
+
+    public boolean hasLoopsLeft() {
+        return listLoop < listLoops;
     }
 
     /**
@@ -223,15 +230,16 @@ public final class TaskMan {
         bot.setBotStatus("Executing task: " + getHead().getDescription() + "   |   Attempt: " + bot.getRemainingAttemptsString());
 
         // if the queue has reached the end
-        if (getScriptIndex() >= size()) {
+        if (getListIndex() >= size()) {
             // if looping is enabled and a copy of the queue exists
             if (isTaskLooping()) {
                 ///  logic executed between each task loop
                 restartTaskLoop();
-                bot.setBotStatus("[Task Manager] Task loops: " + getRemainingScriptLoops() + "   |    Script loops: " + getHead().getRemainingTaskLoops());
-            } else if (isManagerLooping()) {
-                restartManagerLoop();
-                bot.setBotStatus("[Task Manager] Script loops: = " + getHead().getRemainingTaskLoops() + "   |   Task loops" + getRemainingScriptLoops());
+                bot.setBotStatus("[Task Manager] Task loop complete!\nTask loops: " + getHead().getRemainingTaskLoops() + "   |    Script loops: " + getRemainingListLoops());
+            } else if (isScriptLooping()) {
+                ///  logic executed after each script loop
+                restartScriptLoop();
+                bot.setBotStatus("[Task Manager] Script loop complete!\nScript loops: " + getRemainingListLoops() + "   |   Task loops: " + getHead().getRemainingTaskLoops());
             } else {
                 return bot.setBotStatus("[Task Manager] All tasks complete!");
             }
@@ -243,7 +251,7 @@ public final class TaskMan {
             bot.setBotStatus("[Task Manager] Task Complete!");
         }
 
-        return getHead().isCompleted();
+        return Objects.requireNonNull(getTask()).isComplete();
     }
 
     ///
@@ -256,7 +264,9 @@ public final class TaskMan {
      * @return The current {@link Task} selected.
      */
     public Task getTask() {
-        return hasTasks() ? taskListModel.get(scriptIndex) : null;
+        if (listIndex < 0 || listIndex > size())
+            throw new RuntimeException("Attempted to get a task from an invalid index! Script index: " + listIndex);
+        return hasTasks() ? taskListModel.get(listIndex) : null;
     }
 
     /**
@@ -275,19 +285,62 @@ public final class TaskMan {
     }
 
     /**
-     * Returns the previous {@link Task} in the task list, based on the current {@link #scriptIndex}.
+     * Returns the previous {@link Task} in the task list, based on the current {@link #listIndex}. Does not go past
+     * the first {@link Task} in the list.
      */
     public Task getPreviousTask() {
-        return hasTasks() ? taskListModel.get(size() - 1) : null;
+        // ensure list has at least 2 items before going back one
+        if (size() < 1)
+            return null;
+
+        // update the index before returning the item at the newly selected index
+        setListIndex(getSelectedIndex() - 1);
+        return getTask(getSelectedIndex());
     }
 
     /**
-     * Returns the next {@link Task} in the task list, based on the current {@link #scriptIndex}.
+     * Returns the next {@link Task} in the task list, based on the current {@link #listIndex}. Does not go past
+     * the last {@link Task} in the list.
      *
      * @return The next {@link Task} in the list.
      */
     public Task getNextTask() {
-        return hasTasks() ? taskListModel.get(scriptIndex + 1) : null;
+        // ensure list has at least 2 items before going to the next one
+        if (size() < 1)
+            return null;
+
+        // update the index before returning the item at the newly selected index
+        setListIndex(getSelectedIndex() + 1);
+        return getTask(getSelectedIndex());
+    }
+
+    public int getListLoop() {
+        return listLoop;
+    }
+
+    /**
+     * @return The total number of {@link Task}s currently in the queue.
+     */
+    public int getTotalTaskCount() {
+        return getTaskList().size();
+    }
+
+    /**
+     * @return The total number of unexecuted {@link Task}s in the current task-list set.
+     */
+    public int getRemainingTaskCount() {
+        return getTotalTaskCount() - getListIndex();
+    }
+
+    /**
+     * @return The total number of loops remaining for the {@link Task} at the current list index.
+     */
+    public int getRemainingTaskLoops() {
+        Task task = getTask();
+        if (task != null)
+            return task.getRemainingTaskLoops();
+
+        return 0;
     }
 
     /**
@@ -295,25 +348,8 @@ public final class TaskMan {
      *
      * @return The loop count as an int.
      */
-    public int getRemainingScriptLoops() {
-        return scriptLoops - scriptLoop;
-    }
-
-    /**
-     * @return The number of remaining tasks in the queue.
-     */
-    public int getTotalTaskCount() {
-        return getTaskList().size();
-    }
-
-    public int getRemainingTaskCountLoop() {
-        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
-        return getTotalTaskCount() - getScriptIndex();
-    }
-
-    public int getRemainingTaskCountScript() {
-        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
-        return getTotalTaskCount() - scriptLoop;
+    public int getRemainingListLoops() {
+        return listLoops - listLoop;
     }
 
     /**
@@ -336,15 +372,41 @@ public final class TaskMan {
      * 
      * @param index The task list index to set.
      */
-    public void setScriptIndex(int index) {
+    public void setListIndex(int index) {
         if (index < 0)
-            scriptIndex = 0;
+            listIndex = 0;
         else if (index >= size())
-            scriptIndex = size() - 1;
-        else scriptIndex = index;
+            listIndex = size() - 1;
+        else listIndex = index;
+
+        // update task list selection
+        taskList.setSelectedIndex(listIndex);
     }
-    public int getScriptIndex() {
-        return scriptIndex;
+    public int getListIndex() {
+        return listIndex;
+    }
+
+    public void incrementScriptIndex() {
+        listIndex++;
+        // if index has passed the end of the list
+        if (listIndex >= size()) {
+            // and if the script is looping
+            if (isScriptLooping()) {
+                // point back to the start of the queue
+                listIndex = 0;
+            } else if (isPausingOnScriptEnd) {
+                //TODO: setup logic to pause script via bot menu to give the user time to check logs and setup a new bot
+            } else if (isOpeningMenuOnScriptEnd) {
+                //TODO: setup alert, pop-up on top of other applications to say bot complete and to prompt more script ation
+                // also cause pause
+            }
+        }
+    }
+
+    public void decrementScriptIndex() {
+        listIndex--;
+        if (listIndex < 0)
+            listIndex = 0;
     }
 
     public DefaultListModel<Task> getTaskList() {
@@ -361,10 +423,9 @@ public final class TaskMan {
 
         // if the task is done, prepare the next task
         if (task != null && task.run(bot)) {
-            //TODO check necessity?
-//            // move pointer to the next item in the queue
-//            currentIndex++;
-//            bot.getBotMenu().taskList.setSelectedIndex(currentIndex);
+            // move pointer to the next item in the queue
+            incrementScriptIndex();
+//          bot.getBotMenu().taskList.setSelectedIndex(currentIndex);
             return true;
         }
 
@@ -372,29 +433,35 @@ public final class TaskMan {
     }
 
     /**
-     * Restarts the Task loop
+     * Restarts the task loop
      */
     private void restartTaskLoop() {
-        // increment loops
-        scriptIndex++;
+        // reference task
+        Task task = getHead();
 
-        // return early if max loops have been exceeded
-        if (scriptIndex >= scriptLoops || scriptIndex >= MAX_SCRIPT_LOOPS)
-            throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
+        // throw error if restarting without any task loops left
+        if (task.hasNoLoopsLeft())
+            throw new RuntimeException("[TaskMan Error] Attempted restart without any task loops!");
+
+        // throw error if restarting with satisfied end condition
+        if (task.hasMetEndCondition())
+            throw new RuntimeException("[TaskMan Error] Attempted restart after end condition was met!");
+
+        // call the restart function to prepare the task for the next task loop cycle
+        task.restart();
     }
 
     /**
-     * Restarts the Task Manager loop
+     * Restarts the script loop
      */
-    private void restartManagerLoop() {
-        // increment loops
-        scriptIndex++;
-
+    private void restartScriptLoop() {
         // return early if max loops have been exceeded
-        if (scriptIndex >= scriptLoops || scriptIndex >= MAX_SCRIPT_LOOPS)
+        if (listIndex >= listLoops || listIndex >= MAX_SCRIPT_LOOPS)
             throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
 
         // go back to the start of the queue to repeat the set again
-        setScriptIndex(0);
+        setListIndex(0);
+        // increment loop count
+        listLoop++;
     }
 }

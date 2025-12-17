@@ -200,7 +200,7 @@ public abstract class BotMan extends Script {
             setStatus("Checking tasks...");
             // if a task was found, attempt to complete it
             if (taskMan.hasTasks()) {
-                setStatus("Found " + taskMan.getRemainingTaskCountLoop() + " tasks to complete.");
+                setStatus("Found " + taskMan.getRemainingTaskCount() + " tasks to complete.");
                 // return the result of the task as a delay
                 return attempt();
             }
@@ -250,7 +250,7 @@ public abstract class BotMan extends Script {
     }
 
     public int getRemainingTaskCount() {
-        return taskMan.getRemainingTaskCountLoop();
+        return taskMan.getRemainingTaskLoops();
     }
 
     protected int checkAttempts() throws InterruptedException {
@@ -420,11 +420,12 @@ public abstract class BotMan extends Script {
         return taskMan.getNextTask();
     }
 
-    public final String getNextTaskDescription() {
-        return getNextTask() == null ? null : getNextTask().getDescription();
+    public final int getCompletedLoops() {
+        // script loop = completed loops as it is increment after each script loop completes
+        return taskMan.getListLoop();
     }
 
-    /// Getters/setters (settings)
+    /// Getters/setters: bot menu
 
     public boolean isLogoutOnExit() {
         return logoutOnExit;
@@ -435,7 +436,7 @@ public abstract class BotMan extends Script {
         setBotStatus("Logout on exit: " + (logoutOnExit ? "ON" : "OFF"));
     }
 
-    ///  Getters/setters (dev mode)
+    ///  Getters/setters: dev console
 
     public void setDevMode(boolean devMode) {
         isDevMode = devMode;
@@ -479,10 +480,10 @@ public abstract class BotMan extends Script {
     }
 
     public void setScriptIndex(int index) {
-        taskMan.setScriptIndex(index);
+        taskMan.setListIndex(index);
     }
     public final int getScriptIndex() {
-        return taskMan.getScriptIndex();
+        return taskMan.getListIndex();
     }
 
     ///
@@ -512,10 +513,13 @@ public abstract class BotMan extends Script {
     protected int attempt() throws InterruptedException {
         // attempt to complete the next stage of this task
         if (taskMan.call(this))
+            ///  Logic executed after successful stage
             // if the task returns as completed, set a standard delay
             delay = LOOP_DELAY.get();
             // else, if the call returned false, return a much shorter delay
-        else delay = LOOP_DELAY.get() / 10;
+        else
+            ///  Logic execute after an unsuccessful stage
+            delay = LOOP_DELAY.get() / 10;
 
         // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
         currentAttempt = 0;

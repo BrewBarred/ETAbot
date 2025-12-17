@@ -39,8 +39,8 @@ public abstract class Task {
     protected Position position;
 
     // menu items
-    private int taskLoops = 1;
-    private int currentLoop = 0;
+    private int loop = 0;
+    private int loops = 1;
 
     /**
      * The stage that this {@link Task} is currently up to. This stage feature allows the bot to stop in the middle of a
@@ -102,7 +102,7 @@ public abstract class Task {
      *
      * @param loops An {@link Integer} value denoting the number of times in which this task will be repeated.
      */
-    public final void setTaskLoops(int loops) {
+    public final void setLoops(int loops) {
         // maximum loops must be set to at least one, because there is no point in adding something and doing it 0 times.
         if (loops < 1)
             throw new RuntimeException("[Task] Error setting task loops, value too low: " + loops);
@@ -112,16 +112,16 @@ public abstract class Task {
             throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_TASK_LOOPS + ") exceeded!");
 
         // update loop count/reset current loop to start loop count again
-        this.taskLoops = loops;
-        this.currentLoop = 0;
+        this.loops = loops;
+        this.loop = 0;
     }
 
-    public final int getTaskLoops() {
-        return taskLoops;
+    public final int getLoops() {
+        return loops;
     }
 
-    public final int getCurrentTaskLoop() {
-        return currentLoop;
+    public final int getLoop() {
+        return loop;
     }
 
     /**
@@ -131,19 +131,19 @@ public abstract class Task {
      * @return The loop count as an int.
      */
     public final int getRemainingTaskLoops() {
-        return getTaskLoops() - getCurrentTaskLoop();
+        return getLoops() - getLoop();
     }
 
     /**
      * @return True if this task has completed all of its loops or if the completion condition has been met.
      */
-    public final boolean isCompleted() {
+    public final boolean isComplete() {
         // automatically flag as completed if the max loops are exceeded or end conditions have been met (return true)
-        return isLooping() || hasMetEndCondition();
+        return hasNoLoopsLeft() || hasMetEndCondition();
     }
 
-    public final boolean isLooping() {
-        return getCurrentTaskLoop() < getTaskLoops();
+    public final boolean hasNoLoopsLeft() {
+        return getLoop() < getLoops();
     }
 
     public final boolean hasMetEndCondition() {
@@ -159,19 +159,9 @@ public abstract class Task {
 
     }
 
-    /**
-     * Tick over to the next loop, restarting any existing stage progress.
-     */
-    public final void tick() {
-        // increment this tasks loop count
-        this.currentLoop++;
-        // reset the task stage
-        this.stage = 1;
-    }
-
     /** Repeat the task X times */
     public final Task loop(int times) {
-        this.setTaskLoops(times);
+        this.setLoops(times);
         return this;
     }
 
@@ -222,21 +212,54 @@ public abstract class Task {
 
         // if this task has been fully executed
         if (execute(bot)) {
-            // tick over to the next loop, resetting task stage
-            tick();
+            // increment loop only on task completion (successful execution)
+            loop++;
+            ///  logic on task completion
+            onTaskCompletion();
+        } else {
+            ///  logic on stage completion (everything else should throw an error)
+            onStageCompletion();
         }
+
+
 
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
         bot.setBotStatus("Task: " + getDescription()
-                + "   |   Stage:  " + stage + "/" + stages
-                + "   |   Task: " + bot.getRemainingTaskCount()
-                + "   |   Progress:  " + getTaskProgress()
-                + "   |   Loops: " + getRemainingTaskLoops()
-                + "   |   Attempts: " + bot.getRemainingAttemptsString());
+                + "   |   Task Stage:  " + stage + "/" + stages
+                + "   |   Task Loops: " + bot.getCompletedLoops() + "/" + getRemainingTaskLoops()
+                + "   |   Task Progress:  " + getTaskProgress()
+                + "   |   Attempts: " + bot.getRemainingAttemptsString()
+                + "   |   Remaining tasks: " + bot.getRemainingTaskCount()
+                + "   |   SelectedIndex: " + bot.getSelectedTaskIndex()
+                + "   |   ScriptIndex: " + bot.getScriptIndex());
 
-        return isCompleted();
+        return isComplete();
     }
+
+    /**
+     * Restart the task by pointing back to the start and incrementing the task loop count. Tasks are complete once
+     * this count exceeds the loops count or the end condition is satisfied.
+     */
+    public void restart() {
+        // restart the task by pointing back to the start and increment the loop
+        setStage(0);
+        incrementTaskLoop();
+    }
+
+    public void incrementTaskLoop() {
+        loop++;
+    }
+
+    /**
+     * Override to execute some extra logic after a task has completed (in-between loops).
+     */
+    protected abstract void onTaskCompletion();
+
+    /**
+     * Override to execute some extra logic after each stage of a task.
+     */
+    protected abstract void onStageCompletion();
 
     /**
      * Travel to the specified {@link Position} before executing this task.
