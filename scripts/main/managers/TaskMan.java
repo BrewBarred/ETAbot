@@ -1,12 +1,9 @@
 package main.managers;
 
 import main.BotMan;
-import main.BotMenu;
 import main.task.Task;
 
 import javax.swing.*;
-import java.util.*;
-import java.util.List;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -25,15 +22,17 @@ import java.util.List;
  *}</pre>
  */
 public final class TaskMan {
-    private final DefaultListModel<Task> queue = new DefaultListModel<>();
-    private final int MAX_LOOPS = 100;
-    private int loops = 1;
-    private int current_loop = 0;
+    // create list/model pair to dynamically display task list in bot menu
+    private final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
+    private JList<Task> taskList = new JList<>(taskListModel);
+
+    private final int MAX_SCRIPT_LOOPS = 100;
+    private int scriptLoops = 1;
     /**
-     * This index value is provided for testing purposes only and not intended for normal use-cases. The TaskManager
-     * usually only tackles the first task at all times, and removes it on completion, ready to start the next task.
+     * The current index of the task list being executed. This is separated otherwise iterating the menu would force
+     * the bot do tasks prematurely.
      */
-    private int currentIndex = 0;
+    private int scriptIndex = 0;
 
     /**
      * Add the passed tasks to the queue based on their priority level.
@@ -44,32 +43,29 @@ public final class TaskMan {
         // add each task to the task list based on their priority levels
         for (Task task : tasks) {
             if (task.isUrgent)
-                queue.add(1, task);
+                taskListModel.add(1, task);
             else
-                queue.addElement(task);
+                taskListModel.addElement(task);
         }
     }
 
     /**
-     * Removes the passed task from the queue.
+     * Removes the passed {@link Task} from the queue.
      *
      * @param task The task to remove from the queue.
      */
     boolean removeTask(Task task) {
-        return queue.removeElement(task);
+        return taskListModel.removeElement(task);
     }
 
     /**
-     * Removes the task at the passed index from the list, if the passed index is valid.
+     * Removes the {@link Task} at the passed index from the list, if the passed index is valid.
      *
      * @param index The index position in the queue to extract.
-     * @return The {@link Task task} object that was previously in the queue. This allows for easier rearrangement of queues, if needed.
      */
-    public Task removeTask(int index) {
-        if (index >= 0 && index < queue.size())
-            return queue.remove(index);
-
-        return null;
+    public void removeTask(int index) {
+        if (index >= 0 && index < taskListModel.size())
+            taskListModel.remove(index);
     }
 
     /**
@@ -80,67 +76,36 @@ public final class TaskMan {
      */
     public Task peekAt(int index) {
         // validate index boundary
-        if (index < 0 || index >= queue.size())
+        if (index < 0 || index >= taskListModel.size())
             return null;
 
         // return the element at the passed index
-        return queue.get(index);
+        return taskListModel.get(index);
     }
 
     public Task getHead() {
-        return peekAt(getIndex());
+        return peekAt(0);
     }
 
     /**
      * @return {@link Boolean true} if this task still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
     public boolean isTaskLooping() {
-        return getHead() != null && getHead().getLoops() > 0;
+        return getHead() != null && getHead().isLooping();
     }
 
     public boolean isManagerLooping() {
-        return getHead() != null && this.current_loop < this.loops;
+        return getHead() != null && scriptIndex < scriptLoops;
     }
 
     /**
      * @return True if the queue has some tasks loaded into it, else returns false.
      */
     public boolean hasTasks() {
-        return !queue.isEmpty();
+        return !taskListModel.isEmpty();
     }
 
-    /**
-     * @return The number of remaining tasks in the queue.
-     */
-    public int getTotalTaskCount() {
-        return queue.size();
-    }
 
-    public int getRemainingTaskCount() {
-        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
-        return queue.size() - getIndex();
-    }
-
-    public int getIndex() {
-        return currentIndex;
-    }
-
-    public void setIndex(int index) {
-        //
-        if (index == -1 && currentIndex >= 1)
-            currentIndex--;
-        else
-            currentIndex = index;
-    }
-
-    /**
-     * Return a list containing all the remaining tasks to be executed in the current loop cycle.
-     *
-     * @return A {@link List<Task>} containing all the remaining tasks to be executed in this cycle.
-     */
-    public DefaultListModel<Task> getDefaultListModel() {
-        return queue;
-    }
 
     /**
      * Calls the next {@link Task} in the {@link TaskMan} queue (if it exists).
@@ -149,22 +114,22 @@ public final class TaskMan {
      * @return true if a task returns successful or if there are no tasks to complete in the last, else returns false.
      */
     public boolean call(BotMan bot) throws InterruptedException{
-        bot.setStatus("[Task Manager] Calling task...");
-        // well, we're already doing nothing!
+        // can't do a nothing!
         if (!hasTasks())
-            return false;
+            return !bot.setBotStatus("[TaskMan] No tasks to execute!");
 
-        // update status
-        bot.setStatus("Executing task: " + getHead().getTaskDescription() + "\n  Attempt: " + bot.getRemainingAttemptsString());
+        // update statuses
+        bot.setStatus("Calling task...");
+        bot.setBotStatus("   Executing task: " + getHead().getDescription() + "   |   Attempt: " + bot.getRemainingAttemptsString());
 
         // if the queue has reached the end
-        if (currentIndex >= queue.size()) {
+        if (getScriptIndex() >= taskListModel.size()) {
             // if looping is enabled and a copy of the queue exists
             if (isTaskLooping()) {
-                restartManagerLoop();
-                bot.setBotStatus("[Task Manager] Loops remaining for this task: " + getHead().getLoops() + "x " + bot.getStatus());
+                restartTaskLoop();
+                bot.setBotStatus("[Task Manager] Remaining loops: script = " + getCompletedScriptLoops() + " task = " + getHead().getCompletedTaskLoops());
             } else if (isManagerLooping()) {
-
+                restartManagerLoop();
             } else {
                 return bot.setBotStatus("[Task Manager] All tasks complete!");
             }
@@ -177,15 +142,121 @@ public final class TaskMan {
         return getHead().isCompleted();
     }
 
+    ///
+    ///  Getters/setters
+    ///
+
+    /**
+     * Return the current task (if any are currently in the queue).
+     *
+     * @return The current {@link Task} selected.
+     */
+    public Task getTask() {
+        return hasTasks() ? taskListModel.get(scriptIndex) : null;
+    }
+
+    /**
+     * Return the task at the passed (valid) index.
+     *
+     * @param index The index at which to fetch a task from the task list at.
+     * @return The {@link Task} at the passed index or null.
+     */
+    public Task getTask(int index) {
+        if (hasTasks())
+            if (index > 0 && index < taskListModel.size())
+                return taskListModel.get(index);
+            else throw new RuntimeException("Invalid task list index passed!");
+
+        return null;
+    }
+
+    /**
+     * Returns the previous {@link Task} in the task list, based on the current {@link #scriptIndex}.
+     */
+    public Task getPreviousTask() {
+        return hasTasks() ? taskListModel.get(taskListModel.size() - 1) : null;
+    }
+
+    /**
+     * Returns the next {@link Task} in the task list, based on the current {@link #scriptIndex}.
+     *
+     * @return The next {@link Task} in the list.
+     */
+    public Task getNextTask() {
+        return hasTasks() ? taskListModel.get(scriptIndex + 1) : null;
+    }
+
+    /**
+     * Returns the number of loops left for this task until it will be flagged as complete.
+     *
+     * @return The loop count as an int.
+     */
+    public int getCompletedScriptLoops() {
+        return scriptLoops - scriptIndex;
+    }
+
+    /**
+     * @return The number of remaining tasks in the queue.
+     */
+    public int getTotalTaskCount() {
+        return getTaskList().size();
+    }
+
+    public int getRemainingTaskCount() {
+        // take all the takes, subtract the completed ones, and add 1 since we pre-decrement
+        return getTotalTaskCount() - getScriptIndex();
+    }
+
+    /**
+     * Returns an {@link Integer} value denoting the "selected" index of the task list. This merely reflects the bot
+     * menu selection and should not be confused with the script loop.
+     * <n>
+     * The core difference is that this index value will change as they user iterates the list via the bot menu.
+     * <n>
+     * The script loop only changes as each task is completed or the script is reset.
+     *
+     * @return The selected index value of the bot menu's task list display.
+     */
+    public int getSelectedIndex() {
+        return taskList.getSelectedIndex();
+    }
+
+    /**
+     * Sets the "task index", a value used to help functions understand which task in the task list is currently
+     * being processed during runtime.
+     * 
+     * @param index The task list index to set.
+     */
+    public void setScriptIndex(int index) {
+        if (index >= 0 && index < getTaskList().getSize())
+            // update index
+            scriptIndex = index;
+        else
+            // default to the start
+            scriptIndex = 0;
+    }
+    public int getScriptIndex() {
+        return scriptIndex;
+    }
+
+    public DefaultListModel<Task> getTaskList() {
+        return taskListModel;
+    }
+
+    ///
+    ///     Main functions
+    ///
+
     private boolean work(BotMan bot) throws InterruptedException {
         // take the first task from the queue
         Task task = getHead();
 
         // if the task is done, prepare the next task
         if (task != null && task.run(bot)) {
-            // move pointer to the next item in the queue
-            currentIndex++;
-            bot.getBotMenu().taskList.setSelectedIndex(currentIndex);
+            //TODO check necessity?
+//            // move pointer to the next item in the queue
+//            currentIndex++;
+//            bot.getBotMenu().taskList.setSelectedIndex(currentIndex);
             return true;
         }
 
@@ -193,17 +264,29 @@ public final class TaskMan {
     }
 
     /**
+     * Restarts the Task loop
+     */
+    private void restartTaskLoop() {
+        // increment loops
+        scriptIndex++;
+
+        // return early if max loops have been exceeded
+        if (scriptIndex >= scriptLoops || scriptIndex >= MAX_SCRIPT_LOOPS)
+            throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
+    }
+
+    /**
      * Restarts the Task Manager loop
      */
     private void restartManagerLoop() {
         // increment loops
-        current_loop++;
+        scriptIndex++;
 
         // return early if max loops have been exceeded
-        if (current_loop >= loops || current_loop >= MAX_LOOPS)
-            throw new RuntimeException("[TaskMan] Maximum loops exceeded!");
+        if (scriptIndex >= scriptLoops || scriptIndex >= MAX_SCRIPT_LOOPS)
+            throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
 
-        // go back to the start of the loop
-        currentIndex = 0;
+        // go back to the start of the queue to repeat the set again
+        setScriptIndex(0);
     }
 }

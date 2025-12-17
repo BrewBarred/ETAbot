@@ -13,7 +13,7 @@ public abstract class Task {
     /**
      * The maximum number of loops allowed per task.
      */
-    private static final int MAX_LOOPS = 100;
+    private static final int MAX_TASK_LOOPS = 100;
     /**
      * The default radius for the target area (measured in tiles in every direction of the player).
      */
@@ -55,7 +55,7 @@ public abstract class Task {
      * to the maximum stages, then this {@link Task} must be on its last step. Once the {@link Task#stage} value exceeds
      * the stages value, the Task must have been executed successfully.
      */
-    public int stages = 1;
+    private int stages = 1;
     public boolean isUrgent = false;
 
     /**
@@ -108,8 +108,8 @@ public abstract class Task {
             throw new RuntimeException("[Task] Error setting task loops, value too low: " + loops);
 
         // check loops less than max loop count
-        if (loops > MAX_LOOPS)
-            throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_LOOPS + ") exceeded!");
+        if (loops > MAX_TASK_LOOPS)
+            throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_TASK_LOOPS + ") exceeded!");
 
         // update loop count/reset current loop to start loop count again
         this.taskLoops = loops;
@@ -120,17 +120,18 @@ public abstract class Task {
         return taskLoops;
     }
 
-    public final int getCurrentLoop() {
+    public final int getCurrentTaskLoop() {
         return currentLoop;
     }
 
     /**
-     * Returns the number of loops left for this task until it will be flagged as complete.
+     * Returns the number of loops left for this task until it should be reset or flagged as complete based on the
+     * {@link Task#MAX_TASK_LOOPS}
      *
      * @return The loop count as an int.
      */
-    public final int getLoops() {
-        return getTaskLoops() - getCurrentLoop();
+    public final int getCompletedTaskLoops() {
+        return getTaskLoops() - getCurrentTaskLoop();
     }
 
     /**
@@ -138,11 +139,11 @@ public abstract class Task {
      */
     public final boolean isCompleted() {
         // automatically flag as completed if the max loops are exceeded or end conditions have been met (return true)
-        return hasFinishedTaskLoops() || hasMetEndCondition();
+        return isLooping() || hasMetEndCondition();
     }
 
-    public final boolean hasFinishedTaskLoops() {
-        return getCurrentLoop() >= getTaskLoops();
+    public final boolean isLooping() {
+        return getCurrentTaskLoop() < getTaskLoops();
     }
 
     public final boolean hasMetEndCondition() {
@@ -154,7 +155,8 @@ public abstract class Task {
      */
     public final int getTaskProgress() {
         // TODO: get graphicsMan to call this progress value and print it
-        return Math.min((this.stage / this.stages) * 100, 100);
+        return Math.min((int) ((stage * 100.0) / Math.max(1, stages)), 100);
+
     }
 
     /**
@@ -165,21 +167,6 @@ public abstract class Task {
         this.currentLoop++;
         // reset the task stage
         this.stage = 1;
-    }
-
-//    public final void postBotStatus(String status) {
-//        this.botStatus = status;
-//    }
-
-//    public final String getBotStatus() {
-//        return this.botStatus;
-//    }
-
-    /**
-     * @return A short description of this task.
-     */
-    public final String getTaskDescription() {
-        return description;
     }
 
     /** Repeat the task X times */
@@ -241,11 +228,11 @@ public abstract class Task {
 
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
-        bot.setBotStatus("Task: " + getTaskDescription()
+        bot.setBotStatus("Task: " + getDescription()
                 + "\n    Stage:  " + stage + "/" + stages
                 + "   |   Task: " + bot.getRemainingTaskCount()
                 + "   |   Progress:  " + getTaskProgress()
-                + "   |   Loops: " + getLoops()
+                + "   |   Loops: " + getCompletedTaskLoops()
                 + "   |   Attempts: " + bot.getRemainingAttemptsString());
 
         return isCompleted();
@@ -308,40 +295,71 @@ public abstract class Task {
         return run(bot);
     }
 
-    ///
-    ///  Getters/setters
-    ///
-    ///
-
     /**
-     * Manually set which stage this {@link Task} is up to, only intended for developers to test various parts of a
+     * Manually set which stage this {@link Task} executes from, only intended for developers to test various parts of a
      * function.
      */
-    public Task setStage(int stage) {
+    public Task fromStage(int stage) {
         this.stage = stage;
         return this;
     }
 
     /**
-     * Manually set which stage this {@link Task} is up to, only intended for developers to test various parts of a
-     * function.
+     * Manually set which stages this function will execute, starting execution from the first stage, continuing until
+     * the task is completed, interrupted, or the last stage is executed.
+     *
+     * @param firstStage The first stage of this task to execute.
+     * @param lastStage The last stage of this task to execute.
      */
-    public void setStage(int firstStage, int lastStage) {
+    public Task betweenStages(int firstStage, int lastStage) {
         this.stage = firstStage;
         this.stages = lastStage;
+        return this;
     }
 
-    public String getStageString() {
+    ///
+    ///  Getters/setters
+    ///
+    ///
+
+    public final void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * @return A short description of this task.
+     */
+    public final String getDescription() {
+        return description;
+    }
+
+    public final void setStage(int stage) {
+        this.stage = stage;
+    }
+
+    public final void setStages(int stages) {
+        this.stages = stages;
+    }
+
+    public final int getStage() {
+        return stage;
+    }
+
+    ///  see abstract functions for getStages() - abstracted to force children to provide on creation when coding.
+
+    public final String getStageString() {
         return stage + "/" + stages;
     }
 
     ///
     ///  Abstract functions
     ///
+
     /**
      * Forces children to provide the total stages for this {@link Task} for the progress bar calculations.
      */
-    protected abstract int getStages();
+    public abstract int getStages();
+
     /**
      * Forces children to define how this task should be completed when called to run no parameters.
      */
@@ -358,7 +376,7 @@ public abstract class Task {
      * Return information on this task instead of a meaningless reference.
      */
     public String toString() {
-        return getTaskDescription();
+        return getDescription();
     }
 
     /**

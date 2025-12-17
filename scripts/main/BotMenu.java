@@ -4,6 +4,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListDataEvent;
 
+import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
 
@@ -23,6 +24,7 @@ public class BotMenu extends JFrame {
             if (!libraryModel.contains(task))
                 libraryModel.addElement(task);
     }
+
     /// Bot menu log handler
     private static class LogEntry {
         final long timeMillis;
@@ -35,6 +37,15 @@ public class BotMenu extends JFrame {
             this.message = message;
         }
     }
+
+    ///  bot menu settings (Sort later) // TODO sort these into fields properly and check botmenu linkage
+
+    // monitor tracking (for later user preferences)
+    private int screenCount = 1;          // total monitors detected
+    private int osbotScreenIndex = 0;     // which monitor OSBot is on (best-effort)
+    private int menuScreenIndex = 0;      // which monitor we chose for BotMenu
+    private int preferredMenuScreen = -1; // optional: user preference (0-based). -1 = auto
+
 
     // dynamic bot menu labels updated in refresh()
     JLabel titleTaskList = new JLabel();
@@ -83,7 +94,7 @@ public class BotMenu extends JFrame {
     protected boolean isHidingOnExit;
 
     // task list (only a view, not a major risk, can only make players THINK something is happening when it is not, so MED risk). e.g. Think the player is eating food then dead.
-    public JList<Task> taskList = new JList<>();
+    public JList<Task> taskList;
 
     private static final DefaultListModel<Task> libraryModel = new DefaultListModel<>();
     private static final JList<Task> libraryList = new JList<>(libraryModel);
@@ -116,12 +127,39 @@ public class BotMenu extends JFrame {
      */
     private Action selectedAction;
 
+    ///
+    ///     Getters/setters
+    ///
 
-//TODO: check necessity of default list model?
-//    /**
-//     * The task list displayed under Dashboard -> Tasks
-//     */
-//    DefaultListModel<String> tasks = new DefaultListModel<>();
+    /**
+     * Sets the default close operation for this {@link BotMenu}. Set to true to hide the menu on close, else false to
+     * exit the menu instead.
+     *
+     * @param hide True if the menu should be hidden on close, else false if closed.
+     */
+    protected void setHideOnClose(boolean hide) {
+        // update class variable
+        this.isHidingOnExit = hide;
+
+        // set default close operation based on passed boolean
+        if (hide)
+            setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
+        else
+            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    }
+
+    /**
+     * Returns the default close operation for this {@link BotMenu}.
+     *
+     * @return True if the default close operation for this menu is set to hide, else false if set to dipose.
+     */
+    protected boolean getHideOnClose() {
+        return this.isHidingOnExit;
+    }
+
+//    protected JList<Task> getTaskList() {
+//        return this.taskList;
+//    }
 
     /**
      * Launches a bot menu for the associated bot instance (os bot script).
@@ -133,8 +171,6 @@ public class BotMenu extends JFrame {
         super("BotMan: BotMenu");
         // link the passed bot with this menu for control e.g., schedule tasks, change script settings via menu
         this.bot = bot;
-        // link task man's queue with the bot menu task list
-        this.taskList = new JList<>(bot.taskMan.getDefaultListModel());
 
         // initialize fields //TODO: check if needed?
         this.scriptPanel = new JPanel();
@@ -157,7 +193,7 @@ public class BotMenu extends JFrame {
     ///
     ///     APPLY DEFAULT SETTINGS FIRST
     ///
-    //TODO: create a function to handle setting defaults later?
+    //TODO: create functions to modularize default settings later + link to reset button
     public void setDefaults() {
         ///  Client settings:
         setMinimumSize(new Dimension(800, 500));
@@ -222,20 +258,146 @@ public class BotMenu extends JFrame {
      */
     //TODO: Test this on one monitor device
     private void setScreenPreference() {
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        GraphicsDevice[] screens = ge.getScreenDevices();
+        // Fetch all available graphics devices (monitors).
+        GraphicsDevice[] screens =
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
 
-        if (screens.length > 1) {
-            GraphicsConfiguration gc = screens[1].getDefaultConfiguration();
-            Rectangle bounds = gc.getBounds();
-
-            int x = bounds.x + (bounds.width - getWidth()) / 2;
-            int y = bounds.y + (bounds.height - getHeight()) / 2;
-
-            setLocation(x, y);
-        } else {
-            setLocationRelativeTo(null); // fallback
+        // Defensive fallback: if the system reports no monitors (extremely rare),
+        // let Swing decide where to place the window.
+        if (screens == null || screens.length == 0) {
+            setLocationRelativeTo(null);
+            return;
         }
+
+        // Decide which monitor index to use.
+        // This also updates internal tracking fields.
+        int index = chooseMenuScreenIndex();
+
+        // Clamp index to a valid range to prevent crashes.
+        if (index < 0) index = 0;
+        if (index >= screens.length) index = screens.length - 1;
+
+        // Retrieve the usable bounds of the chosen monitor.
+        Rectangle bounds = screens[index]
+                .getDefaultConfiguration()
+                .getBounds();
+
+        // Center the BotMenu within the selected monitor.
+        int x = bounds.x + (bounds.width - getWidth()) / 2;
+        int y = bounds.y + (bounds.height - getHeight()) / 2;
+
+        setLocation(x, y);
+    }
+
+    /**
+     * Decide which monitor the BotMenu should use.
+     *
+     * Rules:
+     *  - If only 1 monitor -> returns 0.
+     *  - If multiple monitors:
+     *      1) attempt to detect which monitor the osbot client is currently on
+     *      2) open the bot menu on an alternate monitor
+     *      3) use preferredMenuScreen when defined
+     * <n>
+     * Side effects:
+     *  - Updates screenCount, osbotScreenIndex, menuScreenIndex fields.
+     */
+    private int chooseMenuScreenIndex() {
+        GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+        screenCount = (screens == null) ? 1 : Math.max(1, screens.length);
+
+        // single monitor: nothing to decide
+        if (screenCount == 1) {
+            osbotScreenIndex = 0;
+            menuScreenIndex = 0;
+            return 0;
+        }
+
+        // best-effort: locate OSBot bounds via canvas window (no extra loops beyond screen scan)
+        Rectangle osbotBounds = null;
+        try {
+            Component canvas = (bot != null) ? bot.getBot().getCanvas() : null;
+            if (canvas != null) {
+                Window w = SwingUtilities.getWindowAncestor(canvas);
+                if (w != null) osbotBounds = w.getBounds();
+                else {
+                    Point p = canvas.getLocationOnScreen();
+                    osbotBounds = new Rectangle(p.x, p.y, canvas.getWidth(), canvas.getHeight());
+                }
+            }
+        } catch (Throwable ignored) {}
+
+        // one pass: find OSBot screen (default 0 if unknown)
+        int foundOsbot = 0;
+        if (osbotBounds != null) {
+            for (int i = 0; i < screens.length; i++) {
+                Rectangle b = screens[i].getDefaultConfiguration().getBounds();
+                if (b.intersects(osbotBounds)) { foundOsbot = i; break; }
+            }
+        }
+        osbotScreenIndex = foundOsbot;
+
+        // choose preferred if valid and not OSBot
+        if (preferredMenuScreen >= 0 && preferredMenuScreen < screens.length && preferredMenuScreen != osbotScreenIndex) {
+            menuScreenIndex = preferredMenuScreen;
+            return menuScreenIndex;
+        }
+
+        // otherwise choose the first screen that is not OSBot (usually 0/1 swap)
+        menuScreenIndex = (osbotScreenIndex == 0) ? 1 : 0;
+        return menuScreenIndex;
+    }
+
+    /**
+     * Sets the Task Settings panel to the passed panel. Used to display the settings for each Task as the user
+     * navigates the Task Queue in the {@link BotMenu}.
+     *
+     * @param taskSettings The {@link JPanel} object used to create the Task Settings menu for each Task.
+     */
+    protected final void setTaskSettings(JPanel taskSettings) {
+        // validate the passed task settings
+        if (taskSettings == null)
+            taskSettings = getTaskSettings();
+
+        // update the task settings field
+        this.scriptPanel = taskSettings;
+    }
+
+    /**
+     * Force the child script to produce a script-specific settings tab for easier interaction with each script.
+     *
+     * @return A {@link JPanel} object used as the "Task Settings" section in the Task Queue of the {@link BotMenu}.
+     */
+    protected JPanel getTaskSettings() {
+        Task task = bot.getNextTask();
+        JPanel taskSettings = null;
+
+        // if the bot is currently running a task
+        if (task != null)
+            taskSettings = task.getTaskSettings();
+
+        // if the script did not provide a panel
+        if (taskSettings == null)
+            taskSettings = getDefaultTaskSettings();
+
+        return taskSettings;
+    }
+
+    /**
+     * Creates and returns the default Task Settings panel. This function is a back-up in-case tasks have not provided
+     * any additional settings that can adjust the script.
+     *
+     * @return The default Task Settings panel.
+     */
+    protected JPanel getDefaultTaskSettings() {
+        // create a blank bordered panel
+        JPanel defaultTaskSettingsPanel = new JPanel(new BorderLayout());
+        // add a label to the centre of the blank panel explaining no settings were found for this task
+        JLabel defaultTaskSettingsLabel = new JLabel("No settings found!");
+        defaultTaskSettingsPanel.add(defaultTaskSettingsLabel, BorderLayout.CENTER);
+
+        // return the default task settings panel
+        return defaultTaskSettingsPanel;
     }
 
     ///
@@ -454,8 +616,8 @@ public class BotMenu extends JFrame {
             int index = taskList.getSelectedIndex();
 
             if (index >= 0 && index < taskList.getModel().getSize()) {
-                bot.taskMan.removeTask(index);
-                bot.taskMan.setIndex(-1);
+                bot.removeTask(index);
+                bot.setScriptIndex(-1);
             } else {
                 setStatus("Unable to remove task!");
             }
@@ -580,7 +742,7 @@ public class BotMenu extends JFrame {
 
         JButton btnQueue = new JButton("Add");
         btnQueue.addActionListener(e -> {
-            bot.taskMan.add(libraryList.getSelectedValue());
+            bot.addTask(libraryList.getSelectedValue());
             bot.botMenu.refresh();
             JOptionPane.showMessageDialog(this, "Item has been added to the queue!");
         });
@@ -769,7 +931,7 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildTabSettings() {
-        return getDefaultPanel();
+        return new SettingsPanel(bot);
     }
 
     private JComponent buildDashMenuAbout() {
@@ -1047,11 +1209,14 @@ public class BotMenu extends JFrame {
         }
     }
 
-
     private Runnable refreshDashMenuTasks() {
         return () -> {
             // update task list title with dynamic attributes
-            titleTaskList.setText("Task List:    |    Total: " + taskList.getModel().getSize() + "     |     Index:    " + taskList.getSelectedIndex());
+            this.titleTaskList.setText("Task List:"
+                    + "     |     Total tasks in set: " + bot.getTasks().size()
+                    + "     |     Remaining tasks: " + bot.getRemainingTaskCount()
+                    + "     |     Script Index: " + bot.getScriptIndex()
+                    + "     |     Selected index: " + bot.getSelectedTaskIndex());
         };
     }
     private Runnable refreshDashMenuLog() {
@@ -1096,87 +1261,10 @@ public class BotMenu extends JFrame {
 
     private Runnable refreshTabTaskLibrary() {
         return () -> {
-            // update library list title with dynamic attributes
-            titleLibraryList.setText("Task Library:    |    Total: " + libraryModel.size() + "     |     Index:    " + libraryList.getSelectedIndex());
+            this.titleTaskList.setText("Task Library:"
+                    + "     |     Total tasks in library: " + libraryModel.size()
+                    + "     |     Selected index: " + libraryList.getSelectedIndex());
         };
-    }
-
-    /**
-     * Sets the default close operation for this {@link BotMenu}. Set to true to hide the menu on close, else false to
-     * exit the menu instead.
-     *
-     * @param hide True if the menu should be hidden on close, else false if closed.
-     */
-    protected void setHideOnClose(boolean hide) {
-        // update class variable
-        this.isHidingOnExit = hide;
-
-        // set default close operation based on passed boolean
-        if (hide)
-            setDefaultCloseOperation(HIDE_ON_CLOSE);
-        else
-            setDefaultCloseOperation(EXIT_ON_CLOSE);
-    }
-
-    /**
-     * Returns the default close operation for this {@link BotMenu}.
-     *
-     * @return True if the default close operation for this menu is set to hide, else false if set to dipose.
-     */
-    protected boolean getHideOnClose() {
-        return this.isHidingOnExit;
-    }
-
-    /**
-     * Sets the Task Settings panel to the passed panel. Used to display the settings for each Task as the user
-     * navigates the Task Queue in the {@link BotMenu}.
-     *
-     * @param taskSettings The {@link JPanel} object used to create the Task Settings menu for each Task.
-     */
-    protected final void setTaskSettings(JPanel taskSettings) {
-        // validate the passed task settings
-        if (taskSettings == null)
-            taskSettings = getTaskSettings();
-
-        // update the task settings field
-        this.scriptPanel = taskSettings;
-    }
-
-    /**
-     * Force the child script to produce a script-specific settings tab for easier interaction with each script.
-     *
-     * @return A {@link JPanel} object used as the "Task Settings" section in the Task Queue of the {@link BotMenu}.
-     */
-    protected JPanel getTaskSettings() {
-        Task task = bot.taskMan.getHead();
-        JPanel taskSettings = null;
-
-        // if the bot is currently running a task
-        if (task != null)
-            taskSettings = task.getTaskSettings();
-
-        // if the script did not provide a panel
-        if (taskSettings == null)
-            taskSettings = getDefaultTaskSettings();
-
-        return taskSettings;
-    }
-
-    /**
-     * Creates and returns the default Task Settings panel. This function is a back-up in-case tasks have not provided
-     * any additional settings that can adjust the script.
-     *
-     * @return The default Task Settings panel.
-     */
-    protected JPanel getDefaultTaskSettings() {
-        // create a blank bordered panel
-        JPanel defaultTaskSettingsPanel = new JPanel(new BorderLayout());
-        // add a label to the centre of the blank panel explaining no settings were found for this task
-        JLabel defaultTaskSettingsLabel = new JLabel("No settings found!");
-        defaultTaskSettingsPanel.add(defaultTaskSettingsLabel, BorderLayout.CENTER);
-
-        // return the default task settings panel
-        return defaultTaskSettingsPanel;
     }
 
     protected final void onResume() {
@@ -1329,25 +1417,42 @@ public class BotMenu extends JFrame {
      * Refreshes the BotMenu which safely updates any dynamic labels, lists and displays.
      */
     public void refresh() {
-        if (bot == null || bot.taskMan == null)
+        if (bot == null)
             return;
 
-        ///  NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!
-
-
-        // TODO: extract these into their own function and call it on start later
-        ArrayList<Runnable> runnables = new ArrayList<>();
-        runnables.add(refreshDashMenuTasks());
-        runnables.add(refreshTabTaskLibrary());
-        // add refresh bot menu log dash menu task
-        runnables.add(refreshDashMenuLog());
+        ///  Bot menu refresh tasks
+        ///     -- NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!
 
         // only refresh the sections of the bot menu that were added to the runnables list
-        for (Runnable refreshTask : runnables)
+        for (Runnable refreshTask : getRefreshList())
             if (SwingUtilities.isEventDispatchThread())
                 refreshTask.run();
             else
                 SwingUtilities.invokeLater(refreshTask);
+    }
+
+    /**
+     * Return an {@link ArrayList} of {@link Runnable} objects used to refresh the {@link BotMenu} displays and dynamic labels, etc...
+     *
+     * @return A list of runnable objects used to refresh the bot menu.
+     */
+    private ArrayList<Runnable> getRefreshList() {
+        ///  create a list to group refresh tasks for simpler execution
+        ArrayList<Runnable> refreshList = new ArrayList<>();
+
+        ///  add tasks to refresh bot menu dash menus
+
+        // refresh tasks
+        refreshList.add(refreshDashMenuTasks());
+        // refresh logs
+        refreshList.add(refreshDashMenuLog());
+
+        /// add tasks to refresh each tab
+        // add tasks to refresh task library tab
+        refreshList.add(refreshTabTaskLibrary());
+
+        ///  return the refresh list
+        return refreshList;
     }
 
     /**

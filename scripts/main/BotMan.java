@@ -4,7 +4,7 @@ import main.managers.TaskMan;
 import main.task.Task;
 import main.task.Action;
 import main.tools.ETARandom;
-import main.tools.GraphicsMan;
+import main.managers.GraphicsMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
@@ -13,6 +13,8 @@ import org.osbot.rs07.script.Script;
 import org.osbot.rs07.utility.ConditionalSleep;
 
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -50,7 +52,7 @@ public abstract class BotMan extends Script {
     /**
      * The maximum attempts allowed to complete a task.
      */
-    protected final int MAX_ATTEMPTS = 3;
+    private int MAX_ATTEMPTS = 3;
     /**
      * The minimum delay that can be set to prevent the client from lagging out from excessive loops.
      */
@@ -65,7 +67,7 @@ public abstract class BotMan extends Script {
     /**
      * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
      */
-    protected TaskMan taskMan;
+    private TaskMan taskMan;
     /**
      * The graphics manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
      */
@@ -205,7 +207,7 @@ public abstract class BotMan extends Script {
             }
 
             // throw an error if there are no tasks to complete to prevent infinite looping until a task is submitted
-            throw new RuntimeException("No tasks to complete! TaskMan index: " + taskMan.getIndex());
+            throw new RuntimeException("No tasks to complete!");
 
         } catch (RuntimeException i) {
             setStatus(i.getMessage());
@@ -214,43 +216,15 @@ public abstract class BotMan extends Script {
     }
 
 
-    ///
-    ///     MAIN FUNCTIONS
-    ///
-    protected boolean isSafeToBot() {
-        setBotStatus("Checking hp level...");
-        // if player hp is below threshold && check hp enabled
-        // heal
-        // check player prayer level && check prayer enabled
-        // restore prayer
-        // check player in combat
-        // avoid combat/fight back
-        // check nearby players (if enabled)
-        // hop worlds
-        // check nearby loot
-        // loot
-        // add to loot tracker/table on success
-        // check runtime below preset/maximum
-        // logout for a period of time if so
-        // draw extra things here, like penises.
 
-        return true;
-    }
 
-    protected int attempt() throws InterruptedException {
-        // attempt to complete the next stage of this task
-        if (taskMan.call(this))
-            // if the task returns as completed, set a standard delay
-            delay = LOOP_DELAY.get();
-        // else, if the call returned false, return a much shorter delay
-        else delay = LOOP_DELAY.get() / 10;
 
-        // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
-        currentAttempt = 0;
-        setStatus("Sleeping for: " + delay / 1000 + "s");
 
-        return delay;
-    }
+
+
+
+
+
 
     /**
      * Return the current attempt as an {@link Integer} value.
@@ -432,26 +406,142 @@ public abstract class BotMan extends Script {
         return this.botMenu;
     }
 
+    /**
+     * Returns a short, broad description of what the bot is currently attempting to do.
+     */
+    public String getStatus() { return status; }
+
+    public String getBotStatus() { return botStatus; }
+
+    public final Task getNextTask() {
+        return taskMan.getNextTask();
+    }
+
+    public final String getNextTaskDescription() {
+        return getNextTask() == null ? null : getNextTask().getDescription();
+    }
+
+    /// Getters/setters (settings)
+
+    public boolean isLogoutOnExit() {
+        return logoutOnExit;
+    }
+
+    public void setLogoutOnExit(boolean logout) {
+        logoutOnExit = logout;
+        setBotStatus("Logout on exit: " + (logoutOnExit ? "ON" : "OFF"));
+    }
+
+    ///  Getters/setters (dev mode)
+
+    public void setDevMode(boolean devMode) {
+        isDevMode = devMode;
+        setBotStatus("Dev mode: " + (isDevMode ? "ON" : "OFF"));
+    }
+
+    public boolean isDevMode() {
+        return isDevMode;
+    }
+
+    public final void setMaxAttempts(int attempts) {
+        this.MAX_ATTEMPTS = attempts;
+    }
+
     public final int getMaxAttempts() {
         return this.MAX_ATTEMPTS;
     }
 
-    /**
-     *
-     * @return
-     */
+    ///  Tasks
+
+    public ArrayList<Task> getTasks() {
+        return Collections.list(taskMan.getTaskListModel.elements());
+    }
+
+    public final void setTaskDescription(String description) {
+        this.getNextTask().setDescription(description);
+    }
+
     public final String getTaskDescription() {
         if (taskMan.hasTasks())
-            if (taskMan.getHead() != null)
-                return taskMan.getHead().getTaskDescription();
+            if (getNextTask() != null)
+                return getNextTask().getDescription();
         return null;
     }
 
     public final float getTaskProgress() {
         if (taskMan.hasTasks())
-            if (taskMan.getHead() != null)
-                return taskMan.getHead().getTaskProgress();
+            if (getNextTask() != null)
+                return getNextTask().getTaskProgress();
         return 0;
+    }
+
+    public void setScriptIndex(int index) {
+        taskMan.setScriptIndex(index);
+    }
+    public final int getScriptIndex() {
+        return taskMan.getScriptIndex();
+    }
+
+    ///
+    ///     MAIN FUNCTIONS
+    ///
+
+    protected boolean isSafeToBot() {
+        setBotStatus("Checking hp level...");
+        // if player hp is below threshold && check hp enabled
+        // heal
+        // check player prayer level && check prayer enabled
+        // restore prayer
+        // check player in combat
+        // avoid combat/fight back
+        // check nearby players (if enabled)
+        // hop worlds
+        // check nearby loot
+        // loot
+        // add to loot tracker/table on success
+        // check runtime below preset/maximum
+        // logout for a period of time if so
+        // draw extra things here, like penises.
+
+        return true;
+    }
+
+    protected int attempt() throws InterruptedException {
+        // attempt to complete the next stage of this task
+        if (taskMan.call(this))
+            // if the task returns as completed, set a standard delay
+            delay = LOOP_DELAY.get();
+            // else, if the call returned false, return a much shorter delay
+        else delay = LOOP_DELAY.get() / 10;
+
+        // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
+        currentAttempt = 0;
+        setStatus("Sleeping for: " + delay / 1000 + "s");
+
+        return delay;
+    }
+
+    /**
+     * Submits a task to the {@link TaskMan task manager} for execution.
+     */
+    public final void addTask(Task task) {
+        taskMan.add(task);
+    }
+
+    /**
+     * Removes a task from the {@link TaskMan task managers} task list.
+     */
+    public final void removeTask(int index) {
+        taskMan.removeTask(index);
+    }
+
+    /**
+     * Fetches the index of the {@link Task} currently selected in the task list in the bot menus "tasks" sub-menu.     *
+     *
+     * @return An {@link Integer} value representing the selected index of the task list.
+     */
+    public final int getSelectedTaskIndex() {
+        return taskMan.getSelectedIndex();
     }
 
     /**
@@ -503,14 +593,6 @@ public abstract class BotMan extends Script {
         // always return true for one-line return statements
         return true;
     }
-
-    /**
-     * Returns a short, broad description of what the bot is currently attempting to do.
-     */
-    public String getStatus() { return status; }
-
-    public String getBotStatus() { return botStatus; }
-
 
     ///
     ///     MAIN FUNCTIONS
