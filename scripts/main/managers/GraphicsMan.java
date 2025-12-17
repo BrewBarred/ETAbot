@@ -1,4 +1,4 @@
-package main.tools;
+package main.managers;
 
 import main.BotMan;
 
