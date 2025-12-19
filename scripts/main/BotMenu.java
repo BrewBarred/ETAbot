@@ -186,8 +186,10 @@ public class BotMenu extends JFrame {
     ///
     //TODO: create functions to modularize default settings later + link to reset button
     public void setDefaults() {
+        bot.setListIndex(0);
+
         ///  Client settings:
-        setMinimumSize(new Dimension(800, 500));
+        setMinimumSize(new Dimension(750, 600));
         setScreenPreference();
 
         ///  Menu settings: Settings that change the menu, or how it interacts with the script or client.
@@ -392,16 +394,13 @@ public class BotMenu extends JFrame {
     }
 
     ///
-    ///     CREATE THE BOTMENU
+    ///     CREATE THE BOT MENU GUI
     ///
     private void createMenu() {
         ///
         ///     Create a menu by stacking the header, on top of a set of tabs which each have their own menus, controls
         ///     and (in some cases) their own submenus, then finally, place the status' messages along the bottom
         ///
-
-        ///  adjust window properties
-        setSize(400, 300);
 
         ///  create a bot menu panel to store all the created components
         JPanel menu = new JPanel(new BorderLayout());
@@ -417,6 +416,7 @@ public class BotMenu extends JFrame {
             tabs.addTab("Task Builder", buildTabTaskBuilder());
             tabs.addTab("Travel Manager", buildTabSettings());
             tabs.addTab("Settings", buildTabSettings());
+            tabs.add(buildTabLogs(), "Logs");
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
             tabs.setSelectedIndex(0);
 
@@ -525,19 +525,19 @@ public class BotMenu extends JFrame {
     private JComponent buildTabDashboard() {
         /// create cards and a card panel and use it to switch between various sub-menus
         CardLayout cards = new CardLayout();
-        JPanel cardPanel = new JPanel(cards);
+        JPanel dashMenuPanel = new JPanel(cards);
 
         /// add the submenus to a card-panel for easier switching later
-        cardPanel.add(buildDashMenuTasks(), "Tasks");
-        cardPanel.add(buildDashMenuStatus(), "Status");
-        cardPanel.add(buildDashMenuTrackers(), "Trackers"); //TODO build trackers menu
-        cardPanel.add(buildDashMenuTimers(), "Timers"); //TODO build timers menu
-        cardPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
-        cardPanel.add(buildDashMenuDevConsole(), "Dev Console"); //TODO build player console menu
-        cardPanel.add(buildDashMenuAbout(), "About");
-        cardPanel.add(buildDashMenuLogs(), "Logs");
+            dashMenuPanel.add(buildDashMenuTasks(), "Tasks");
+            dashMenuPanel.add(buildDashMenuStatus(), "Status");
+            dashMenuPanel.add(buildDashMenuTrackers(), "Trackers"); //TODO build trackers menu
+            dashMenuPanel.add(buildDashMenuTimers(), "Timers"); //TODO build timers menu
+            dashMenuPanel.add(buildDashMenuPlayer(), "Player"); //TODO build player info menu
+            dashMenuPanel.add(buildDashMenuDevConsole(), "Dev Console"); //TODO build player console menu
+            dashMenuPanel.add(buildDashMenuAbout(), "About");
 
-        ///  create a
+
+        ///  create a list model to dynamically update botmenu with contents
         DefaultListModel<String> model = new DefaultListModel<>();
             model.addElement("Tasks");
             model.addElement("Status");
@@ -547,7 +547,6 @@ public class BotMenu extends JFrame {
             model.addElement("Reference Manual");
             model.addElement("Dev Console");
             model.addElement("About");
-            model.addElement("Logs");
 
         // make a list using the default list model
         JList<String> navList = new JList<>(model);
@@ -559,14 +558,14 @@ public class BotMenu extends JFrame {
         navList.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
         // dynamically load each submenu using the nav lists item name as a reference to the card panel being displayed
-        navList.addListSelectionListener(e -> cards.show(cardPanel, navList.getSelectedValue()));
+        navList.addListSelectionListener(e -> cards.show(dashMenuPanel, navList.getSelectedValue()));
 
         /// create the dashboard panel which will hold all the controls we create
         JPanel dashboardPanel = new JPanel(new BorderLayout());
         dashboardPanel.setBorder(new EmptyBorder(12, 12, 12, 12));
         // add nav list to the dashboard panel
         dashboardPanel.add(navList, BorderLayout.WEST);
-        dashboardPanel.add(cardPanel, BorderLayout.CENTER);
+        dashboardPanel.add(dashMenuPanel, BorderLayout.CENTER);
         return dashboardPanel;
     }
 
@@ -932,7 +931,7 @@ public class BotMenu extends JFrame {
      * - clearLogDocument()
      * - saveLogsToFile()
      */
-    public JComponent buildDashMenuLogs() {
+    public JComponent buildTabLogs() {
 
         ///
         /// TOP BAR CONTROLS (FILTERS + ACTION BUTTONS)
@@ -1149,9 +1148,9 @@ public class BotMenu extends JFrame {
             // update task list title with dynamic attributes
             this.titleTaskList.setText("Task List:"
                     + "     |     Total tasks in set: " + bot.getTasks().size()
-                    + "     |     Remaining tasks: " + bot.getRemainingTaskCount()
-                    + "     |     Script Index: " + bot.getScriptIndex()
-                    + "     |     Selected index: " + bot.getSelectedTaskIndex());
+                    + "     |     Remaining tasks in set: " + bot.getRemainingTaskCount()
+                    + "     |     List index: " + bot.getListIndex()
+                    + "     |     Selected task index: " + bot.getSelectedTaskIndex());
         };
     }
     private Runnable refreshDashMenuLog() {
@@ -1356,6 +1355,9 @@ public class BotMenu extends JFrame {
         if (bot == null)
             return;
 
+        bot.log("Selected: " + bot.getSelectedTaskIndex());
+        bot.log("List index: " + bot.getListIndex());
+
         ///  Bot menu refresh tasks
         ///     -- NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!
 
@@ -1365,6 +1367,9 @@ public class BotMenu extends JFrame {
                 refreshTask.run();
             else
                 SwingUtilities.invokeLater(refreshTask);
+
+        bot.log("Selected: " + bot.getSelectedTaskIndex());
+        bot.log("List index: " + bot.getListIndex());
     }
 
     /**

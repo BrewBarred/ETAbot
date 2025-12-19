@@ -103,7 +103,7 @@ public final class SettingsPanel extends JPanel {
 
         JLabel lblIdx = new JLabel("Current index:");
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(
-                bot.getScriptIndex(), -1, 9999, 1
+                bot.getListIndex(), 0, bot.getTasks().size(), 1
         ));
         JButton btnApplyIndex = new JButton("Apply index");
 
@@ -112,11 +112,9 @@ public final class SettingsPanel extends JPanel {
 
         btnApplyIndex.addActionListener(e -> {
             int index = (Integer) spinner.getValue();
-            bot.setScriptIndex(index);
-            // keep UI in sync
-            bot.setScriptIndex(Math.max(0, bot.getScriptIndex()));
-            vRemain.setText(String.valueOf(bot.getRemainingTaskCount()));
-            bot.setBotStatus("TaskMan index set to: " + bot.getScriptIndex());
+            bot.setListIndex(index);
+            vRemain.setText(String.valueOf(bot.getListIndex()));
+            bot.setBotStatus("TaskMan index set to: " + bot.getListIndex());
             bot.getBotMenu().refresh();
         });
 

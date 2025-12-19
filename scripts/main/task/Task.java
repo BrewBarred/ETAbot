@@ -39,7 +39,16 @@ public abstract class Task {
     protected Position position;
 
     // menu items
+    /**
+     * Loop index is 0-based for direct list references. (i.e., loop 0 = completing first loop, loop 1 = 1 loop
+     * completed. MAX_TASK_LOOPS = 2 will execute loop 0 and 1, then the loop 2 will not be less than 2, and break.)
+     *
+     * @see #MAX_TASK_LOOPS
+     */
     private int loop = 0;
+    /**
+     * Loops must be a minimum of 1, as there is no point in adding a Task if you want to complete it 0 times.
+     */
     private int loops = 1;
 
     /**
@@ -107,7 +116,7 @@ public abstract class Task {
         if (loops < 1)
             throw new RuntimeException("[Task] Error setting task loops, value too low: " + loops);
 
-        // check loops less than max loop count
+        // check loops less than max loop count (either free version limit e.g. 100 loops or MAX_INTEGER)
         if (loops > MAX_TASK_LOOPS)
             throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_TASK_LOOPS + ") exceeded!");
 
@@ -116,12 +125,19 @@ public abstract class Task {
         this.loop = 0;
     }
 
+    public final int getLoop() {
+        return loop;
+    }
+
     public final int getLoops() {
         return loops;
     }
 
-    public final int getLoop() {
-        return loop;
+    /**
+     * @return A string containing the current/total loops remaining for this task.
+     */
+    public final String getLoopsString() {
+        return getLoop() + "/" + getLoops();
     }
 
     /**
@@ -135,17 +151,31 @@ public abstract class Task {
     }
 
     /**
-     * @return True if this task has completed all of its loops or if the completion condition has been met.
+     * @return True if this task has completed all of its loops or if the end condition is satisfied.
      */
     public final boolean isComplete() {
-        // automatically flag as completed if the max loops are exceeded or end conditions have been met (return true)
-        return hasNoLoopsLeft() || hasMetEndCondition();
+        // tasks are complete if the end condition is satisfied, or all stages and task loops are done
+        return hasMetEndCondition() || isStagesCompleted() && !hasLoopsLeft();
     }
 
-    public final boolean hasNoLoopsLeft() {
+    /**
+     * @return True if this task has loops left to execute, else returns false.
+     */
+    public final boolean hasLoopsLeft() {
         return getLoop() < getLoops();
     }
 
+    /**
+     * @return True if this task loop has completed execution, else returns false.
+     */
+    public final boolean isStagesCompleted() {
+        // task is complete when current stage exceeds or equals total stages since this is checked AFTER execution.
+        return getStage() >= getStages();
+    }
+
+    /**
+     * @return True if this task has satisfied its end condition, else returns false.
+     */
     public final boolean hasMetEndCondition() {
         return getCondition() != null && getCondition().getAsBoolean();
     }
@@ -153,21 +183,23 @@ public abstract class Task {
     /**
      * Returns the progress of this task as a {@link Integer} value representing the completion percentage out of 100.
      */
-    public final int getTaskProgress() {
+    public final int getProgress() {
         // TODO: get graphicsMan to call this progress value and print it
         return Math.min((int) ((stage * 100.0) / Math.max(1, stages)), 100);
 
     }
 
-    /** Repeat the task X times */
+    /**
+     * Repeat the task X times
+     * */
     public final Task loop(int times) {
-        this.setLoops(times);
+        setLoops(times);
         return this;
     }
 
     /** Run until a custom condition has been met */
     public Task until(BooleanSupplier condition) {
-        this.setCondition(condition);
+        setCondition(condition);
         return this;
     }
 
@@ -189,7 +221,9 @@ public abstract class Task {
     }
 
     /**
-     * Creates an executable task which is performed at the players current location
+     * Run this executable task which performs some pre-defined actions as defined by the task-master. These tasks can
+     * be edited via the bot-menu to adjust parameters and some basic options within the script, and can be queued by
+     * {@link main.managers.TaskMan} for automatic execution along-side other tasks on loop.
      *
      * @return True on successful execution, else returns false.
      */
@@ -210,41 +244,49 @@ public abstract class Task {
             bot.getWalking().webWalk(position.getArea(1));
         }
 
-        // if this task has been fully executed
+        ///
+        ///     Reset task loops and execute logic after/between stages
+        ///
+
+        // execution returns true when last stage is successfully compeleted
         if (execute(bot)) {
-            // increment loop only on task completion (successful execution)
-            loop++;
-            ///  logic on task completion
-            onTaskCompletion();
+            // increment loops here as this is where we know the task successfully finished.
+            incrementTaskLoop();
+            bot.setStatus("isCompleted = " + isComplete()
+                    + "\nhasMetEndCondition: " + hasMetEndCondition()
+                    + "\nOR isStagesCompleted && !hasLoopsLeft(): " + isStagesCompleted() + " && " + !hasLoopsLeft()
+                    + "\nNote: condition = " + this.condition + ", stages = " + getStageString() + ", loops = " + getLoopsString() + ", remaining: " + getRemainingTaskLoops());
+            if (isComplete()) {
+                bot.setBotStatus("Task complete!");
+                onTaskCompletion();
+                return true;
+            } else {
+                bot.setBotStatus("Task loop complete!");
+                ///  logic on task completion
+                onTaskLoopCompletion();
+                setStage(0);
+            }
+        // else, on stage completion the bot returns false and comes here, any errors should be caught by exceptions
         } else {
+            bot.setBotStatus("Task stage complete!");
             ///  logic on stage completion (everything else should throw an error)
             onStageCompletion();
         }
 
-
-
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
-        bot.setBotStatus("Task: " + getDescription()
-                + "   |   Task Stage:  " + stage + "/" + stages
-                + "   |   Task Loops: " + bot.getCompletedLoops() + "/" + getRemainingTaskLoops()
-                + "   |   Task Progress:  " + getTaskProgress()
-                + "   |   Attempts: " + bot.getRemainingAttemptsString()
-                + "   |   Remaining tasks: " + bot.getRemainingTaskCount()
-                + "   |   SelectedIndex: " + bot.getSelectedTaskIndex()
-                + "   |   ScriptIndex: " + bot.getScriptIndex());
+        bot.setBotStatus("Task stage: " + getStageString()
+                + "  |  Task Loops: " + getLoopsString()
+                + "  |  List Loops: " + bot.getListLoopsString()
+                + "  |  List index: " + bot.getListIndex()
+                + "  |  Task Progress:  " + getProgress()
+                + "  |  Tasks remaining: " + bot.getRemainingTaskCount()
+                + "  |  Task Complete: " + isComplete()
+                + "  |  Attempts: " + bot.getRemainingAttemptsString()
+                + "  |  Selected Index: " + bot.getSelectedTaskIndex()
+                + "  |  List Index: " + bot.getListIndex());
 
-        return isComplete();
-    }
-
-    /**
-     * Restart the task by pointing back to the start and incrementing the task loop count. Tasks are complete once
-     * this count exceeds the loops count or the end condition is satisfied.
-     */
-    public void restart() {
-        // restart the task by pointing back to the start and increment the loop
-        setStage(0);
-        incrementTaskLoop();
+        return false;
     }
 
     public void incrementTaskLoop() {
@@ -252,10 +294,14 @@ public abstract class Task {
     }
 
     /**
-     * Override to execute some extra logic after a task has completed (in-between loops).
+     * Override to execute some extra logic after a task has completed all stages (in-between task loops).
+     */
+    protected abstract void onTaskLoopCompletion();
+
+    /**
+     * Override to execute some extra logic after a task has completed all stages/loops (in-between task switches).
      */
     protected abstract void onTaskCompletion();
-
     /**
      * Override to execute some extra logic after each stage of a task.
      */
@@ -314,17 +360,13 @@ public abstract class Task {
         return run(bot);
     }
 
-    public boolean loop(BotMan bot, int loops) throws InterruptedException {
-        return run(bot);
-    }
-
     /**
      * Manually set which stage this {@link Task} executes from, only intended for developers to test various parts of a
      * function.
      */
     public Task fromStage(int stage) {
-        this.stage = stage;
-        return this;
+       setStage(stage);
+       return this;
     }
 
     /**
@@ -335,14 +377,17 @@ public abstract class Task {
      * @param lastStage The last stage of this task to execute.
      */
     public Task betweenStages(int firstStage, int lastStage) {
-        this.stage = firstStage;
-        this.stages = lastStage;
-        return this;
+        setStage(firstStage);
+        if (firstStage > 0 && lastStage <= getStages() && firstStage < lastStage) {
+            this.stages = lastStage;
+            return this;
+        }
+
+        throw new RuntimeException("Error creating between-stage task! Invalid stages passed...");
     }
 
     ///
     ///  Getters/setters
-    ///
     ///
 
     public final void setDescription(String description) {
@@ -356,12 +401,14 @@ public abstract class Task {
         return description;
     }
 
-    public final void setStage(int stage) {
+    public final Task setStage(int stage) {
         this.stage = stage;
+        return this;
     }
 
-    public final void setStages(int stages) {
+    public final Task setStages(int stages) {
         this.stages = stages;
+        return this;
     }
 
     public final int getStage() {
