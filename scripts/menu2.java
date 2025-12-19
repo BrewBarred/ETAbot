@@ -148,7 +148,8 @@ public class menu2 extends JFrame {
 
         addUrgent.addActionListener(e -> {
             TaskTemplate t = libraryList.getSelectedValue();
-            if (t == null) return;
+            if (t == null)
+                return;
 
             TaskInstance urgent = new TaskInstance(t, 0, 1, false);
             log("Urgent: run now -> " + urgent);
@@ -159,10 +160,11 @@ public class menu2 extends JFrame {
         });
 
         remove.addActionListener(e -> {
-            int idx = queueList.getSelectedIndex();
-            if (idx < 0) return;
-            TaskInstance removed = queueModel.get(idx);
-            queueModel.remove(idx);
+            int index = queueList.getSelectedIndex();
+            if (index < 0)
+                return;
+            TaskInstance removed = queueModel.get(index);
+            queueModel.remove(index);
             log("Queue: removed -> " + removed);
 
             // TODO: bot.taskMan.queueRemove(idx);

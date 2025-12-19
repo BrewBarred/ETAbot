@@ -1,5 +1,6 @@
 package main;
 
+import main.actions.Dig;
 import main.managers.TaskMan;
 import main.task.Action;
 import main.task.Task;
@@ -151,6 +152,7 @@ public abstract class BotMan extends Script {
             // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
 
+            taskMan.add(new Dig());
             setBotStatus("Creating BotMenu...");
             botMenu = new BotMenu(this);
 
@@ -200,7 +202,7 @@ public abstract class BotMan extends Script {
             setStatus("Checking tasks...");
             // if a task was found, attempt to complete it
             if (taskMan.hasTasks()) {
-                setStatus("Found " + taskMan.getRemainingTaskCount() + " tasks to complete.");
+                setStatus("Found " + taskMan.getRemainingLoops() + " tasks to complete.");
                 // return the result of the task as a delay
                 return attempt();
             }
@@ -250,7 +252,7 @@ public abstract class BotMan extends Script {
     }
 
     public int getRemainingTaskCount() {
-        return taskMan.getRemainingTaskLoops();
+        return taskMan.getRemainingTaskCount();
     }
 
     protected int checkAttempts() throws InterruptedException {
@@ -416,13 +418,25 @@ public abstract class BotMan extends Script {
         return taskMan.buildDashMenuTasks(label);
     }
 
+    public final Task getTask() {
+        return taskMan.getTask();
+    }
+
     public final Task getNextTask() {
         return taskMan.getNextTask();
     }
 
-    public final int getCompletedLoops() {
+    public final int getCompletedTaskLoops() {
         // script loop = completed loops as it is increment after each script loop completes
-        return taskMan.getListLoop();
+        return taskMan.getTask().getLoop();
+    }
+
+    public final String getTaskLoopsString() {
+       return taskMan.getTask().getLoopsString();
+    }
+
+    public final String getListLoopsString() {
+        return taskMan.getLoopsAsString();
     }
 
     /// Getters/setters: bot menu
@@ -458,7 +472,7 @@ public abstract class BotMan extends Script {
     ///  Tasks
 
     public DefaultListModel<Task> getTasks() {
-        return taskMan.getTaskList();
+        return taskMan.getTaskListModel();
     }
 
     public final void setTaskDescription(String description) {
@@ -473,16 +487,14 @@ public abstract class BotMan extends Script {
     }
 
     public final float getTaskProgress() {
-        if (taskMan.hasTasks())
-            if (getNextTask() != null)
-                return getNextTask().getTaskProgress();
-        return 0;
+        return taskMan.getTaskProgress();
     }
 
-    public void setScriptIndex(int index) {
+    public void setListIndex(int index) {
+        //setBotStatus("Setting list index to : " + index);
         taskMan.setListIndex(index);
     }
-    public final int getScriptIndex() {
+    public final int getListIndex() {
         return taskMan.getListIndex();
     }
 
@@ -512,14 +524,17 @@ public abstract class BotMan extends Script {
 
     protected int attempt() throws InterruptedException {
         // attempt to complete the next stage of this task
-        if (taskMan.call(this))
+        // returns: true if the task and all its loops are completed, else returns false
+        if (taskMan.call(this)) {
             ///  Logic executed after successful stage
             // if the task returns as completed, set a standard delay
             delay = LOOP_DELAY.get();
-            // else, if the call returned false, return a much shorter delay
-        else
+            // move pointer to next task in the list since this task is finished
+
+        } else {
             ///  Logic execute after an unsuccessful stage
             delay = LOOP_DELAY.get() / 10;
+        }
 
         // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
         currentAttempt = 0;
