@@ -103,7 +103,7 @@ public final class SettingsPanel extends JPanel {
 
         JLabel lblIdx = new JLabel("Current index:");
         JSpinner spinner = new JSpinner(new SpinnerNumberModel(
-                bot.getListIndex(), 0, bot.getTasks().size(), 1
+                bot.getListIndex(), 0, bot.getTaskListModel().size(), 1
         ));
         JButton btnApplyIndex = new JButton("Apply index");
 

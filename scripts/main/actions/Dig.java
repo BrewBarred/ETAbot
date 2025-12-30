@@ -34,7 +34,7 @@ public class Dig extends Task {
      * Dig at the current location.
      */
     public Dig() {
-        super(Action.DIG, "digging at current location");
+        super(Action.DIG, "dig at the players current location.");
     }
 
     public Dig(String description) {
@@ -81,7 +81,8 @@ public class Dig extends Task {
                 if (!bot.hasInvItems(REQUIRED_ITEMS)) // TODO add logic to fetch required items? (set stage to 2 or 4 etc.) 2 = fetch, 3 = buy, 4 = walk to site, 5 = dig. etc.
                     return !bot.setBotStatus("Unable to find required items!");
                 bot.setBotStatus("Found required items!");
-                break;
+                setStage(9);
+                return false;
 
             case 2:
                 // calculate closest bank and travel
@@ -125,7 +126,7 @@ public class Dig extends Task {
                 break;
 
             case 10:
-                bot.setBotStatus("Digging at x: \" + bot.myPosition().getX() + \", y: \" + bot.myPosition().getY()");
+                bot.setBotStatus("Digging at x: " + bot.myPosition().getX() + ", y: " + bot.myPosition().getY());
                 Item spade = bot.getInvItem("Spade");
                 // interact with the spade to start digging
                 if (spade.interact("Dig")) {
@@ -133,10 +134,11 @@ public class Dig extends Task {
                     bot.sleep(getRandReallyShortDelayInt(), () -> bot.myPlayer().isAnimating());
                     return true;
                 }
-                break;
+                bot.setBotStatus("Error digging!");
+                return false;
 
             default:
-                throw new DiggingException(bot, "[Digging Exception] Error encountered while digging. Stage: " + bot.getNextTask().getStageString());
+                throw new DiggingException("Stage: " + bot.getTask().getStageString());
         }
 
         // increment stage and return false here to save spam in all steps except the last (which should return true)
@@ -157,13 +159,13 @@ public class Dig extends Task {
         Position wizardsTowerDigSpot = new Position(3110, 3152, 0); // wizards tower
 
         return new Task[]{
-                new Dig("Standard dig test...").setStage(10),
-                new Dig("Dig near wizards tower dig spot... (within 1 tile of beginner clue)").near(wizardsTowerDigSpot, 1),
+                new Dig("perform a standard dig").setStage(10),
+                new Dig("dig near the wizards tower beginner clue location... (within 1 tile)").near(wizardsTowerDigSpot, 1),
 //            new Dig("Testing dig at wizards tower beginner clue dig-spot...").at(wizardsTowerDigSpot),
 //            new Dig("Testing dig near wizards tower beginner clue dig-spot within a 5 tile radius...").near(wizardsTowerDigSpot, 5),
 //            new Dig("Testing dig on the spot, only looping once...").loop(1),
 //            new Dig("Testing dig on the spot, only looping twice...").loop(2),
-                new Dig("Dig exception test.").fromStage(-1)
+                new Dig("cause a digging exception by setting an invalid stage (-1)").fromStage(-1)
         };
     }
 
@@ -177,10 +179,8 @@ public class Dig extends Task {
      * self-train based on mistakes (with this being treated as the punishment/failure zone).
      */
     public static class DiggingException extends RuntimeException {
-        public DiggingException(BotMan bot, String message) {
-            super(message);
-            bot.setStatus(message);
-            bot.setBotStatus("Thinking...");
+        public DiggingException(String message) {
+            super("[Digging Exception] Error encountered while digging. " + message);
         }
     }
 }

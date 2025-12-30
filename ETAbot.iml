@@ -11,6 +11,6 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" exported="" name="OSBot 2.7.66" level="project" />
+    <orderEntry type="library" exported="" name="osbot 2.7.67" level="project" />
   </component>
 </module>

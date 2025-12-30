@@ -49,7 +49,7 @@ public class menu2 extends JFrame {
         JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
         tabs.setFont(new Font("Segoe UI", Font.PLAIN, 14));
 
-        tabs.addTab("Tasks", buildTasksTab());
+        tabs.addTab("Tasks", buildTaskLibraryTab());
         tabs.addTab("Builder", buildBuilderTab());
         tabs.addTab("Status", buildStatusTab());
         tabs.addTab("Settings", buildSettingsTab());
@@ -98,7 +98,7 @@ public class menu2 extends JFrame {
 
     // ---------------- Tab: Tasks ----------------
 
-    private JComponent buildTasksTab() {
+    private JComponent buildTaskLibraryTab() {
         JPanel root = new JPanel(new BorderLayout(12, 12));
         root.setBorder(new EmptyBorder(12, 12, 12, 12));
 

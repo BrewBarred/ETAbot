@@ -52,7 +52,7 @@ public abstract class BotMan extends Script {
     /**
      * The maximum attempts allowed to complete a task.
      */
-    private int MAX_ATTEMPTS = 3;
+    private int MAX_ATTEMPTS = 5;
     /**
      * The minimum delay that can be set to prevent the client from lagging out from excessive loops.
      */
@@ -182,11 +182,15 @@ public abstract class BotMan extends Script {
     }
 
     /**
-     * The main loop for everything responsible for this bot instance. This class is the main hub for all bots to access
-     * the osbot api with better documentation and improved functionality for simple, flexible and modular scripting.
+     * The main loop for everything responsible for this bot instance. This loop runs forever, checking for tasks to
+     * complete which are submitted by the script-user, to the {@link TaskMan}, via the {@link BotMenu}.
+     * <p>
+     * This class provides access to OsBot default script functions as well as some extra functions and a menu to enhance
+     * your botting experience, making it possible to create scripts with better documentation and improved functionality
+     * for simple, flexible and modular scripting all without requiring any coding knowledge.
      * <p>
      * This loop uses attempts to prevent scripts getting stuck in loops. A default attempt limit is preset while the
-     * attempt count, exit on attempt limit reached and error handling is already handled in this loop.
+     * attempt count. Once the attempts value exceeds MAX_ATTEMPTS this script will exit automatically.
      *
      * @return An integer value denoting the time in milliseconds (ms) to wait between loop cycles.
      */
@@ -199,19 +203,20 @@ public abstract class BotMan extends Script {
             if (!isSafeToBot())
                 throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
 
-            setStatus("Checking tasks...");
-            // if a task was found, attempt to complete it
-            if (taskMan.hasTasks()) {
-                setStatus("Found " + taskMan.getRemainingLoops() + " tasks to complete.");
-                // return the result of the task as a delay
+            setStatus("Reading task list...");
+            // double check attempts before attempting to complete the next stage/task
+            if (currentAttempt <  MAX_ATTEMPTS)
+                // attempt to complete a stage/task
                 return attempt();
-            }
+            // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
+            else onExit();
 
-            // throw an error if there are no tasks to complete to prevent infinite looping until a task is submitted
-            throw new RuntimeException("No tasks to complete!");
+            // return a normal delay
+            return delay;
 
         } catch (RuntimeException i) {
-            setStatus(i.getMessage());
+            if (i.getMessage() != null)
+                setStatus(i.getMessage());
             return checkAttempts();
         }
     }
@@ -471,8 +476,23 @@ public abstract class BotMan extends Script {
 
     ///  Tasks
 
-    public DefaultListModel<Task> getTasks() {
+    public DefaultListModel<Task> getTaskListModel() {
         return taskMan.getTaskListModel();
+    }
+
+    /**
+     * @return the {@link JList Jlist} that is used to display the {@link DefaultListModel task-list} model.
+     */
+    public JList<Task> getTaskList() {
+        return taskMan.getTaskList();
+    }
+
+    public DefaultListModel<Task> getTaskLibraryModel() {
+        return taskMan.getTaskLibraryModel();
+    }
+
+    public JList<Task> getTaskLibrary() {
+        return taskMan.getTaskLibrary();
     }
 
     public final void setTaskDescription(String description) {
@@ -498,6 +518,8 @@ public abstract class BotMan extends Script {
         return taskMan.getListIndex();
     }
 
+    public final int getLibraryIndex() { return taskMan.getLibraryIndex(); }
+
     ///
     ///     MAIN FUNCTIONS
     ///
@@ -522,21 +544,22 @@ public abstract class BotMan extends Script {
         return true;
     }
 
+    /**
+     * Returns true on the completion of any task or list of tasks, regardless of their remaining loops, else returns
+     * false for completed stages. Errors should be thrown and caught in the main {@link BotMan} loop.
+     *
+     * @return An integer value denoting the recommended delay time for this task.
+     */
     protected int attempt() throws InterruptedException {
-        // attempt to complete the next stage of this task
-        // returns: true if the task and all its loops are completed, else returns false
-        if (taskMan.call(this)) {
-            ///  Logic executed after successful stage
-            // if the task returns as completed, set a standard delay
+        // attempt to complete the next stage of this task, return true on completed task/list loops, else false.
+        if (taskMan.call(this))
+            ///  Logic executed after the completion of a task/list loop.
             delay = LOOP_DELAY.get();
-            // move pointer to next task in the list since this task is finished
-
-        } else {
-            ///  Logic execute after an unsuccessful stage
+        else
+            ///  Logic executed after the completion of each task stage.
             delay = LOOP_DELAY.get() / 10;
-        }
 
-        // only reset attempts on success, errors will skip this step and get triggered by the attempt count,
+        // only reset attempts on success, errors should skip this step and get triggered by the attempt count,
         currentAttempt = 0;
         setStatus("Sleeping for: " + delay / 1000 + "s");
 
@@ -585,7 +608,7 @@ public abstract class BotMan extends Script {
      */
     public boolean setStatus(String status) {
         // no point in printing nothing!
-        if (status.isEmpty())
+        if (status != null && status.isEmpty())
             return false;
 
         // update on-screen status via GraphicsMan
@@ -624,19 +647,27 @@ public abstract class BotMan extends Script {
     ///
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
+     *
+     * @param pause Makes the
      */
-    public final void toggleExecutionMode() throws InterruptedException {
+    public final void setExecutionMode(boolean pause) throws InterruptedException {
         ScriptExecutor script = getBot().getScriptExecutor();
-        // toggle execution mode of both client and interface (interface handled via Overridden pause() and resume())
-        if (script.isPaused()) {
-            // resume script
-            script.resume();
-            resumeMenu(); // TODO confirm not causing issues
-        } else {
-            // pause script
+        // if the script is currently paused or the passed boolean is true
+        if (!script.isPaused() || pause) {
+            // pause the script and its menu
             script.pause();
             pauseMenu(); // TODO confirm not causing issues
+            return;
         }
+
+        // else, resume the script and its menu
+        script.resume();
+        resumeMenu(); // TODO confirm not causing issues
+    }
+
+    public final void toggleExecutionMode() throws InterruptedException {
+        // toggle the execution mode by passing the current execution mode
+        setExecutionMode(!getBot().getScriptExecutor().isPaused());
     }
 
     /**

@@ -1,0 +1,22 @@
+public int execute() {
+        if (isInRange(getCamera().getScaleZ(), zoom)) {
+            setFinished();
+            return 0;
+        } else if (!getTabs().isOpen(Tab.SETTINGS)) {
+            if (getSettings().open())
+                return 0;
+        } else if (getSettings().getCurrentBasicSettingsTab() != Settings.BasicSettingsTab.DISPLAY) {
+            if (getSettings().open(Settings.BasicSettingsTab.DISPLAY)) {
+                return 0;
+            }
+        } else {
+            RS2Widget slider = getWidgets().getWidgetContainingSprite(116, 1201);
+            if (slider != null) {
+                if (getMouse().continualClick(new WidgetDestination(getBot(), slider, 3), moveMouse(slider)) &&
+                        ConditionalSleep2.sleep(1000, () -> isInRange(getCamera().getScaleZ(), zoom))) {
+                    return 0;
+                }
+            }
+        }
+        return 300;
+    }

@@ -2,6 +2,7 @@ package main.task;
 
 import main.BotMan;
 import main.BotMenu;
+import main.managers.TaskMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.ui.Skill;
@@ -25,7 +26,7 @@ public abstract class Task {
     /**
      * A short description broadly describing the {@link Task} at hand.
      */
-    private String description = "Loading task...";
+    private String description = null;
     /**
      * The target {@link Area} in which this {@link Task} should be performed.
      */
@@ -90,8 +91,8 @@ public abstract class Task {
 
         //TODO: (consider adding) this.stageOneLoops = loops[1]; // repeat stage one of a given task x amount of times
 
-        // make it impossible for the task library not to contain any created task until it is manually deleted for simple reference in the manual.
-        BotMenu.updateTaskLibrary(this);
+        // add this new task into the task library so the user can add it to the task list
+        TaskMan.updateTaskLibrary(this);
     }
 
     public final Action getType() {
@@ -165,12 +166,30 @@ public abstract class Task {
         return getLoop() < getLoops();
     }
 
+    public final boolean isReadyToloop() {
+        return isStagesCompleted() && hasLoopsLeft();
+    }
+
     /**
      * @return True if this task loop has completed execution, else returns false.
      */
     public final boolean isStagesCompleted() {
         // task is complete when current stage exceeds or equals total stages since this is checked AFTER execution.
         return getStage() >= getStages();
+    }
+
+    /**
+     * @return The number of stages required to complete this task.
+     */
+    public final int getRemainingStages() {
+        return stages - stage;
+    }
+
+    /**
+     * @return True if there are stages left to complete this task loop, else returns false if all stages are complete.
+     */
+    public final boolean hasStagesLeft() {
+        return getRemainingStages() < 1;
     }
 
     /**
@@ -221,15 +240,14 @@ public abstract class Task {
     }
 
     /**
-     * Run this executable task which performs some pre-defined actions as defined by the task-master. These tasks can
-     * be edited via the bot-menu to adjust parameters and some basic options within the script, and can be queued by
-     * {@link main.managers.TaskMan} for automatic execution along-side other tasks on loop.
+     * Runs the task, first by relocating to the error, validating the players location, and then executing a one of the
+     * {@link Task}s stages - as defined by the task-maker.
      *
      * @return True on successful execution, else returns false.
      */
     public boolean run(BotMan bot) throws InterruptedException {
         if (bot == null)
-            throw new RuntimeException("[Task] Error running bot!");
+            throw new RuntimeException("[Task Error] Error running task! Bot was null");
 
         // if a target area has been provided for this task, ensure the player is inside
         if (this.area != null && !this.area.contains(bot.myPosition())) {
@@ -252,10 +270,14 @@ public abstract class Task {
         if (execute(bot)) {
             // increment loops here as this is where we know the task successfully finished.
             incrementTaskLoop();
-            bot.setStatus("isCompleted = " + isComplete()
-                    + "\nhasMetEndCondition: " + hasMetEndCondition()
-                    + "\nOR isStagesCompleted && !hasLoopsLeft(): " + isStagesCompleted() + " && " + !hasLoopsLeft()
-                    + "\nNote: condition = " + this.condition + ", stages = " + getStageString() + ", loops = " + getLoopsString() + ", remaining: " + getRemainingTaskLoops());
+            //TODO remove below setbotstatus()
+//            bot.setBotStatus("isCompleted = " + isComplete()
+//                    + "     |     hasMetEndCondition: " + hasMetEndCondition()
+//                    + "   ||   isStagesCompleted && !hasLoopsLeft(): " + isStagesCompleted() + " && " + !hasLoopsLeft()
+//                    + "     |     condition = " + this.condition
+//                    + "     |     stages = " + getStageString()
+//                    + "     |     loops = " + getLoopsString()
+//                    + "     |     remaining: " + getRemainingTaskLoops());
             if (isComplete()) {
                 bot.setBotStatus("Task complete!");
                 onTaskCompletion();
@@ -264,7 +286,6 @@ public abstract class Task {
                 bot.setBotStatus("Task loop complete!");
                 ///  logic on task completion
                 onTaskLoopCompletion();
-                setStage(0);
             }
         // else, on stage completion the bot returns false and comes here, any errors should be caught by exceptions
         } else {
@@ -275,7 +296,7 @@ public abstract class Task {
 
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
-        bot.setBotStatus("Task stage: " + getStageString()
+        bot.setBotStatus("Task stage (after): " + getStageString()
                 + "  |  Task Loops: " + getLoopsString()
                 + "  |  List Loops: " + bot.getListLoopsString()
                 + "  |  List index: " + bot.getListIndex()
@@ -384,6 +405,15 @@ public abstract class Task {
         }
 
         throw new RuntimeException("Error creating between-stage task! Invalid stages passed...");
+    }
+
+    public void restart() {
+        // throw error if restarting without any task loops left
+        if (isComplete())
+            throw new RuntimeException("[TaskMan Error] Attempted to restart a completed task!");
+
+        // restart the task
+        setStage(1);
     }
 
     ///

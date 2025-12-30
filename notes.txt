@@ -1,0 +1,66 @@
+- All fields should be private
+- All getters/setters package-private (no modifier)
+- Ensure sensitive functions check isDev()
+
+Current tasks:
+
+- fix bug causing botmenu to fail to load because task list is empty and it tries to get a task from the list while it is empty and bugs it out.
+- update listloop() and listloops() to getlistloop() etc.
+- update listindex -> getListIndex()
+- make increment/decrement scriptindex() funcs in taskman use the setScriptIndex() func for modularity
+- confirm TaskMan uses the correct task loop/script loops. Script loops are the overarching loop, task loops are per task!
+- update getHead() -> getTask()
+- update taskman.size() -> size()
+- Add buttons to tasks dash menu (see commented out section in build func in taskman)
+- Ensure that navigating the bot menus task list wont change order of operation until manually set (add button to skip to selected task?)
+- May have to add the loop field back to TaskMan because its a mission trying to work between the two lists with one being on botmenu
+- Check everywhere getHead() is used, this is important cos I just changed it so it actually returns the head, but this might be used in other ways from the older setup where the head was always the next task.
+- Ensure task loops work
+- Ensure script loops work and are separated from task loops
+- Finish adding menu logic from 2 gpt generated menus
+- Finish getters/setters
+
+Bot menu tasks:
+
+- Add tabs to walk man to categorize walking between clue locations, cities, npcs, shops, etc.
+- Add tabs to log console tab to switch between stuff instead of combobox (All | Status | Bot Status | Class)
+- Automatically detect what class the error is from by trimming, splitting by space, taking 0th value and checking for start [ and end ], then using the string inbetween as the filter otherwise ALL as a default filter.
+- Ideally automatically create a new tab for the console logger as a new message appears with [ERROR] format for automated grouping ;)
+- 
+
+Later tasks:
+
+- Check over all TODO's
+- Investigate: showTaskTypeEditor(Action t) (redundant code?)
+- Clear redundant code from all classes
+
+- setup world-hop and triggers for it
+	- world-hop if x npcs within y radius
+	- world-hop if specific npc within y radius
+	- world-hop if x players within y radius
+	- world-hop if specific player within y radius
+	- world-hop after x minutes since last world hop (field + botmenu setting)
+
+- Set f2p/p2p field and adjust world hops to it 
+
+Big tasks:
+
+- Create lists of npcs, objects, items, locations and see if they can be automatically mapped through each class, links to the bot menu reference manual and statically referenced from all classes. Add static finder as done with
+	old locations.java and use that to get WalkMan to walk to a location by passing a loaded location or npc or something and automatically fetching the coordinates from the libraries and then walking.
+- Auto-generate tasks based on available surroundings and actions available (later get AI to decide which is best action based on equipment etc.)
+- AI data loading
+
+
+
+// add to task man near default tasklistmodel
+
+
+    // link task man task list with the bot menu display model
+    private JList<Task> taskList = new JList<>(bot.taskMan.getTaskListModel());
+	
+	
+CHECK JAVA DOCS:
+- {@link doc}
+- @param
+- @return
+- @see doc

@@ -1,0 +1,20 @@
+(iF2P) Air/Earth/Essence..
+    - Successfully withdraws the selected pickaxe but fails to equip it
+        - should check players attack level and compare against pickaxe requirement somehow, either items cache or maybe osbot api has a function for this
+
+Iron banker:
+    - Always banks if started in bank (even if items required already obtained), just opens and closes for no reason
+    - If you pause the script it will stop it, then you won't be able to resume again
+    - Bot hops too fast - sometimes players login to check spot then logout, and bot will hop worlds for no reason
+
+Tests:
+    - Task class (complete test)
+    - Fetch class (complete test)
+    - Digging at invalid tiles
+    - Check if it's possible to add logic to pauseMenu() to check the bots safety before pausing?
+    -
+      TEST if pauseMenu() can be used to safe your bot from danger before pausing script
+      TEST getTaskList() function, should return a list of tasks in the queue
+      TEST check menu visibility
+      TEST open and close bot menu
+      TEST open and close bot menu

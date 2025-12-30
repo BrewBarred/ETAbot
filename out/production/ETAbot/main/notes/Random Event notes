@@ -1,0 +1,34 @@
+Drunken Dwarf
+    npc id: 322
+Sergeant Damien:
+    npc id: 337
+
+    object ids:
+        ?: "Exercise mat", 16508
+        ?: "Exercise mat", 20810
+        ?: "Exercise mat", 9313
+        ?: "Exercise mat", 20801
+
+        Need to obtain since we cant see id ingame:
+
+        try fetch and print the object:
+            for (RS2Object sign : objects.getAll()) {
+                String name = sign.getName(); // should be like "Bow", "Dance", etc.
+                Position matTile = sign.getPosition().translate(0, -1, 0); // adjust depending on orientation
+                RS2Object mat = objects.closest(o -> o.getPosition().equals(matTile) && isMat(o));
+
+                if (mat != null) {
+                    log("Found object! Name: " + name + ", mat: " + mat);
+                    emoteToMat.put(name, mat);
+                }
+            }
+
+
+    widgets:
+        chatbox widget: (231, 0)
+        click to continue dialogue widget: (231, 5)
+        "I want to see you on that mat doing star jumps, private!": (231, 6)
+        Seargeants char within (231, 0) widget = (231, 1) Note: this might be the one we read to determine what to do
+
+
+
