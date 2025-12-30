@@ -461,7 +461,16 @@ public abstract class Task {
     public abstract int getStages();
 
     /**
-     * Forces children to define how this task should be completed when called to run no parameters.
+     * Forces children to provide the logic used to execute this task function.
+     * <p>
+     * Each stage should represent a unique part of the task function and can be manually overridden by adjusting the 
+     * current {@link Task#stage stage} of this task using {@link Task#setStage(int)}.
+     * <p>
+     * The number of unique cases in this function should match the number provided to {@link Task#getStages() stage} as
+     * that is the value that will be used to calculate the {@link Task#getProgress() task progress}.
+     * <p>
+     * Each case should break unless an error is thrown or an early escape (stage override or task completion) is 
+     * triggered. Stages are automatically incremented after each case and a small random-delay is forced.
      */
     protected abstract boolean execute(BotMan bot) throws InterruptedException;
 

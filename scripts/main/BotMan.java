@@ -1,6 +1,5 @@
 package main;
 
-import main.actions.Dig;
 import main.managers.TaskMan;
 import main.task.Action;
 import main.task.Task;
@@ -52,7 +51,7 @@ public abstract class BotMan extends Script {
     /**
      * The maximum attempts allowed to complete a task.
      */
-    private int MAX_ATTEMPTS = 5;
+    private int MAX_ATTEMPTS = 3;
     /**
      * The minimum delay that can be set to prevent the client from lagging out from excessive loops.
      */
@@ -123,7 +122,6 @@ public abstract class BotMan extends Script {
      * Constructs a bot instance (without a bot menu) which can be used to execute pre-written or task-based scripts, or
      * for testing purposes.
      *
-     * @see
      * @see TaskMan
      */
     public BotMan() {}
@@ -152,7 +150,6 @@ public abstract class BotMan extends Script {
             // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
 
-            taskMan.add(new Dig());
             setBotStatus("Creating BotMenu...");
             botMenu = new BotMenu(this);
 
@@ -352,16 +349,37 @@ public abstract class BotMan extends Script {
         }
     }
 
+    public final void onPause() {
+        pauseScript();
+        botMenu.onPause();
+
+        try {
+            getBot().getScriptExecutor().pause();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public final void onResume() {
+        resumeScript();
+        botMenu.onResume();
+        getBot().getScriptExecutor().resume();
+    }
+
     /**
      * Function used to execute some code before the script stops, useful for disposing, debriefing or tail-chaining
      * scripts together.
      */
     @Override
     public final void onExit() throws InterruptedException {
+        super.onExit();
+        getBot().getScriptExecutor().suspend();
         if (botMenu != null)
             // force-close the bot menu
             botMenu.close(true);
 
+        // clear the task-list to prevent errors from stacking duplicate task sets
+        taskMan.getTaskListModel().clear();
         stop(logoutOnExit);
         log("Successfully exited ETA's (OsBot) Bot Manager");
     }
@@ -395,10 +413,10 @@ public abstract class BotMan extends Script {
 
     /**
      * Optional overridable function that gets called when the main script is paused, allowing children to set a 'pause'
-     * set, such as menu buttons changing text/color/avaialbility for example, or a bot making sure it's safe? //TODO test if this, might be lying
+     * state, such as menu buttons changing text/color/availability for example, or a bot making sure it's safe? //TODO test if this, might be lying
      */
-    public void pauseMenu() {}
-    public void resumeMenu() {}
+    public void pauseScript() {}
+    public void resumeScript() {}
 
 
     ///
@@ -424,7 +442,7 @@ public abstract class BotMan extends Script {
     }
 
     public final Task getTask() {
-        return taskMan.getTask();
+        return taskMan == null ? null : taskMan.getTask();
     }
 
     public final Task getNextTask() {
@@ -432,16 +450,18 @@ public abstract class BotMan extends Script {
     }
 
     public final int getCompletedTaskLoops() {
-        // script loop = completed loops as it is increment after each script loop completes
-        return taskMan.getTask().getLoop();
+        Task task = getTask();
+        return task == null ? -1 : task.getLoop();
     }
 
     public final String getTaskLoopsString() {
-       return taskMan.getTask().getLoopsString();
+        Task task = getTask();
+        return task == null ? "" : task.getLoopsString();
     }
 
     public final String getListLoopsString() {
-        return taskMan.getLoopsAsString();
+        Task task = getTask();
+        return task == null ? "" : taskMan.getLoopsString();
     }
 
     /// Getters/setters: bot menu
@@ -552,12 +572,24 @@ public abstract class BotMan extends Script {
      */
     protected int attempt() throws InterruptedException {
         // attempt to complete the next stage of this task, return true on completed task/list loops, else false.
-        if (taskMan.call(this))
-            ///  Logic executed after the completion of a task/list loop.
+        if (taskMan.call(this)) {
+            ///  Logic executed after the completion of a task or list loop.
+
+            // check if this is the last task in the task-list
+            if (taskMan.getListIndex() >= taskMan.size() - 1) {
+                setStatus("Pausing");
+                // pause the bot
+                this.onPause();
+                return 0;
+            } else {
+                taskMan.incrementListIndex();
+            }
+            setStatus("Not pausing");
             delay = LOOP_DELAY.get();
-        else
-            ///  Logic executed after the completion of each task stage.
+        } else {
+            ///  Logic executed after the completion of a task stage.
             delay = LOOP_DELAY.get() / 10;
+        }
 
         // only reset attempts on success, errors should skip this step and get triggered by the attempt count,
         currentAttempt = 0;
@@ -645,29 +677,21 @@ public abstract class BotMan extends Script {
     ///
     ///     MAIN FUNCTIONS
     ///
+
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
-     *
-     * @param pause Makes the
      */
-    public final void setExecutionMode(boolean pause) throws InterruptedException {
+    public final void toggleExecutionMode() throws InterruptedException {
         ScriptExecutor script = getBot().getScriptExecutor();
         // if the script is currently paused or the passed boolean is true
-        if (!script.isPaused() || pause) {
+        if (script.isPaused()) {
             // pause the script and its menu
-            script.pause();
-            pauseMenu(); // TODO confirm not causing issues
+            this.resume();
             return;
         }
 
         // else, resume the script and its menu
-        script.resume();
-        resumeMenu(); // TODO confirm not causing issues
-    }
-
-    public final void toggleExecutionMode() throws InterruptedException {
-        // toggle the execution mode by passing the current execution mode
-        setExecutionMode(!getBot().getScriptExecutor().isPaused());
+        this.onPause();
     }
 
     /**

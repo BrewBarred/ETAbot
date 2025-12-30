@@ -196,7 +196,7 @@ public final class TaskMan {
     }
 
     public boolean hasLoopsLeft() {
-        return listLoop <= listLoops;
+        return listLoop < listLoops;
     }
 
     /**
@@ -276,11 +276,11 @@ public final class TaskMan {
         return false;
     }
 
-    public final void reset(BotMan bot) {
+    public final void reset(BotMan bot) throws InterruptedException {
         // reset the list index
         setListIndex(0);
         // wait for the user to resume before re-attempting work
-        bot.pause();
+        bot.onPause();
     }
 
     ///
@@ -293,6 +293,9 @@ public final class TaskMan {
      * @return The current {@link Task} selected.
      */
     public synchronized Task getTask() {
+        if (getTaskListModel() == null || getTaskListModel().isEmpty())
+            return null;
+
         if (!isListIndexValid())
             throw new RuntimeException("Error fetching task! List index was invalid. List index: " + listIndex + ", List size: " + size());
 
@@ -350,7 +353,7 @@ public final class TaskMan {
         return listLoops;
     }
 
-    public String getLoopsAsString() {
+    public String getLoopsString() {
         return getListLoop() + "/" + getListLoops();
     }
 
@@ -472,7 +475,6 @@ public final class TaskMan {
         if (task.run(bot)) {
             // move pointer to the next item in the queue
             bot.setBotStatus("Preparing next task...");
-            incrementListIndex();
             return true;
         }
 

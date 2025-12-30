@@ -68,10 +68,6 @@ public class Dig extends Task {
     ///
     ///     PARENT FUNCTIONS: OVERRIDDEN FROM TASK CLASS {@link Task#execute}
     ///
-    /**
-     * This is the default 'Dig' function. This will simply dig on the spot, and is called if no parameters are passed
-     * to the constructor.
-     */
     @Override
     protected boolean execute(BotMan bot) {
         switch (stage) {
@@ -138,7 +134,7 @@ public class Dig extends Task {
                 return false;
 
             default:
-                throw new DiggingException("Stage: " + bot.getTask().getStageString());
+                throw new DiggingException("Stage: " + getStageString());
         }
 
         // increment stage and return false here to save spam in all steps except the last (which should return true)
@@ -160,12 +156,11 @@ public class Dig extends Task {
 
         return new Task[]{
                 new Dig("perform a standard dig").setStage(10),
-                new Dig("dig near the wizards tower beginner clue location... (within 1 tile)").near(wizardsTowerDigSpot, 1),
+                new Dig("dig near the wizards tower beginner clue location... (within 1 tile)").near(wizardsTowerDigSpot, 1)
 //            new Dig("Testing dig at wizards tower beginner clue dig-spot...").at(wizardsTowerDigSpot),
 //            new Dig("Testing dig near wizards tower beginner clue dig-spot within a 5 tile radius...").near(wizardsTowerDigSpot, 5),
 //            new Dig("Testing dig on the spot, only looping once...").loop(1),
 //            new Dig("Testing dig on the spot, only looping twice...").loop(2),
-                new Dig("cause a digging exception by setting an invalid stage (-1)").fromStage(-1)
         };
     }
 
