@@ -112,7 +112,7 @@ public final class SettingsPanel extends JPanel {
 
         btnApplyIndex.addActionListener(e -> {
             int index = (Integer) spinner.getValue();
-            bot.setListIndex(index);
+            bot.setTaskListIndex(index);
             vRemain.setText(String.valueOf(bot.getListIndex()));
             bot.setBotStatus("TaskMan index set to: " + bot.getListIndex());
             bot.getBotMenu().refresh();

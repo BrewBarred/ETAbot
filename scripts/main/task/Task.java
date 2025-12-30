@@ -1,7 +1,6 @@
 package main.task;
 
 import main.BotMan;
-import main.BotMenu;
 import main.managers.TaskMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
@@ -156,24 +155,24 @@ public abstract class Task {
      */
     public final boolean isComplete() {
         // tasks are complete if the end condition is satisfied, or all stages and task loops are done
-        return hasMetEndCondition() || isStagesCompleted() && !hasLoopsLeft();
+        return hasMetEndCondition() || hasCompletedStages() && hasCompletedLoops();
     }
 
     /**
      * @return True if this task has loops left to execute, else returns false.
      */
-    public final boolean hasLoopsLeft() {
-        return getLoop() < getLoops();
+    public final boolean hasCompletedLoops() {
+        return getLoop() >= getLoops();
     }
 
-    public final boolean isReadyToloop() {
-        return isStagesCompleted() && hasLoopsLeft();
+    public final boolean isReadyToLoop() {
+        return hasCompletedStages() && !hasCompletedLoops();
     }
 
     /**
      * @return True if this task loop has completed execution, else returns false.
      */
-    public final boolean isStagesCompleted() {
+    public final boolean hasCompletedStages() {
         // task is complete when current stage exceeds or equals total stages since this is checked AFTER execution.
         return getStage() >= getStages();
     }
@@ -247,7 +246,7 @@ public abstract class Task {
      */
     public boolean run(BotMan bot) throws InterruptedException {
         if (bot == null)
-            throw new RuntimeException("[Task Error] Error running task! Bot was null");
+            throw new RuntimeException("[Task Error] Failed to run task! Bot was null");
 
         // if a target area has been provided for this task, ensure the player is inside
         if (this.area != null && !this.area.contains(bot.myPosition())) {

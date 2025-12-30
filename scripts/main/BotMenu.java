@@ -162,7 +162,7 @@ public class BotMenu extends JFrame {
     ///
     //TODO: create functions to modularize default settings later + link to reset button
     public void setDefaults() {
-        bot.setListIndex(0);
+        bot.setTaskListIndex(0);
 
         ///  Client settings:
         setMinimumSize(new Dimension(750, 600));

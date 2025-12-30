@@ -349,21 +349,16 @@ public abstract class BotMan extends Script {
         }
     }
 
-    public final void onPause() {
+    public final void pauseBot() throws InterruptedException {
         pauseScript();
         botMenu.onPause();
-
-        try {
-            getBot().getScriptExecutor().pause();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        getBot().getScriptExecutor().pause();
     }
 
-    public final void onResume() {
-        resumeScript();
-        botMenu.onResume();
+    public final void resumeBot() {
         getBot().getScriptExecutor().resume();
+        botMenu.onResume();
+        resumeScript();
     }
 
     /**
@@ -372,16 +367,14 @@ public abstract class BotMan extends Script {
      */
     @Override
     public final void onExit() throws InterruptedException {
-        super.onExit();
-        getBot().getScriptExecutor().suspend();
         if (botMenu != null)
             // force-close the bot menu
             botMenu.close(true);
 
+        stop(logoutOnExit);
         // clear the task-list to prevent errors from stacking duplicate task sets
         taskMan.getTaskListModel().clear();
-        stop(logoutOnExit);
-        log("Successfully exited ETA's (OsBot) Bot Manager");
+        log("Successfully exited ETA's (OsBot) Bot Managerr");
     }
 
     /**
@@ -456,12 +449,12 @@ public abstract class BotMan extends Script {
 
     public final String getTaskLoopsString() {
         Task task = getTask();
-        return task == null ? "" : task.getLoopsString();
+        return task == null ? "?" : task.getLoopsString();
     }
 
     public final String getListLoopsString() {
         Task task = getTask();
-        return task == null ? "" : taskMan.getLoopsString();
+        return task == null ? "?" : taskMan.getLoopsString();
     }
 
     /// Getters/setters: bot menu
@@ -530,9 +523,9 @@ public abstract class BotMan extends Script {
         return taskMan.getTaskProgress();
     }
 
-    public void setListIndex(int index) {
+    public void setTaskListIndex(int index) {
         //setBotStatus("Setting list index to : " + index);
-        taskMan.setListIndex(index);
+        taskMan.setTaskListIndex(index);
     }
     public final int getListIndex() {
         return taskMan.getListIndex();
@@ -574,17 +567,9 @@ public abstract class BotMan extends Script {
         // attempt to complete the next stage of this task, return true on completed task/list loops, else false.
         if (taskMan.call(this)) {
             ///  Logic executed after the completion of a task or list loop.
-
-            // check if this is the last task in the task-list
-            if (taskMan.getListIndex() >= taskMan.size() - 1) {
-                setStatus("Pausing");
-                // pause the bot
-                this.onPause();
-                return 0;
-            } else {
-                taskMan.incrementListIndex();
-            }
-            setStatus("Not pausing");
+            setBotStatus("Preparing next task...");
+            // move the pointer to the next task in the list
+            taskMan.incrementListIndex();
             delay = LOOP_DELAY.get();
         } else {
             ///  Logic executed after the completion of a task stage.
@@ -691,7 +676,7 @@ public abstract class BotMan extends Script {
         }
 
         // else, resume the script and its menu
-        this.onPause();
+        this.pauseBot();
     }
 
     /**

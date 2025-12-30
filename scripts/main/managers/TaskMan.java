@@ -192,38 +192,43 @@ public final class TaskMan {
     }
 
     public boolean isTaskReadyToLoop() {
-        return getTask().isReadyToloop();
+        Task task = getTask();
+        return task != null && task.isReadyToLoop();
     }
 
     public boolean hasLoopsLeft() {
-        return listLoop < listLoops;
+        return listLoop < listLoops - 1;
     }
 
     /**
      * Restarts the list loop by increment the list loop count and setting the index to 0.
      */
-    private void resetListLoop() {
+    private final void restart() {
+        // go back to the start of the queue to repeat the set again
+        setTaskListIndex(0);
+        // increment loop count
+        incrementListLoop();
+
         // return early if max loops have been exceeded
         if (getListLoop() >= getListLoops() || getListLoop() >= MAX_SCRIPT_LOOPS)
             throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
 
-        // go back to the start of the queue to repeat the set again
-        setListIndex(0);
-        // increment loop count
-        incrementListLoop();
+        // TODO reset all tasks here, probably from using a ghost queue?
     }
 
     /**
      * @return True if the queue has some tasks loaded into it, else returns false.
      */
     public boolean hasTasks() {
+        Task task = getTask();
         // the bot has tasks left if the model is not empty, and the current task is incomplete or there are more loops left
-        return !taskListModel.isEmpty() && !getTask().isComplete() || hasLoopsLeft();
+        return !taskListModel.isEmpty() && task != null && (!task.isComplete() || hasLoopsLeft());
     }
 
     public boolean hasWorkToDo() {
+        Task task = getTask();
         // return true if there are tasks, and the current task is incomplete or there are more tasks in the list
-        return !getTask().isComplete() || getRemainingTaskCount() > 0;
+        return task != null && (task.isComplete() || getRemainingTaskCount() > 0);
     }
 
     public int size() {
@@ -244,7 +249,13 @@ public final class TaskMan {
         bot.setBotStatus("Calling task...");
 
         // update statuses //TODO remove later
-        bot.setBotStatus("|| Task stage (before): " + getTask().getStageString()
+        if (getTask() == null)
+            throw new RuntimeException("[TaskMan Error] Task is null!");
+
+        if (getTask().isComplete())
+            throw new RuntimeException("[TaskMan Error] Task is complete!");
+
+        bot.setBotStatus("> Task stage (before): " + getTask().getStageString()
                 + "  |  Task Loops: " + bot.getTaskLoopsString()
                 + "  |  List Loops: " + getListLoopsString()
                 + "  |  List index: " + bot.getListLoopsString()
@@ -255,32 +266,27 @@ public final class TaskMan {
                 + "  |  Selected Index: " + getSelectedIndex()
                 + "  |  List Index: " + getListIndex());
 
-        // State 1: work current task
-        if (!getTask().isComplete())
-            return work(bot);
+        if (work(bot)) {
+            // if this is the last task in the task-list
+            if (getRemainingTaskCount() <= 0)
+                if (hasLoopsLeft())
+                    restart();
+                else
+                    resetTaskList(bot);
 
-        // State 2: current task complete, more tasks to complete loop
-        if (getRemainingTaskCount() > 0) {
-            incrementListIndex();
-            return work(bot);
+            return true;
         }
 
-        // State 3: end of list, more list loops to complete
-        if (hasLoopsLeft()) {
-            setListIndex(0);
-            return work(bot);
-        }
-
-        // State 4: nothing left to do
-        reset(bot);
         return false;
     }
 
-    public final void reset(BotMan bot) throws InterruptedException {
+    private void resetTaskList(BotMan bot) throws InterruptedException {
+        // else it's the last task and there are no more list loops to complete
+        bot.setBotStatus("Resetting task-list...");
         // reset the list index
-        setListIndex(0);
+        setTaskListIndex(0);
         // wait for the user to resume before re-attempting work
-        bot.onPause();
+        bot.pauseBot();
     }
 
     ///
@@ -313,7 +319,7 @@ public final class TaskMan {
      */
     public synchronized Task getTask(int index) {
         if (index < 0 || index >= size())
-            throw new RuntimeException("Attempted to get a task from an invalid index! List index: " + getListIndex() + ", List size: " + size());
+            return null;
         return getTaskListModel().get(index);
     }
 
@@ -392,7 +398,8 @@ public final class TaskMan {
     }
 
     public String getStagesAsString() {
-        return getTask().getStage() + "/" + getTask().getStages();
+        Task task = getTask();
+        return task == null ? "" : task.getStage() + "/" + task.getStages();
     }
 
     public float getTaskProgress() {
@@ -407,7 +414,7 @@ public final class TaskMan {
      * 
      * @param index The task list index to set.
      */
-    public void setListIndex(int index) {
+    public void setTaskListIndex(int index) {
         // if passed value is less than 0
         if (index < 0 || size() < 1 || index >= size()) // fix potential index = -1 minor error that is built into the JListModel
             listIndex = 0;
@@ -426,15 +433,22 @@ public final class TaskMan {
     }
 
     public void incrementListIndex() {
-        setListIndex(getListIndex() + 1);
+        setTaskListIndex(getListIndex() + 1);
     }
 
     public void incrementListLoop() {
         listLoop++;
+
+        // limit list loop value
+        if (listLoop >= listLoops)
+            listLoop = listLoops;
+
+        if (listLoop >= MAX_SCRIPT_LOOPS)
+            listLoop = MAX_SCRIPT_LOOPS;
     }
 
     public void decrementListIndex() {
-        setListIndex(getListIndex() - 1);
+        setTaskListIndex(getListIndex() - 1);
     }
 
     public DefaultListModel<Task> getTaskListModel() {
@@ -468,24 +482,21 @@ public final class TaskMan {
     private boolean work(BotMan bot) throws InterruptedException {
         // fetch the current task
         Task task = getTask();
-        bot.setStatus("Attempting to " + getTask().getDescription());
-        bot.setBotStatus("|| Task: " + task.toString() + "     |     Stage: " + task.getStageString());
-
-        // if the task is done, prepare the next task
-        if (task.run(bot)) {
-            // move pointer to the next item in the queue
-            bot.setBotStatus("Preparing next task...");
-            return true;
+        if (task != null) {
+            bot.setStatus("Attempting to " + task);
+            bot.setBotStatus("|| Task: " + task + "     |     Stage: " + task.getStageString());        // if the task is done, prepare the next task
+            return task.run(bot);
         }
 
-        return false;
+        throw new RuntimeException("[TaskMan Error] Cannot work on task! Task is null.");
     }
 
     /**
      * Resets the current task stage back to 1 to start the task from the start again.
      */
     private void restartTask() {
-        getTask().restart();
+        if (getTask() != null)
+            getTask().restart();
     }
 
     @Override
