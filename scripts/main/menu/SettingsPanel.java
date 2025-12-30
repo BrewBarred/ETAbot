@@ -2,6 +2,7 @@ package main.menu;
 
 import main.BotMan;
 import main.task.Task;
+import org.osbot.rs07.event.ScriptExecutor;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,26 +27,7 @@ public final class SettingsPanel extends JPanel {
     private JComponent buildScriptTab(BotMan bot) {
         JPanel root = new JPanel(new BorderLayout(12, 12));
 
-        JPanel exec = section("Execution");
-
-        JButton btnPlayPause = new JButton("Play / Pause");
-        btnPlayPause.addActionListener(e -> {
-            try {
-                bot.toggleExecutionMode();
-            } catch (Throwable t) {
-                bot.setStatus("Toggle failed: " + t);
-            }
-        });
-
-        JButton btnStop = new JButton("Stop Script");
-        btnStop.addActionListener(e -> {
-            try {
-                bot.setStatus("Stopping script...");
-                bot.onExit();
-            } catch (Throwable t) {
-                bot.setStatus("Stop failed: " + t);
-            }
-        });
+        JPanel exec = section("Toggles");
 
         JCheckBox chkDevMode = new JCheckBox("Developer mode (bypass attempts)");
         chkDevMode.setSelected(bot.isDevMode());
@@ -55,10 +37,6 @@ public final class SettingsPanel extends JPanel {
         chkLogout.setSelected(bot.isLogoutOnExit());
         chkLogout.addActionListener(e -> bot.setLogoutOnExit(chkLogout.isSelected()));
 
-        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        row1.add(btnPlayPause);
-        row1.add(btnStop);
-
         JPanel row2 = new JPanel();
         row2.setLayout(new BoxLayout(row2, BoxLayout.Y_AXIS));
         row2.add(chkDevMode);
@@ -66,7 +44,6 @@ public final class SettingsPanel extends JPanel {
         row2.add(chkLogout);
 
         exec.setLayout(new BorderLayout(8, 8));
-        exec.add(row1, BorderLayout.NORTH);
         exec.add(row2, BorderLayout.CENTER);
 
         JPanel info = section("Live info");

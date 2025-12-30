@@ -396,12 +396,15 @@ public class BotMenu extends JFrame {
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
             tabs.setSelectedIndex(0);
 
+        JPanel executionPanel = getExecutionPanel();
+
         ///  add bot menu components
 
         // add menu header
         menu.add(buildHeader(), BorderLayout.NORTH);
         // add main menu tabs (dashboard, task manager, etc...)
         menu.add(tabs, BorderLayout.CENTER);
+        menu.add(executionPanel, BorderLayout.EAST);
     }
 
     /**
@@ -476,10 +479,10 @@ public class BotMenu extends JFrame {
         ///  create a panel to neatly group our quick action buttons
 
         JPanel quickPanel = new JPanel(new GridLayout(0, 4));
-        quickPanel.add(action1);
-        quickPanel.add(action2);
-        quickPanel.add(action3);
-        quickPanel.add(action4);
+            quickPanel.add(action1);
+            quickPanel.add(action2);
+            quickPanel.add(action3);
+            quickPanel.add(action4);
 
         /// add header components
 
@@ -490,6 +493,31 @@ public class BotMenu extends JFrame {
 
         // return the header we just built
         return header;
+    }
+
+    private JPanel getExecutionPanel() {
+        JButton btnPlayPause = new JButton(!bot.bot.getScriptExecutor().isPaused() ? "⏸" : "▶");
+        btnPlayPause.addActionListener(e -> {
+            try {
+                btnPlayPause.setText(bot.toggleExecutionMode() ?  "⏸" : "▶");
+            } catch (Throwable t) {
+                bot.setStatus("Toggle failed: " + t);
+            }
+        });
+
+        JButton btnStop = new JButton("■");
+        btnStop.addActionListener(e -> {
+            try {
+                bot.setStatus("Stopping script...");
+                bot.onExit();
+            } catch (Throwable t) {
+                bot.setStatus("Stop failed: " + t);
+            }
+        });
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        row1.add(btnPlayPause);
+        row1.add(btnStop);
+        return row1;
     }
 
     /**

@@ -374,7 +374,7 @@ public abstract class BotMan extends Script {
         stop(logoutOnExit);
         // clear the task-list to prevent errors from stacking duplicate task sets
         taskMan.getTaskListModel().clear();
-        log("Successfully exited ETA's (OsBot) Bot Managerr");
+        log("Successfully exited ETA's (OsBot) Bot Manager");
     }
 
     /**
@@ -567,7 +567,6 @@ public abstract class BotMan extends Script {
         // attempt to complete the next stage of this task, return true on completed task/list loops, else false.
         if (taskMan.call(this)) {
             ///  Logic executed after the completion of a task or list loop.
-            setBotStatus("Preparing next task...");
             delay = LOOP_DELAY.get();
         } else {
             ///  Logic executed after the completion of a task stage.
@@ -663,18 +662,21 @@ public abstract class BotMan extends Script {
 
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
+     *
+     * @return True if the execution is resumed by this function, else returns false if paused.
      */
-    public final void toggleExecutionMode() throws InterruptedException {
+    public final boolean toggleExecutionMode() throws InterruptedException {
         ScriptExecutor script = getBot().getScriptExecutor();
         // if the script is currently paused or the passed boolean is true
         if (script.isPaused()) {
             // pause the script and its menu
-            this.resume();
-            return;
+            this.resumeBot();
+            return true;
         }
 
         // else, resume the script and its menu
         this.pauseBot();
+        return false;
     }
 
     /**

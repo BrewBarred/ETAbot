@@ -267,6 +267,8 @@ public final class TaskMan {
                 + "  |  List Index: " + getListIndex());
 
         if (work(bot)) {
+            bot.setStatus("Finished work!");
+            bot.setBotStatus("Preparing next task...");
             // if this is the last task in the task-list
             if (getRemainingTaskCount() <= 0)
                 if (hasLoopsLeft())
@@ -367,6 +369,11 @@ public final class TaskMan {
 
     public int getListLoops() {
         return listLoops;
+    }
+
+    public void setListLoops(int loops) {
+        if (loops > 0 && loops < MAX_SCRIPT_LOOPS)
+            listLoops = loops;
     }
 
     public String getLoopsString() {
