@@ -204,10 +204,10 @@ public final class TaskMan {
      * Restarts the list loop by increment the list loop count and setting the index to 0.
      */
     private final void restart() {
-        // go back to the start of the queue to repeat the set again
-        setTaskListIndex(0);
         // increment loop count
         incrementListLoop();
+        // go back to the start of the queue to repeat the set again
+        setTaskListIndex(0);
 
         // return early if max loops have been exceeded
         if (getListLoop() >= getListLoops() || getListLoop() >= MAX_SCRIPT_LOOPS)
@@ -273,6 +273,9 @@ public final class TaskMan {
                     restart();
                 else
                     resetTaskList(bot);
+            // else move the pointer to the next task in the list
+            else
+                incrementListIndex();
 
             return true;
         }
@@ -283,8 +286,15 @@ public final class TaskMan {
     private void resetTaskList(BotMan bot) throws InterruptedException {
         // else it's the last task and there are no more list loops to complete
         bot.setBotStatus("Resetting task-list...");
-        // reset the list index
-        setTaskListIndex(0);
+        SwingUtilities.invokeLater(() -> {
+            if (size() <= 0) {
+                taskList.clearSelection();
+                return;
+            }
+            // reset the list index
+            setTaskListIndex(0);
+        });
+
         // wait for the user to resume before re-attempting work
         bot.pauseBot();
     }
@@ -415,14 +425,13 @@ public final class TaskMan {
      * @param index The task list index to set.
      */
     public void setTaskListIndex(int index) {
-        // if passed value is less than 0
-        if (index < 0 || size() < 1 || index >= size()) // fix potential index = -1 minor error that is built into the JListModel
+        if (index < 0 || index >= size()) // fix potential index = -1 minor error that is built into the JListModel
             listIndex = 0;
         else
             listIndex = index;
 
         // update task list selection for bot menu display
-        taskList.setSelectedIndex(getListIndex());
+        taskList.setSelectedIndex(index);
     }
     public int getListIndex() {
         return listIndex;

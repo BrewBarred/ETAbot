@@ -568,8 +568,6 @@ public abstract class BotMan extends Script {
         if (taskMan.call(this)) {
             ///  Logic executed after the completion of a task or list loop.
             setBotStatus("Preparing next task...");
-            // move the pointer to the next task in the list
-            taskMan.incrementListIndex();
             delay = LOOP_DELAY.get();
         } else {
             ///  Logic executed after the completion of a task stage.
