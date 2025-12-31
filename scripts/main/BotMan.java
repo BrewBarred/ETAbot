@@ -44,6 +44,11 @@ public abstract class BotMan extends Script {
     ///
     ///     PUBLIC FIELDS
     ///
+    /**
+     * True if this bot instance is currently in its running state, or false if it is paused. This flag is used to
+     * prevent duplicate calls to pause() that can't be adjusted as it is a bug on OSBot's side.
+     */
+    public boolean isRunning = false;
 
     ///
     ///     PROTECTED FINAL FIELDS
@@ -140,6 +145,8 @@ public abstract class BotMan extends Script {
 
             ///  setup defaults
 
+            // pause script to prevent bot taking off before tasks are set
+            callPause();
             // reset current attempts
             currentAttempt = 0;
             setStatus("Successfully loaded defaults!");
@@ -193,41 +200,34 @@ public abstract class BotMan extends Script {
      */
     @Override
     public int onLoop() throws InterruptedException, RuntimeException {
-        try {
-            // track the attempts on every loop so the main loop cannot continue indefinitely under abnormal circumstances.
-            currentAttempt++;
-            // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
-            if (!isSafeToBot())
-                throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
+        if (isRunning) {
+            try {
+                // track the attempts on every loop so the main loop cannot continue indefinitely under abnormal circumstances.
+                currentAttempt++;
+                // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
+                if (!isSafeToBot())
+                    throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
 
-            setStatus("Reading task list...");
-            // double check attempts before attempting to complete the next stage/task
-            if (currentAttempt <  MAX_ATTEMPTS)
-                // attempt to complete a stage/task
-                return attempt();
-            // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
-            else onExit();
+                setStatus("Reading task list...");
+                // double check attempts before attempting to complete the next stage/task
+                if (currentAttempt < MAX_ATTEMPTS)
+                    // attempt to complete a stage/task
+                    return attempt();
+                    // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
+                else onExit();
 
-            // return a normal delay
-            return delay;
+                // return a normal delay
+                return delay;
 
-        } catch (RuntimeException i) {
-            if (i.getMessage() != null)
-                setStatus(i.getMessage());
-            return checkAttempts();
+            } catch (RuntimeException i) {
+                if (i.getMessage() != null)
+                    setStatus(i.getMessage());
+                return checkAttempts();
+            }
         }
+
+        return ETARandom.getRandShortDelayInt();
     }
-
-
-
-
-
-
-
-
-
-
-
 
     /**
      * Return the current attempt as an {@link Integer} value.
@@ -349,21 +349,56 @@ public abstract class BotMan extends Script {
         }
     }
 
-    public final void pauseBot() throws InterruptedException {
-        pauseScript();
-        botMenu.onPause();
-        getBot().getScriptExecutor().pause();
-    }
-
-    public final void resumeBot() {
-        getBot().getScriptExecutor().resume();
-        botMenu.onResume();
-        resumeScript();
+    /**
+     * Uses the script executor to pause the script. This function calls {@link BotMan#pause()} under the hood in order
+     * to execute extra pause logic. Any additional pause logic should also be added there instead to ensure proper
+     * execution.
+     */
+    public final void callPause() throws InterruptedException {
+        setBotStatus("Calling pause...");
+        bot.getScriptExecutor().pause();
     }
 
     /**
-     * Function used to execute some code before the script stops, useful for disposing, debriefing or tail-chaining
-     * scripts together.
+     * Overrides the default pause function to execute additional logic before pausing the script.
+     */
+    @Override
+    public final void pause() {
+        if (isRunning) {
+            isRunning = false;
+            //TODO figure out why this is always called twice?
+            setBotStatus("Pausing script...");
+            pauseScript();
+            botMenu.onPause();
+            setStatus("Bot has been paused.");
+        }
+    }
+
+    /**
+     * Uses the script executor to resume the script. This function calls {@link BotMan#resume()} under the hood in
+     * order to execute extra resume logic. Any addition resume logic should also be added there instead to ensure
+     * proper execution.
+     */
+    public final void callResume() {
+        getBot().getScriptExecutor().resume();
+    }
+
+    /**
+     * Overrides the default resume function to execute additional logic before resuming the script.
+     */
+    @Override
+    public final void resume() {
+        if (!isRunning) {
+            isRunning = true;
+            setBotStatus("Resuming script...");
+            botMenu.onResume();
+            resumeScript();
+            setStatus("Thinking...");
+        }
+    }
+
+    /**
+     * Function used to execute some code before the script stops, useful for last-minute guaranteed disposal.
      */
     @Override
     public final void onExit() throws InterruptedException {
@@ -372,8 +407,6 @@ public abstract class BotMan extends Script {
             botMenu.close(true);
 
         stop(logoutOnExit);
-        // clear the task-list to prevent errors from stacking duplicate task sets
-        taskMan.getTaskListModel().clear();
         log("Successfully exited ETA's (OsBot) Bot Manager");
     }
 
@@ -670,12 +703,11 @@ public abstract class BotMan extends Script {
         // if the script is currently paused or the passed boolean is true
         if (script.isPaused()) {
             // pause the script and its menu
-            this.resumeBot();
+            this.callResume();
             return true;
         }
 
-        // else, resume the script and its menu
-        this.pauseBot();
+        this.callPause();
         return false;
     }
 

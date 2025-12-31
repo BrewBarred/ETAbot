@@ -2,12 +2,12 @@ package main.menu;
 
 import main.BotMan;
 import main.task.Task;
-import org.osbot.rs07.event.ScriptExecutor;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.TitledBorder;
 import java.awt.*;
+
+import static main.BotMenu.section;
 
 public final class SettingsPanel extends JPanel {
 
@@ -18,13 +18,14 @@ public final class SettingsPanel extends JPanel {
         JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
         tabs.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
-        tabs.addTab("Script", buildScriptTab(bot));
+        tabs.addTab("General", buildGeneralSettingsTab(bot));
+        tabs.addTab("Script", buildScriptSettingsTab(bot));
         tabs.addTab("Developer", buildDeveloperTab(bot)); // real dev/testing controls
 
         add(tabs, BorderLayout.CENTER);
     }
 
-    private JComponent buildScriptTab(BotMan bot) {
+    private JComponent buildScriptSettingsTab(BotMan bot) {
         JPanel root = new JPanel(new BorderLayout(12, 12));
 
         JPanel exec = section("Toggles");
@@ -68,6 +69,10 @@ public final class SettingsPanel extends JPanel {
         root.add(exec, BorderLayout.NORTH);
         root.add(info, BorderLayout.CENTER);
         return root;
+    }
+
+    private JComponent buildGeneralSettingsTab(BotMan bot) {
+        return new JPanel();
     }
 
     private JComponent buildDeveloperTab(BotMan bot) {
@@ -185,18 +190,6 @@ public final class SettingsPanel extends JPanel {
         root.add(Box.createVerticalGlue());
 
         return root;
-    }
-
-    private JPanel section(String title) {
-        JPanel p = new JPanel();
-        p.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200)),
-                title,
-                TitledBorder.LEFT,
-                TitledBorder.TOP,
-                new Font("Segoe UI", Font.BOLD, 13)
-        ));
-        return p;
     }
 
     private JPanel row(JComponent... comps) {

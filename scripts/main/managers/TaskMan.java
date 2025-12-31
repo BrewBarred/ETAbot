@@ -4,8 +4,11 @@ import main.BotMan;
 import main.task.Task;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+
+import static main.BotMenu.section;
 
 //TODO: check this javadoc still has valid examples
 /**
@@ -25,11 +28,13 @@ import java.awt.*;
  */
 
 public final class TaskMan {
-    // create list/model pair to dynamically display task list in the bot menus tasks dashboard menu
-    private static final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
+    // create list/model pair to dynamically display task list in the bot menus tasks dashboard menu.
+    // NOTE: Making this static forces it to remember the list state even after the script stops - this may be useful?
+    private final DefaultListModel<Task> taskListModel = new DefaultListModel<>();
     private final JList<Task> taskList = new JList<>(taskListModel);
 
     // create list/model pair to dynamically display all created tasks in the bot menus task library tab
+    // NOTE: although this list is static it cannot contain duplicates so there is no infinite growing issues here
     private static final DefaultListModel<Task> taskLibraryModel = new DefaultListModel<>();
     private static final JList<Task> taskLibrary = new JList<>(taskLibraryModel);
 
@@ -64,8 +69,26 @@ public final class TaskMan {
         // configure list once
         taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JButton remove = new JButton("Remove");
-        remove.addActionListener(e -> {
+        JButton duplicate = new JButton("Duplicate");
+        duplicate.addActionListener(e -> {
+            //TODO implement dupe logic here
+        });
+
+        ///  create a up arrow button as an alternate way to navigate the task list
+        JButton btnUp = new JButton("↑");
+        duplicate.addActionListener(e -> {
+            taskList.setSelectedIndex(taskList.getSelectedIndex() - 1);
+        });
+
+        ///  create a down arrow button as an alternate way to navigate the task list
+        JButton btnDown = new JButton("↓");
+        btnDown.addActionListener(e -> {
+            taskList.setSelectedIndex(taskList.getSelectedIndex() + 1);
+        });
+
+
+        JButton btnRemove = new JButton("Remove");
+        btnRemove.addActionListener(e -> {
             int index = getSelectedIndex();
 
             if (index >= 0 && index < getTaskListModel().size()) {
@@ -97,17 +120,41 @@ public final class TaskMan {
 //        });
 
         /// create a task panel to store all these controls
+        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
+        JButton preset1 = new JButton("Preset 1");
+            preset1.addActionListener(e -> JOptionPane.showMessageDialog(preset1, "Preset 1 triggered!"));
+        JButton preset2 = new JButton("Preset 2");
+            preset2.addActionListener(e -> JOptionPane.showMessageDialog(preset2, "Preset 2 triggered!"));
+        JButton preset3 = new JButton("Preset 3");
+            preset3.addActionListener(e -> JOptionPane.showMessageDialog(preset3, "Preset 3 triggered!"));
+        JButton preset4 = new JButton("Preset 4");
+            preset4.addActionListener(e -> JOptionPane.showMessageDialog(preset1, "Preset 4 triggered!"));
+
+        ///  create a panel to neatly group our quick action buttons
+        JPanel presetPanel = new JPanel(new GridLayout(0, 4));
+            presetPanel.add(preset1);
+            presetPanel.add(preset2);
+            presetPanel.add(preset3);
+            presetPanel.add(preset4);
 
         // create buttons panel
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttons.add(remove);
+        JPanel listButtons = section("Controls");
+            listButtons.add(duplicate);
+            listButtons.add(btnUp);
+            listButtons.add(btnDown);
+            listButtons.add(btnRemove);
+
+        JPanel controlPanel = new JPanel(new GridLayout(2,1));
+            controlPanel.add(listButtons);
+            controlPanel.add(presetPanel);
+
 
         // create task panel
         JPanel taskPanel = new JPanel(new BorderLayout(12, 12));
-        taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
-        taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
-        taskPanel.add(buttons, BorderLayout.SOUTH);
-        taskPanel.add(label, BorderLayout.NORTH);
+            taskPanel.setBorder(new EmptyBorder(0, 12, 0, 0));
+            taskPanel.add(label, BorderLayout.NORTH);
+            taskPanel.add(new JScrollPane(taskList), BorderLayout.CENTER);
+            taskPanel.add(controlPanel, BorderLayout.SOUTH);
 
         // return the created task panel
         return taskPanel;
@@ -252,9 +299,6 @@ public final class TaskMan {
         if (getTask() == null)
             throw new RuntimeException("[TaskMan Error] Task is null!");
 
-        if (getTask().isComplete())
-            throw new RuntimeException("[TaskMan Error] Task is complete!");
-
         bot.setBotStatus("> Task stage (before): " + getTask().getStageString()
                 + "  |  Task Loops: " + bot.getTaskLoopsString()
                 + "  |  List Loops: " + getListLoopsString()
@@ -288,17 +332,10 @@ public final class TaskMan {
     private void resetTaskList(BotMan bot) throws InterruptedException {
         // else it's the last task and there are no more list loops to complete
         bot.setBotStatus("Resetting task-list...");
-        SwingUtilities.invokeLater(() -> {
-            if (size() <= 0) {
-                taskList.clearSelection();
-                return;
-            }
-            // reset the list index
-            setTaskListIndex(0);
-        });
-
+        // reset the list index
+        setTaskListIndex(0);
         // wait for the user to resume before re-attempting work
-        bot.pauseBot();
+        bot.callPause();
     }
 
     ///

@@ -2,6 +2,7 @@ package main;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 
 import main.menu.SettingsPanel;
 import main.task.Task;
@@ -396,15 +397,12 @@ public class BotMenu extends JFrame {
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
             tabs.setSelectedIndex(0);
 
-        JPanel executionPanel = getExecutionPanel();
-
         ///  add bot menu components
 
         // add menu header
         menu.add(buildHeader(), BorderLayout.NORTH);
         // add main menu tabs (dashboard, task manager, etc...)
         menu.add(tabs, BorderLayout.CENTER);
-        menu.add(executionPanel, BorderLayout.EAST);
     }
 
     /**
@@ -466,40 +464,29 @@ public class BotMenu extends JFrame {
 
         ///  create the quick action buttons and link them to an action event
 
-        // create 4x quick-action buttons which can be used to create short-cuts later for the user.
-        JButton action1 = new JButton("Action 1");
-        action1.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 1 fired."));
-        JButton action2 = new JButton("Action 2");
-        action2.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 2 fired."));
-        JButton action3 = new JButton("Action 3");
-        action3.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 3 fired."));
-        JButton action4 = new JButton("Action 4");
-        action4.addActionListener(e -> JOptionPane.showMessageDialog(this, "Quick action 4 fired."));
+        JPanel executionPanel = new JPanel();
+            executionPanel.add(getExecutionPanel(), BorderLayout.EAST);
 
-        ///  create a panel to neatly group our quick action buttons
-
-        JPanel quickPanel = new JPanel(new GridLayout(0, 4));
-            quickPanel.add(action1);
-            quickPanel.add(action2);
-            quickPanel.add(action3);
-            quickPanel.add(action4);
+        JPanel headerPanel = new JPanel(new BorderLayout());
+            headerPanel.add(executionPanel, BorderLayout.NORTH);
+            //headerPanel.add(quickActionPanel, BorderLayout.SOUTH);
 
         /// add header components
 
         // add header title
         header.add(titlePanel, BorderLayout.WEST);
         // add header quick action buttons
-        header.add(quickPanel, BorderLayout.EAST);
+        header.add(headerPanel, BorderLayout.EAST);
 
         // return the header we just built
         return header;
     }
 
     private JPanel getExecutionPanel() {
-        JButton btnPlayPause = new JButton(!bot.bot.getScriptExecutor().isPaused() ? "⏸" : "▶");
-        btnPlayPause.addActionListener(e -> {
+        btnExecutionToggle = new JButton(!bot.bot.getScriptExecutor().isPaused() ? "⏸" : "▶");
+        btnExecutionToggle.addActionListener(e -> {
             try {
-                btnPlayPause.setText(bot.toggleExecutionMode() ?  "⏸" : "▶");
+                btnExecutionToggle.setText(bot.toggleExecutionMode() ?  "⏸" : "▶");
             } catch (Throwable t) {
                 bot.setStatus("Toggle failed: " + t);
             }
@@ -515,7 +502,7 @@ public class BotMenu extends JFrame {
             }
         });
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        row1.add(btnPlayPause);
+        row1.add(btnExecutionToggle);
         row1.add(btnStop);
         return row1;
     }
@@ -724,7 +711,7 @@ public class BotMenu extends JFrame {
 
         ///  create a panel to store the task list buttons neatly
 
-        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
             buttons.add(btnQueue);
             buttons.add(btnUp);
             buttons.add(btnDown);
@@ -1216,13 +1203,11 @@ public class BotMenu extends JFrame {
     }
 
     protected final void onResume() {
-        setStatus("Function called: onResume()");
-        btnExecutionToggle.setText("Pause");
+        btnExecutionToggle.setText("⏸");
     }
 
     protected final void onPause() {
-        setStatus("Function called: onPause()");
-        btnExecutionToggle.setText("Play");
+        btnExecutionToggle.setText("▶");
     }
 
     /**
@@ -1295,6 +1280,24 @@ public class BotMenu extends JFrame {
 
         setStatus("Hiding BotMenu...");
         this.setVisible(false);
+    }
+
+    /**
+     * Helper function to create a titled bordered section to neatly contain components.
+     *
+     * @param title The title of this section.
+     * @return A JPanel section which can be used to neatly contain java swing components.
+     */
+    public static JPanel section(String title) {
+        JPanel p = new JPanel();
+        p.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(new Color(200, 200, 200)),
+                title,
+                TitledBorder.LEFT,
+                TitledBorder.TOP,
+                new Font("Segoe UI", Font.BOLD, 13)
+        ));
+        return p;
     }
 
 
