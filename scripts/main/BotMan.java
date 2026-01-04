@@ -6,6 +6,7 @@ import main.task.Action;
 import main.task.Task;
 import main.tools.ETARandom;
 import main.managers.GraphicsMan;
+import main.tools.LogMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
@@ -38,6 +39,7 @@ import java.util.function.Supplier;
  * <p>- Scripts no longer need to return an integer value, instead they sleep/break/return, using the default delay
  * for any standard pauses.</p>
  * <p>- Additional/special delays will require an additional sleep before breaking the script loop (see functions below).</p>
+ *
  * @see BotMan#sleep(int)
  * @see BotMan#sleep(long, BooleanSupplier)
  */
@@ -62,18 +64,11 @@ public abstract class BotMan extends Script {
     /**
      * The minimum delay that can be set to prevent the client from lagging out from excessive loops.
      */
-    protected final int MIN_DELAY = 350;
-    ///
-    ///     PROTECTED FIELDS
-    ///
+    private int MIN_DELAY = 350;
     /**
-     * The bot menu associated with this bot instance - protected since it gains control of player accounts.
+     * The log manager, used to handle/display all logging messages/errors.
      */
-    protected BotMenu botMenu;
-    /**
-     * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
-     */
-    private TaskMan taskMan;
+    private LogMan logMan;
     /**
      * The window manager, used to detect, manipulate and attach listeners to various windows.
      */
@@ -81,7 +76,15 @@ public abstract class BotMan extends Script {
     /**
      * The graphics manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
      */
-    protected GraphicsMan graphicsMan;
+    private GraphicsMan graphicsMan;
+    /**
+     * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
+     */
+    private TaskMan taskMan;
+    /**
+     * The bot menu associated with this bot instance - protected since it gains control of player accounts.
+     */
+    private BotMenu botMenu;
     /**
      * A short, broad description of what the bot is currently attempting to do. (i.e., what BotMan knows)
      */
@@ -167,12 +170,8 @@ public abstract class BotMan extends Script {
 
             /// setup managers
 
-            setBotStatus("Creating TaskMan...");
-            // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
-            taskMan = new TaskMan();
-
-            setBotStatus("Creating BotMenu...");
-            botMenu = new BotMenu(this);
+            setBotStatus("Creating LogMan...");
+            logMan = new LogMan(this);
 
             setBotStatus("Creating WindowMan...");
             windowMan = new WindowMan(this);
@@ -180,6 +179,13 @@ public abstract class BotMan extends Script {
             setBotStatus("Creating GraphicsMan...");
             // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
             graphicsMan = new GraphicsMan(this);
+
+            setBotStatus("Creating TaskMan...");
+            // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
+            taskMan = new TaskMan();
+
+            setBotStatus("Creating BotMenu...");
+            botMenu = new BotMenu(this);
 
             setStatus("Successfully loaded managers!");
 
@@ -285,6 +291,10 @@ public abstract class BotMan extends Script {
         ///  Client type event
         ///  Level up event
         ///  New loot event
+    }
+
+    public Runnable refreshLogMan() {
+       return logMan::refresh;
     }
 
     private Runnable closeBotMenu() {
@@ -503,7 +513,7 @@ public abstract class BotMan extends Script {
     @Override
     public final void onPaint(Graphics2D g) {
         // pass the graphics object over to the graphics man to handle the default on-screen overlays
-        graphicsMan.drawMainOverlay(g);
+        graphicsMan.draw(g);
 //        // draw extra things here, like penises.
 //        botMenu.update(); //TODO consider removing, I think updating on loop is slower but less heavy and still fine
     }
@@ -544,6 +554,10 @@ public abstract class BotMan extends Script {
     public final String getStatus() { return status; }
 
     public final String getBotStatus() { return botStatus; }
+
+    public final JComponent getTabLogs() {
+        return logMan.buildTabLogs();
+    }
 
     public final JPanel getDashMenuTasks(JLabel label) {
         return taskMan.buildDashMenuTasks(label);
@@ -721,6 +735,15 @@ public abstract class BotMan extends Script {
         return taskMan.getSelectedIndex();
     }
 
+    @Override
+    public void log(String message) {        // call parent function to ensure proper execution
+        super.log(message);
+
+        // logging is triggered before log man is created and can't be prevented
+        if (logMan != null)
+            logMan.logDebug(message);
+    }
+
     /**
      * Logs the bots status updates to the console/overlay manager (if enabled).
      * <p>
@@ -740,12 +763,13 @@ public abstract class BotMan extends Script {
         if (status != null && status.isEmpty())
             return false;
 
-        // update on-screen status via GraphicsMan
+        // update status variable for later reference
         this.status = status;
 
+        // if a bot menu exists
         if (botMenu != null)
             // update bot menu console log
-            botMenu.logStatus(this.status);
+            logMan.logStatus(this.status);
 
         // update main console log
         log(this.status);
@@ -755,15 +779,15 @@ public abstract class BotMan extends Script {
 
     public boolean setBotStatus(String botStatus) {
         // no point in printing nothing!
-        if (botStatus == null || botStatus.isEmpty())
+        if (botStatus != null && botStatus.isEmpty())
             return false;
 
-        // update on-screen bot status via GraphicsMan
-        this.botStatus = getCaller() + botStatus;
+        // update bot status variable for later reference
+        this.botStatus = botStatus;
 
         if (botMenu != null)
             // update bot menu console log
-            botMenu.logBotStatus(this.botStatus);
+            logMan.logBotStatus(this.botStatus);
 
         // update main console log
         log(this.botStatus);
@@ -861,8 +885,11 @@ public abstract class BotMan extends Script {
             String method = e.getMethodName();
 
             // skip the logger itself
-            if (cls.contains("Trace")) continue;
-            if (method.contains("setStatus") || method.contains("setBotStatus") || method.contains("appendLog"))
+            if (cls.contains("Trace"))
+                continue;
+
+            if (method.contains("setStatus") || method.contains("setBotStatus")
+                    || method.contains("log") || method.contains("appendLog"))
                 continue;
 
             // clean class name

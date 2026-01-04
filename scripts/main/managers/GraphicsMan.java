@@ -32,7 +32,12 @@ public class GraphicsMan {
         this.bot = bot;
     }
 
-    public void drawMainOverlay(Graphics2D g) {
+    /**
+     * Main function used for drawing overlay objects over the client screen.
+     *
+     * @param g The graphics object used for drawing.
+     */
+    public void draw(Graphics2D g) {
         if (bot == null)
             return;
 

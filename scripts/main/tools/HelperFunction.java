@@ -9,10 +9,10 @@ import java.util.Scanner;
 /**
  * Randomly assorted functions used to help develop this application.
  */
-public class Helpers {
+public class HelperFunction {
     BotMan bot;
 
-    public Helpers(BotMan bot) {
+    public HelperFunction(BotMan bot) {
         this.bot = bot;
     }
     /**

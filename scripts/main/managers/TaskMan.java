@@ -364,10 +364,10 @@ public final class TaskMan {
     /**
      * Return the current task (if any are currently in the queue).
      *
-     * @return The current {@link Task} selected.
+     * @return The currently selected {@link Task}.
      */
     public synchronized Task getTask() {
-        if (getTaskListModel().isEmpty())
+        if (size() < 1)
             throw new RuntimeException("[TaskMan Error] Unable to fetch task! Task list is empty.");
 
         if (!isListIndexValid())

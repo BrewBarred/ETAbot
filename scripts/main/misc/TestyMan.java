@@ -16,7 +16,8 @@ public class TestyMan extends BotMan {
     @Override
     protected void paintScriptOverlay(Graphics2D g) {
         setStatus("Using graphics man to draw on-screen graphics...");
-        graphicsMan.drawMainMenuText(g, "Test draw from TestyMan ;)");
+        //
+        // graphicsMan.drawMainMenuText(g, "Test draw from TestyMan ;)");
     }
 
     /**
