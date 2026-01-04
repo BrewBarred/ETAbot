@@ -3,6 +3,11 @@ package main;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.Style;
+import javax.swing.text.StyleConstants;
+import javax.swing.text.StyleContext;
+import javax.swing.text.StyledDocument;
 
 import main.menu.SettingsPanel;
 import main.task.Task;
@@ -10,8 +15,13 @@ import main.task.Action;
 import main.managers.WindowMan;
 
 import java.awt.*;
+import java.awt.datatransfer.StringSelection;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -25,23 +35,20 @@ public class BotMenu extends JFrame {
 
     ///  LOGGING STUFF - NEED TO FILTER AND TIDY UP
 
-
-
     // ---- LOGGING ----
-    private enum LogSource { ALL, STATUS, BOT_STATUS }
-
-
-
-    private final java.util.List<LogEntry> logList = new CopyOnWriteArrayList<>();
-    private boolean logPaused = false;
     private static final int LOG_BUFFER = 214700;
+
+    private enum LogSource { ALL, STATUS, BOT_STATUS }
+    private final java.util.List<LogEntry> logList = new CopyOnWriteArrayList<>();
+
+    private boolean logPaused = false;
 
     // UI
     private JTextPane logPane;
     private javax.swing.text.StyledDocument logDoc;
 
     private JComboBox<LogSource> cbSource;
-    private JTextField tfSearch;
+    private JTextField tbSearch;
     private JCheckBox chkCaseSensitive;
     private JToggleButton btnPause;
     /**
@@ -854,7 +861,7 @@ public class BotMenu extends JFrame {
         cbSource.setSelectedItem(LogSource.ALL);
 
         // add a text field used to search/filter logs by substring match
-        tfSearch = new JTextField();
+        tbSearch = new JTextField();
         // add a checkbox to toggle whether the search is case-sensitive or not.
         chkCaseSensitive = new JCheckBox("Case sensitive");
         chkCaseSensitive.setSelected(false);
@@ -865,8 +872,8 @@ public class BotMenu extends JFrame {
         // clears the stored log buffer and the visible log document.
         JButton btnClear = new JButton("Clear");
 
-        // attempts to save logs to a text file using a file chooser. may be blocked by OSBot's SecurityManager.
-        JButton btnSave = new JButton("Save");
+        // copies logs to the clipboard
+        JButton btnCopy = new JButton("Copy");
 
         /// Top bar container holding left-side filters and right-side actions.
 
@@ -876,28 +883,28 @@ public class BotMenu extends JFrame {
         /// Top bar: left side
         ///  - Show, source combo-box, search
 
-        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        left.add(new JLabel("Show:"));
-        left.add(cbSource);
-        left.add(new JLabel("Search:"));
+        JPanel loggingPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        loggingPanel.add(new JLabel("Show:"));
+        loggingPanel.add(cbSource);
+        loggingPanel.add(new JLabel("Search:"));
 
         // give the search field a consistent width to avoid layout jitter.
-        tfSearch.setPreferredSize(new Dimension(220, 24));
-        left.add(tfSearch);
-        left.add(chkCaseSensitive);
+        tbSearch.setPreferredSize(new Dimension(220, 24));
+        loggingPanel.add(tbSearch);
+        loggingPanel.add(chkCaseSensitive);
 
         /// Top bar: right side
         /// - Pause/Resume, clear, save
 
-        JPanel right = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        right.add(btnPause);
-        right.add(btnClear);
-        right.add(btnSave);
+        JPanel loggingPanelControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        loggingPanelControls.add(btnPause);
+        loggingPanelControls.add(btnClear);
+        loggingPanelControls.add(btnCopy);
 
         /// Complete the top bar construction
 
-        top.add(left, BorderLayout.WEST);
-        top.add(right, BorderLayout.EAST);
+        top.add(loggingPanel, BorderLayout.WEST);
+        top.add(loggingPanelControls, BorderLayout.EAST);
 
         ///
         /// LOG CONSOLE (TEXTPANE + STYLED DOCUMENT)
@@ -915,7 +922,7 @@ public class BotMenu extends JFrame {
         logDoc = logPane.getStyledDocument();
 
         // Register named styles (TIME, STATUS, BOT_STATUS, NORMAL).
-        ensureLogStyles(logDoc);
+        setLogStyles(logDoc);
         // Wrap the log pane in a scroll pane for overflow.
         JScrollPane scroll = new JScrollPane(logPane);
         // Remove default scroll borders for a cleaner look.
@@ -944,14 +951,17 @@ public class BotMenu extends JFrame {
 
         /// DocumentListener reacts to live changes in the search field.
         /// Any keystroke triggers a refresh of the filtered log view.
-        javax.swing.event.DocumentListener dl = new javax.swing.event.DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) { refresh(); }
+        DocumentListener dl = new DocumentListener() {
+            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                refresh(); }
+            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                refresh(); }
+            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                refresh(); }
         };
 
         /// Attach the document listener to the search field.
-        tfSearch.getDocument().addDocumentListener(dl);
+        tbSearch.getDocument().addDocumentListener(dl);
 
         /// Refresh the view when case sensitivity is toggled.
         chkCaseSensitive.addActionListener(e -> refresh());
@@ -969,8 +979,8 @@ public class BotMenu extends JFrame {
             clearLogDocument();
         });
 
-        /// Save logs to disk (if permitted by the runtime environment).
-        btnSave.addActionListener(e -> saveLogsToFile());
+        /// Copy logs to clipboard
+        btnCopy.addActionListener(e -> copyLogsToClipboard());
 
 
         ///
@@ -981,21 +991,21 @@ public class BotMenu extends JFrame {
         return logPanel;
     }
 
-    private void ensureLogStyles(javax.swing.text.StyledDocument doc) {
-        javax.swing.text.Style def = javax.swing.text.StyleContext.getDefaultStyleContext()
-                .getStyle(javax.swing.text.StyleContext.DEFAULT_STYLE);
+    private void setLogStyles(StyledDocument doc) {
+        Style def = javax.swing.text.StyleContext.getDefaultStyleContext()
+                .getStyle(StyleContext.DEFAULT_STYLE);
 
-        javax.swing.text.Style normal = doc.addStyle("NORMAL", def);
-        javax.swing.text.StyleConstants.setForeground(normal, Color.DARK_GRAY);
+        Style normal = doc.addStyle("NORMAL", def);
+        StyleConstants.setForeground(normal, Color.DARK_GRAY);
 
-        javax.swing.text.Style status = doc.addStyle("STATUS", def);
-        javax.swing.text.StyleConstants.setForeground(status, new Color(30, 90, 200));
+        Style status = doc.addStyle("STATUS", def);
+        StyleConstants.setForeground(status, new Color(30, 90, 200));
 
-        javax.swing.text.Style botStatus = doc.addStyle("BOT_STATUS", def);
-        javax.swing.text.StyleConstants.setForeground(botStatus, new Color(0, 120, 70));
+        Style botStatus = doc.addStyle("BOT_STATUS", def);
+        StyleConstants.setForeground(botStatus, new Color(0, 120, 70));
 
-        javax.swing.text.Style time = doc.addStyle("TIME", def);
-        javax.swing.text.StyleConstants.setForeground(time, new Color(120, 120, 120));
+        Style time = doc.addStyle("TIME", def);
+        StyleConstants.setForeground(time, new Color(120, 120, 120));
     }
 
     private void clearLogDocument() {
@@ -1004,7 +1014,9 @@ public class BotMenu extends JFrame {
                 logDoc.remove(0, logDoc.getLength());
             } catch (javax.swing.text.BadLocationException ignored) {}
         };
-        if (SwingUtilities.isEventDispatchThread()) r.run();
+
+        if (SwingUtilities.isEventDispatchThread())
+            r.run();
         else SwingUtilities.invokeLater(r);
     }
 
@@ -1014,9 +1026,11 @@ public class BotMenu extends JFrame {
     }
 
     private boolean matchesFilter(LogEntry e, LogSource sourceFilter, String search, boolean caseSensitive) {
-        if (sourceFilter != LogSource.ALL && e.source != sourceFilter) return false;
+        if (sourceFilter != LogSource.ALL && e.source != sourceFilter)
+            return false;
 
-        if (search == null || search.isEmpty()) return true;
+        if (search == null || search.isEmpty())
+            return true;
 
         String msg = e.message == null ? "" : e.message;
         if (!caseSensitive) {
@@ -1026,34 +1040,19 @@ public class BotMenu extends JFrame {
         return msg.contains(search);
     }
 
-    /**
-     * Save the console logs for this session (only what is currently viewable, any content missed due to track
-     * manipulation/deletion is not restored).
-     */
-    private void saveLogsToFile() {
-        setBotStatus("Saving bot menu logs...");
-        JFileChooser fc = new JFileChooser();
-        fc.setDialogTitle("Save logs");
-        fc.setSelectedFile(new java.io.File("botman_logs.txt"));
-
-        int res = fc.showSaveDialog(this);
-        if (res != JFileChooser.APPROVE_OPTION) return;
-
-        java.io.File file = fc.getSelectedFile();
-
-        try (java.io.PrintWriter out = new java.io.PrintWriter(
-                new java.io.OutputStreamWriter(Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8))) {
-
-            for (LogEntry e : logList) {
-                out.println("[" + formatTime(e.timeMillis) + "] " + e.source + " " + e.message);
-            }
-            setStatus("Saved logs to: " + file.getAbsolutePath());
-        } catch (SecurityException se) {
-            setStatus("Save blocked by security manager (OSBot).");
-        } catch (Exception ex) {
-            setStatus("Failed to save logs: " + ex.getMessage());
+    private void copyLogsToClipboard() {
+        StringBuilder sb = new StringBuilder(logList.size() * 48);
+        for (LogEntry e : logList) {
+            sb.append('[').append(formatTime(e.timeMillis)).append("] ")
+                    .append(e.source).append(' ')
+                    .append(e.message).append('\n');
         }
+
+        StringSelection sel = new StringSelection(sb.toString());
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(sel, null);
+        setStatus("Logs copied to clipboard.");
     }
+
 
     private Runnable refreshDashMenuTasks() {
         return () -> {
@@ -1075,7 +1074,7 @@ public class BotMenu extends JFrame {
                 return;
 
             LogSource sourceFilter = (LogSource) cbSource.getSelectedItem();
-            String search = tfSearch.getText();
+            String search = tbSearch.getText();
             boolean caseSensitive = chkCaseSensitive.isSelected();
 
             try {
@@ -1127,24 +1126,14 @@ public class BotMenu extends JFrame {
     }
 
     /**
-     * Opens the bot menu associated with the calling bot instance.
-     * <p>
-     * Bot menus enable user-bot interaction by providing direct access to the bots main loop and allowing the user to
-     * adjust settings or create their own tasks and add them after each existing script loop, or better yet, they can
-     * just make their own scripts by pressing buttons!
-     * <p>
-     * If a menu already exists, this function
-     * function will call its {@link BotMenu#show()} function, else {@link BotMenu#open()} will be called.
-     *
-     * @see BotMenu
+     * Opens the {@link BotMenu}
      */
     protected final boolean open() {
         //TODO: document code with more of these later @see ^^
 
-        // can't open nothing!
-        if (bot == null || bot.botMenu == null || isVisible()) {
-            setStatus("Unable to find a bot menu to open...");
-            return false;
+        // can't open a nothing!
+        if (bot == null || bot.botMenu == null) {
+            return !setBotStatus("Unable to find a bot menu to open...");
         }
 
         // try open the bot menu using swing utilies to delay premature loading before BotMan is instantiated.
@@ -1160,7 +1149,7 @@ public class BotMenu extends JFrame {
         if (bot == null)
             return;
 
-        setStatus("Closing BotMenu...");
+        setBotStatus("Closing BotMenu...");
         // detach bot menu from bot instance
         bot.botMenu = null;
         // dispose of this menu
@@ -1172,16 +1161,18 @@ public class BotMenu extends JFrame {
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
     public final void callClose() throws InterruptedException {
-        setStatus("Determining close action...");
+        setBotStatus("Determining close action...");
         // if this is not a forced closed, do some checks before closing the bot menu
         if (!isVisible())
             return;
 
         // if the setting toggle "exit on close" is enabled - stop the bot script.
         // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
-        if (this.isExitingOnClose)
+        if (this.isExitingOnClose) {
             // exit the bot instead of just closing the menu
             bot.onExit();
+            return;
+        }
 
         // if setting toggle "hide on exit" is enabled and this is not a forced close
         if (this.isHidingOnExit) {
@@ -1379,13 +1370,11 @@ public class BotMenu extends JFrame {
      *
      * @param status The status to display on-screen (if enabled) and in the {@link BotMenu}
      */
-    private void setStatus(String status) {
-        if (bot != null)
-            bot.setStatus(status);
+    private boolean setStatus(String status) {
+        return bot != null && bot.setStatus(status);
     }
 
-    private void setBotStatus(String botStatus) {
-        if (bot != null)
-            bot.setBotStatus(botStatus);
+    private boolean setBotStatus(String botStatus) {
+        return bot != null && bot.setBotStatus(botStatus);
     }
 }

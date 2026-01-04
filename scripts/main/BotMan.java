@@ -475,6 +475,8 @@ public abstract class BotMan extends Script {
     /**
      * Function used to execute some code before the script stops, useful for last-minute guaranteed disposal.
      */
+    //TODO LATER: inspect why this function is called twice (under the hood?) and see if it can be prevented to remove
+    // isRunning flag
     @Override
     public final void onExit() throws InterruptedException {
         // block menu closing twice (due to OSBot calling onExit() twice under the hood)
@@ -848,27 +850,57 @@ public abstract class BotMan extends Script {
     ///  Static helper functions
     ///
 
-    /**
-     * Reads the stack trace to return the name of the calling class and function at the time this function is called.
-     *
-     * @return [Unknown] or [BotMan:onStart()] styled headers for bot-status logs.
-     */
     public static String getCaller() {
-        // fetch the stack trace and read down it to fetch the calling function
         StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-        StackTraceElement caller = stack.length > 3 ? stack[3] : null;
 
-        // return early if no caller is found to prevent null reference errors
-        if (caller == null)
-            return "[Unknown] ";
+        // Walk until we leave the logging call-chain
+        for (int i = 2; i < stack.length; i++) {
+            StackTraceElement e = stack[i];
 
-        // strip package name from the front e.g., main.BotMan:onLoop -> BotMan:onLoop
-        String className = caller.getClassName();
-        int start = className.lastIndexOf('.') + 1;
+            String cls = e.getClassName();
+            String method = e.getMethodName();
 
-        // return the formatted class/function names
-        return "[" + className.substring(start) + ":" + caller.getMethodName() + "()] ";
+            // skip the logger itself
+            if (cls.contains("Trace")) continue;
+            if (method.contains("setStatus") || method.contains("setBotStatus") || method.contains("appendLog"))
+                continue;
+
+            // clean class name
+            cls = cls.substring(cls.lastIndexOf('.') + 1);
+
+            // clean lambda name
+            if (method.startsWith("lambda$")) {
+                method = method.substring(7, method.lastIndexOf('$'));
+            }
+
+            return "[" + cls + ":" + method + "()] ";
+        }
+
+        return "[Unknown] ";
     }
+
+
+//    /**
+//     * Reads the stack trace to return the name of the calling class and function at the time this function is called.
+//     *
+//     * @return [Unknown] or [BotMan:onStart()] styled headers for bot-status logs.
+//     */
+//    public static String getCaller() {
+//        // fetch the stack trace and read down it to fetch the calling function
+//        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+//        StackTraceElement caller = stack.length > 3 ? stack[3] : null;
+//
+//        // return early if no caller is found to prevent null reference errors
+//        if (caller == null)
+//            return "[Unknown] ";
+//
+//        // strip package name from the front e.g., main.BotMan:onLoop -> BotMan:onLoop
+//        String className = caller.getClassName();
+//        int start = className.lastIndexOf('.') + 1;
+//
+//        // return the formatted class/function names
+//        return "[" + className.substring(start) + ":" + caller.getMethodName() + "()] ";
+//    }
 
     ///
     ///  Abstract functions
