@@ -1,6 +1,7 @@
 package main;
 
 import main.managers.TaskMan;
+import main.managers.WindowMan;
 import main.task.Action;
 import main.task.Task;
 import main.tools.ETARandom;
@@ -14,9 +15,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.Scanner;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -75,6 +73,10 @@ public abstract class BotMan extends Script {
      * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
      */
     private TaskMan taskMan;
+    /**
+     * The window manager, used to detect, manipulate and attach listeners to various windows.
+     */
+    private WindowMan windowMan;
     /**
      * The graphics manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
      */
@@ -171,6 +173,9 @@ public abstract class BotMan extends Script {
             setBotStatus("Creating BotMenu...");
             botMenu = new BotMenu(this);
 
+            setBotStatus("Creating WindowMan...");
+            windowMan = new WindowMan(this);
+
             setBotStatus("Creating GraphicsMan...");
             // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
             graphicsMan = new GraphicsMan(this);
@@ -185,9 +190,13 @@ public abstract class BotMan extends Script {
             setStatus("Successfully loaded children!");
 
             ///  setup menu items
+
             setBotStatus("Setting up menu items...");
             logoutOnExit = false; // TODO setup checkbox in menu or constructor to change this value
             setStatus("Successfully loaded menu items!");
+
+            setupListeners();
+            setStatus("Successfully loaded listeners!");
 
             setStatus("Initialization complete!");
 
@@ -217,14 +226,14 @@ public abstract class BotMan extends Script {
                 currentAttempt++;
                 // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
                 if (!isSafeToBot())
-                    throw new RuntimeException("[BotMan] Unsafe to bot!! Check logs for more information...");
+                    throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
 
                 setStatus("Reading task list...");
                 // double check attempts before attempting to complete the next stage/task
                 if (currentAttempt < MAX_ATTEMPTS)
                     // attempt to complete a stage/task
                     return attempt();
-                    // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
+                // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
                 else onExit();
 
                 // return a normal delay
@@ -238,6 +247,55 @@ public abstract class BotMan extends Script {
         }
 
         return ETARandom.getRandShortDelayInt();
+    }
+
+    /**
+     * Attaches refresh() events to any windows that need updating, adds list handlers to menu lists for an updated
+     * display and attaches on close events to windows to trigger custom logic when they are exited by the user.
+     */
+    private void setupListeners() {
+        ///
+        ///  Setup BotMenu Listeners:
+        ///
+
+        ///  list listeners - attach listeners to lists to reflect changes in bot menu
+
+        // refresh bot menu anytime the task list is manipulated (index change, add, remove)
+        windowMan.attachMenuListListeners(getTaskList());
+        // refresh bot menu anytime the task library is manipulated (index change, add, remove)
+        windowMan.attachMenuListListeners(getTaskLibrary());
+
+        ///  onClose() events
+
+        // call the bot menu on close function whenever the user exits the menu (via window 'x' button)
+        windowMan.attachOnCloseEvent(botMenu, closeBotMenu());
+
+        ///  refresh() events
+
+        ///
+        ///  Setup Bot Listeners:
+        ///
+
+        ///  HP changed event
+        ///  Prayer changed event
+        ///  Player died event
+        ///  Client left click event
+        ///  Client right click event
+        ///  Client type event
+        ///  Level up event
+        ///  New loot event
+    }
+
+    private Runnable closeBotMenu() {
+        return () -> {
+            try {
+                setBotStatus("Calling close task...");
+                // call normal close (not forced)
+                botMenu.callClose();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        };
     }
 
     /**
@@ -419,9 +477,10 @@ public abstract class BotMan extends Script {
     @Override
     public final void onExit() throws InterruptedException {
         if (botMenu != null)
-            // force-close the bot menu
-            botMenu.close(true);
+            // force-close the bot menu (forcing prevents infinite loop)
+            botMenu.callClose(true);
 
+        // STOP gets called twice?
         stop(logoutOnExit);
         log("Successfully exited ETA's (OsBot) Bot Manager");
     }
@@ -679,28 +738,28 @@ public abstract class BotMan extends Script {
 
         if (botMenu != null)
             // update bot menu console log
-            botMenu.logStatus(status);
+            botMenu.logStatus(this.status);
 
         // update main console log
-        log(status);
+        log(this.status);
         // always return true for one-line return statements
         return true;
     }
 
     public boolean setBotStatus(String botStatus) {
         // no point in printing nothing!
-        if (botStatus.isEmpty())
+        if (botStatus == null || botStatus.isEmpty())
             return false;
 
         // update on-screen bot status via GraphicsMan
-        this.botStatus = botStatus;
+        this.botStatus = getCaller() + botStatus;
 
         if (botMenu != null)
             // update bot menu console log
-            botMenu.logBotStatus(botStatus);
+            botMenu.logBotStatus(this.botStatus);
 
         // update main console log
-        log(botStatus);
+        log(this.botStatus);
         // always return true for one-line return statements
         return true;
     }
@@ -780,9 +839,34 @@ public abstract class BotMan extends Script {
         return sleep(timeout, () -> false);
     }
 
+    ///
+    ///  Static helper functions
+    ///
+
+    /**
+     * Reads the stack trace to return the name of the calling class and function at the time this function is called.
+     *
+     * @return [Unknown] or [BotMan:onStart()] styled headers for bot-status logs.
+     */
+    public static String getCaller() {
+        // fetch the stack trace and read down it to fetch the calling function
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+        StackTraceElement caller = stack.length > 3 ? stack[3] : null;
+
+        // return early if no caller is found to prevent null reference errors
+        if (caller == null)
+            return "[Unknown] ";
+
+        // strip package name from the front e.g., main.BotMan:onLoop -> BotMan:onLoop
+        String className = caller.getClassName();
+        int start = className.lastIndexOf('.') + 1;
+
+        // return the formatted class/function names
+        return "[" + className.substring(start) + ":" + caller.getMethodName() + "()] ";
+    }
 
     ///
-    ///     ABSTRACT FUNCTIONS
+    ///  Abstract functions
     ///
     protected abstract void paintScriptOverlay(Graphics2D g);
 }

@@ -49,9 +49,6 @@ public final class TaskMan {
     private int listLoop = 0;
     private int listLoops = 1;
 
-    private boolean isPausingOnScriptEnd = true;
-    private boolean isOpeningMenuOnScriptEnd = true;
-
     /**
      * This function automatically updates the task-library on task-creation. This forces any created task to be placed
      * into this library for user selection later.
@@ -189,10 +186,6 @@ public final class TaskMan {
         return taskListModel.removeElement(task);
     }
 
-    public boolean deleteTask(Task task) {
-        return taskLibraryModel.removeElement(task);
-    }
-
     /**
      * Removes the {@link Task} at the passed index from the list, if the passed index is valid.
      *
@@ -201,6 +194,17 @@ public final class TaskMan {
     public void removeTask(int index) {
         if (index >= 0 && index < size())
             taskListModel.remove(index);
+    }
+
+    /**
+     * Permanently removes the passed task from the task-library. The task will not be able to be retrieved or re-used
+     * after this function is executed.
+     *
+     * @param task The {@link Task} to permanently delete from the task-library.
+     * @return True if the {@link Task} is successfully removed from the task-library.
+     */
+    public boolean deleteTask(Task task) {
+        return taskLibraryModel.removeElement(task);
     }
 
     /**

@@ -7,7 +7,7 @@ import javax.swing.border.TitledBorder;
 import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
-import main.tools.ClientDetector;
+import main.managers.WindowMan;
 
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
@@ -16,11 +16,12 @@ import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class BotMenu extends JFrame {
-    ///  bot menu settings (Sort later) // TODO sort these into fields properly and check botmenu linkage
+    ///  bot menu settings (Sort later)
+    // TODO sort these into fields properly and check bot-menu links
 
     // dynamic bot menu labels updated in refresh()
-    JLabel titleTaskList = new JLabel();
-    JLabel titleTaskLibrary = new JLabel();
+    private final JLabel titleTaskList = new JLabel();
+    private final JLabel titleTaskLibrary = new JLabel();
 
     ///  LOGGING STUFF - NEED TO FILTER AND TIDY UP
 
@@ -57,6 +58,7 @@ public class BotMenu extends JFrame {
     public BotMan bot;
 
     protected boolean isHidingOnExit;
+    protected boolean isExitingOnClose;
 
     private final JPanel taskTypeSettingsCard = new JPanel(new CardLayout());
     private static final String CARD_EMPTY = "EMPTY";
@@ -97,13 +99,9 @@ public class BotMenu extends JFrame {
             // create bot menu
             createMenu();
             // set default settings
-            setDefaults();
-            // setup task list listeners
-            setupListeners(bot.getTaskList());
-            // setup library list listeners
-            setupListeners(bot.getTaskLibrary());
+            setDefaultSettings();
             // place the bot menu on a different screen to the bot client if possible
-            ClientDetector.placeMenuOnOtherMonitor(this);
+            WindowMan.moveToAlternateMonitor(this);
             // display the menu
             this.showMenu();
             // refresh the bot menu to reflect all changes
@@ -129,6 +127,27 @@ public class BotMenu extends JFrame {
     ///
 
     /**
+     * Sets whether to stop the botting script when the Bot Menu is closed.
+     *
+     * @param exit True if the script should stop on menu closure, else false.
+     */
+    protected void setExitOnClose(boolean exit) {
+        // update exit on close setting
+        this.isExitingOnClose = exit;
+        // cannot exit on close AND hide on close
+        this.isHidingOnExit = !isExitingOnClose;
+    }
+
+    /**
+     * Returns whether the botting script should stop on menu closure or not.
+     *
+     * @return True if the script should stop on menu closure, else false.
+     */
+    protected boolean getExitOnClose() {
+        return this.isExitingOnClose;
+    }
+
+    /**
      * Sets the default close operation for this {@link BotMenu}. Set to true to hide the menu on close, else false to
      * exit the menu instead.
      *
@@ -137,12 +156,8 @@ public class BotMenu extends JFrame {
     protected void setHideOnClose(boolean hide) {
         // update class variable
         this.isHidingOnExit = hide;
-
-        // set default close operation based on passed boolean
-        if (hide)
-            setDefaultCloseOperation(WindowConstants.HIDE_ON_CLOSE);
-        else
-            setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        // cannot hide on close AND exit on close
+        this.isExitingOnClose = !isHidingOnExit;
     }
 
     /**
@@ -158,25 +173,23 @@ public class BotMenu extends JFrame {
     ///     APPLY DEFAULT SETTINGS FIRST
     ///
     //TODO: create functions to modularize default settings later + link to reset button
-    public void setDefaults() {
-        bot.setTaskListIndex(0);
+    public void setDefaultSettings() {
 
-        ///  Client settings:
+        ///  Menu Settings (Client)
         setMinimumSize(new Dimension(750, 600));
 
-        ///  Menu settings: Settings that change the menu, or how it interacts with the script or client.
-
+        ///  Menu Settings (BotMenu): Settings that change the menu, or how it interacts with the script or client.
         setHideOnClose(true);
+        setExitOnClose(true);
 
-
-        ///  Script settings: Settings that change how the script runs and operates prior to execution
+        ///  Menu Settings (Task):
+        bot.setTaskListIndex(0);
 
         // this.maxLoops = 1; // disables looping until manually set
         // this.taskType = TaskType.SCAN; // sets default task to scan the surrounding area to decide what can be done
         // this.target = null; // fetches nearest target based on task type?
         // this.position = null; // fetches current position?
         // this.area = null; // fetches current area using (position, DEFAULT_RADIUS)?
-
 
         ///  Bot settings: Settings that change how the script runs prior and during execution.
 
@@ -339,39 +352,6 @@ public class BotMenu extends JFrame {
         menu.add(buildHeader(), BorderLayout.NORTH);
         // add main menu tabs (dashboard, task manager, etc...)
         menu.add(tabs, BorderLayout.CENTER);
-    }
-
-    /**
-     * Attach listeners to the task list/model
-     */
-    private void setupListeners(JList<Task> list) {
-        // update bot menu whenever the user iterates the task list (helps keep index up to date)
-        list.addListSelectionListener(e -> {
-            if (e.getValueIsAdjusting())
-                return;
-            refresh();
-        });
-
-        // refresh the bot menu task list whenever the list is changed, added to, or removed from
-        list.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
-            @Override
-            public void intervalAdded(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Added task! (interval)");
-                refresh();
-            }
-
-            @Override
-            public void intervalRemoved(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Removed task! (interval)");
-                refresh();
-            }
-
-            @Override
-            public void contentsChanged(javax.swing.event.ListDataEvent e) {
-                setBotStatus("Changed task! (interval)");
-                refresh();
-            }
-        });
     }
 
     private JComponent buildHeader() {
@@ -1175,32 +1155,53 @@ public class BotMenu extends JFrame {
         return bot.botMenu == null;
     }
 
+    private void close() {
+        // can't close what ain't open
+        if (bot == null)
+            return;
+
+        setStatus("Closing BotMenu...");
+        // detach bot menu from bot instance
+        bot.botMenu = null;
+        // dispose of this menu
+        this.dispose();
+    }
+
+
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
-    public final void close(boolean force) {
-        // no need to close nothing!
-        if (bot == null || bot.botMenu == null || !isVisible())
+    public final void callClose() throws InterruptedException {
+        setStatus("Determining close action...");
+        // if this is not a forced closed, do some checks before closing the bot menu
+        if (!isVisible())
             return;
 
-        // if hide on exit is enable and force-close is not enabled
-        if (this.isHidingOnExit && !force) {
-            // hide the menu and exit early
+        // if the setting toggle "exit on close" is enabled - stop the bot script.
+        // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
+        if (this.isExitingOnClose)
+            // exit the bot instead of just closing the menu
+            bot.onExit();
+
+        // if setting toggle "hide on exit" is enabled and this is not a forced close
+        if (this.isHidingOnExit) {
+            // hide the menu and exit early to prevent closure
             this.hideMenu();
             return;
         }
 
-        setStatus("Closing BotMenu...");
-        bot.botMenu = null;
-        this.dispose();
+        this.close();
     }
 
     /**
-     * Helper function for {@link BotMenu#close(boolean)} which disables the force-close parameter, enabling a normal
-     * close.
+     * Helper function which calls {@link BotMenu#callClose(boolean)} passing a false boolean parameter.
      */
-    public final void close() {
-        close(false);
+    public final void callClose(boolean forced) throws InterruptedException {
+        setBotStatus("Calling menu close...");
+        if (forced)
+            close();
+        else
+            callClose();
     }
 
     public final void showMenu() {
@@ -1341,26 +1342,12 @@ public class BotMenu extends JFrame {
         refreshList.add(refreshDashMenuLog());
 
         /// add tasks to refresh each tab
+
         // add tasks to refresh task library tab
         refreshList.add(refreshTabTaskLibrary());
 
         ///  return the refresh list
         return refreshList;
-    }
-
-    /**
-     * Update the bot status to keep the user informed about the script progress.
-     *
-     * @param status The status to display on-screen (if enabled) and in the {@link BotMenu}
-     */
-    private void setStatus(String status) {
-        if (bot != null)
-            bot.setStatus("[BotMenu] " + status);
-    }
-
-    private void setBotStatus(String status) {
-        if (bot != null)
-            bot.setBotStatus("[BotMenu] " + status);
     }
 
     public void logStatus(String msg) {
@@ -1385,5 +1372,20 @@ public class BotMenu extends JFrame {
 
         // update view (respects current filter/search)
         refresh();
+    }
+
+    /**
+     * Update the bot status to keep the user informed about the script progress.
+     *
+     * @param status The status to display on-screen (if enabled) and in the {@link BotMenu}
+     */
+    private void setStatus(String status) {
+        if (bot != null)
+            bot.setStatus(status);
+    }
+
+    private void setBotStatus(String botStatus) {
+        if (bot != null)
+            bot.setBotStatus(botStatus);
     }
 }

@@ -114,11 +114,11 @@ public abstract class Task {
     public final void setLoops(int loops) {
         // maximum loops must be set to at least one, because there is no point in adding something and doing it 0 times.
         if (loops < 1)
-            throw new RuntimeException("[Task] Error setting task loops, value too low: " + loops);
+            throw new RuntimeException("[Task Error] Failed to set task loops, value too low: " + loops);
 
         // check loops less than max loop count (either free version limit e.g. 100 loops or MAX_INTEGER)
         if (loops > MAX_TASK_LOOPS)
-            throw new RuntimeException("[Task] Error setting task loops, maximum loops (" + MAX_TASK_LOOPS + ") exceeded!");
+            throw new RuntimeException("[Task Error] Failed to set task loops, maximum loops (" + MAX_TASK_LOOPS + ") exceeded!");
 
         // update loop count/reset current loop to start loop count again
         this.loops = loops;
