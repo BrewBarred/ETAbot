@@ -7,6 +7,7 @@ import javax.swing.border.TitledBorder;
 import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
+import main.tools.ClientDetector;
 
 import java.awt.*;
 import java.nio.charset.StandardCharsets;
@@ -16,13 +17,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 public class BotMenu extends JFrame {
     ///  bot menu settings (Sort later) // TODO sort these into fields properly and check botmenu linkage
-
-    // monitor tracking (for later user preferences)
-    private int screenCount = 1;          // total monitors detected
-    private int osbotScreenIndex = 0;     // which monitor OSBot is on (best-effort)
-    private int menuScreenIndex = 0;      // which monitor we chose for BotMenu
-    private int preferredMenuScreen = -1; // optional: user preference (0-based). -1 = auto
-
 
     // dynamic bot menu labels updated in refresh()
     JLabel titleTaskList = new JLabel();
@@ -108,6 +102,8 @@ public class BotMenu extends JFrame {
             setupListeners(bot.getTaskList());
             // setup library list listeners
             setupListeners(bot.getTaskLibrary());
+            // place the bot menu on a different screen to the bot client if possible
+            ClientDetector.placeMenuOnOtherMonitor(this);
             // display the menu
             this.showMenu();
             // refresh the bot menu to reflect all changes
@@ -167,7 +163,6 @@ public class BotMenu extends JFrame {
 
         ///  Client settings:
         setMinimumSize(new Dimension(750, 600));
-        setScreenPreference();
 
         ///  Menu settings: Settings that change the menu, or how it interacts with the script or client.
 
@@ -228,94 +223,35 @@ public class BotMenu extends JFrame {
      */
     //TODO: Test this on one monitor device
     private void setScreenPreference() {
-        // Fetch all available graphics devices (monitors).
-        GraphicsDevice[] screens =
-                GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
-
-        // Defensive fallback: if the system reports no monitors (extremely rare),
-        // let Swing decide where to place the window.
-        if (screens == null || screens.length == 0) {
-            setLocationRelativeTo(null);
-            return;
-        }
-
-        // Decide which monitor index to use.
-        // This also updates internal tracking fields.
-        int index = chooseMenuScreenIndex();
-
-        // Clamp index to a valid range to prevent crashes.
-        if (index < 0) index = 0;
-        if (index >= screens.length) index = screens.length - 1;
-
-        // Retrieve the usable bounds of the chosen monitor.
-        Rectangle bounds = screens[index]
-                .getDefaultConfiguration()
-                .getBounds();
-
-        // Center the BotMenu within the selected monitor.
-        int x = bounds.x + (bounds.width - getWidth()) / 2;
-        int y = bounds.y + (bounds.height - getHeight()) / 2;
-
-        setLocation(x, y);
-    }
-
-    /**
-     * Decide which monitor the BotMenu should use.
-     *
-     * Rules:
-     *  - If only 1 monitor -> returns 0.
-     *  - If multiple monitors:
-     *      1) attempt to detect which monitor the osbot client is currently on
-     *      2) open the bot menu on an alternate monitor
-     *      3) use preferredMenuScreen when defined
-     * <n>
-     * Side effects:
-     *  - Updates screenCount, osbotScreenIndex, menuScreenIndex fields.
-     */
-    private int chooseMenuScreenIndex() {
-        GraphicsDevice[] screens = GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
-        screenCount = (screens == null) ? 1 : Math.max(1, screens.length);
-
-        // single monitor: nothing to decide
-        if (screenCount == 1) {
-            osbotScreenIndex = 0;
-            menuScreenIndex = 0;
-            return 0;
-        }
-
-        // best-effort: locate OSBot bounds via canvas window (no extra loops beyond screen scan)
-        Rectangle osbotBounds = null;
-        try {
-            Component canvas = (bot != null) ? bot.getBot().getCanvas() : null;
-            if (canvas != null) {
-                Window w = SwingUtilities.getWindowAncestor(canvas);
-                if (w != null) osbotBounds = w.getBounds();
-                else {
-                    Point p = canvas.getLocationOnScreen();
-                    osbotBounds = new Rectangle(p.x, p.y, canvas.getWidth(), canvas.getHeight());
-                }
-            }
-        } catch (Throwable ignored) {}
-
-        // one pass: find OSBot screen (default 0 if unknown)
-        int foundOsbot = 0;
-        if (osbotBounds != null) {
-            for (int i = 0; i < screens.length; i++) {
-                Rectangle b = screens[i].getDefaultConfiguration().getBounds();
-                if (b.intersects(osbotBounds)) { foundOsbot = i; break; }
-            }
-        }
-        osbotScreenIndex = foundOsbot;
-
-        // choose preferred if valid and not OSBot
-        if (preferredMenuScreen >= 0 && preferredMenuScreen < screens.length && preferredMenuScreen != osbotScreenIndex) {
-            menuScreenIndex = preferredMenuScreen;
-            return menuScreenIndex;
-        }
-
-        // otherwise choose the first screen that is not OSBot (usually 0/1 swap)
-        menuScreenIndex = (osbotScreenIndex == 0) ? 1 : 0;
-        return menuScreenIndex;
+//        // Fetch all available graphics devices (monitors).
+//        GraphicsDevice[] screens =
+//                GraphicsEnvironment.getLocalGraphicsEnvironment().getScreenDevices();
+//
+//        // Defensive fallback: if the system reports no monitors (extremely rare),
+//        // let Swing decide where to place the window.
+//        if (screens == null || screens.length == 0) {
+//            setLocationRelativeTo(null);
+//            return;
+//        }
+//
+//        // Decide which monitor index to use.
+//        // This also updates internal tracking fields.
+//        int index = chooseMenuScreenIndex();
+//
+//        // Clamp index to a valid range to prevent crashes.
+//        if (index < 0) index = 0;
+//        if (index >= screens.length) index = screens.length - 1;
+//
+//        // Retrieve the usable bounds of the chosen monitor.
+//        Rectangle bounds = screens[index]
+//                .getDefaultConfiguration()
+//                .getBounds();
+//
+//        // Center the BotMenu within the selected monitor.
+//        int x = bounds.x + (bounds.width - getWidth()) / 2;
+//        int y = bounds.y + (bounds.height - getHeight()) / 2;
+//
+//        setLocation(x, y);
     }
 
     /**

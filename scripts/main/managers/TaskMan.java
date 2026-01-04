@@ -4,7 +4,6 @@ import main.BotMan;
 import main.task.Task;
 
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
@@ -69,14 +68,14 @@ public final class TaskMan {
         // configure list once
         taskList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        JButton duplicate = new JButton("Duplicate");
-        duplicate.addActionListener(e -> {
+        JButton save = new JButton("Save Preset");
+        save.addActionListener(e -> {
             //TODO implement dupe logic here
         });
 
         ///  create a up arrow button as an alternate way to navigate the task list
         JButton btnUp = new JButton("↑");
-        duplicate.addActionListener(e -> {
+        btnUp.addActionListener(e -> {
             taskList.setSelectedIndex(taskList.getSelectedIndex() - 1);
         });
 
@@ -139,7 +138,7 @@ public final class TaskMan {
 
         // create buttons panel
         JPanel listButtons = section("Controls");
-            listButtons.add(duplicate);
+            listButtons.add(save);
             listButtons.add(btnUp);
             listButtons.add(btnDown);
             listButtons.add(btnRemove);
@@ -226,9 +225,17 @@ public final class TaskMan {
     /**
      * @return {@link Boolean true} if this script still has at least 1 loop remaining, else returns {@link Boolean false}.
      */
-    public boolean isListLooping() {
+    public boolean isReadyToLoop() {
+        Task task = getTask();
         // restart script loop if the task list has tasks & script index reaches end of queue & there are more script loops to execute.
-        return hasTasks() && getHead().isComplete() && isListIndexValid();
+        return task != null && task.isComplete() && hasLoopsLeft() && isListIndexValid() && isListLoopsValid();
+    }
+
+    /**
+     * @return {@link Boolean true} if this scripts loops count does not exceed the set or default maximum limits.
+     */
+    public boolean isListLoopsValid() {
+        return listLoop < listLoops && listLoop < MAX_SCRIPT_LOOPS;
     }
 
     /**
@@ -248,17 +255,16 @@ public final class TaskMan {
     }
 
     /**
-     * Restarts the list loop by increment the list loop count and setting the index to 0.
+     * Restarts the task-list by pointing back to the first {@link Task} in the list and checking the list loop count
+     * has not exceeded any limits.
      */
-    private final void restart() {
-        // increment loop count
-        incrementListLoop();
+    private void restartLoop(BotMan bot) throws InterruptedException {
         // go back to the start of the queue to repeat the set again
         setTaskListIndex(0);
 
         // return early if max loops have been exceeded
         if (getListLoop() >= getListLoops() || getListLoop() >= MAX_SCRIPT_LOOPS)
-            throw new RuntimeException("[TaskMan] Maximum script loops exceeded!");
+            bot.callPause();
 
         // TODO reset all tasks here, probably from using a ghost queue?
     }
@@ -314,11 +320,14 @@ public final class TaskMan {
             bot.setStatus("Finished work!");
             bot.setBotStatus("Preparing next task...");
             // if this is the last task in the task-list
-            if (getRemainingTaskCount() <= 0)
-                if (hasLoopsLeft())
-                    restart();
-                else
-                    resetTaskList(bot);
+            if (getRemainingTaskCount() <= 0) {
+                incrementListLoop();
+                // if there are more task loops to complete, start the loop again
+                if (isReadyToLoop())
+                    restartLoop(bot);
+                // else, reset the task list and pause - awaiting user input.
+                reset(bot);
+            }
             // else move the pointer to the next task in the list
             else
                 incrementListIndex();
@@ -329,7 +338,13 @@ public final class TaskMan {
         return false;
     }
 
-    private void resetTaskList(BotMan bot) throws InterruptedException {
+    /**
+     * Resets the {@link TaskMan}s task-list for the passed {@link BotMan} instance and then waits for user to resume
+     * the script again.
+     *
+     * @param bot The {@link BotMan} instance.
+     */
+    public void reset(BotMan bot) throws InterruptedException {
         // else it's the last task and there are no more list loops to complete
         bot.setBotStatus("Resetting task-list...");
         // reset the list index
@@ -348,14 +363,14 @@ public final class TaskMan {
      * @return The current {@link Task} selected.
      */
     public synchronized Task getTask() {
-        if (getTaskListModel() == null || getTaskListModel().isEmpty())
-            return null;
+        if (getTaskListModel().isEmpty())
+            throw new RuntimeException("[TaskMan Error] Unable to fetch task! Task list is empty.");
 
         if (!isListIndexValid())
-            throw new RuntimeException("Error fetching task! List index was invalid. List index: " + listIndex + ", List size: " + size());
+            throw new RuntimeException("[TaskMan Error] Unable to fetch task! List index was invalid. List index: " + listIndex + ", List size: " + size());
 
         if (getTask(getListIndex()) == null)
-            throw new RuntimeException("Error fetching task! Task is null.");
+            throw new RuntimeException("[TaskMan Error] Unable to fetch task! Task is null.");
 
         return getTask(getListIndex());
     }
@@ -490,14 +505,11 @@ public final class TaskMan {
     }
 
     public void incrementListLoop() {
+        int newLoops = listLoop + 1;
+        if (newLoops >= listLoops || newLoops >= MAX_SCRIPT_LOOPS)
+            listLoop = -1;
+
         listLoop++;
-
-        // limit list loop value
-        if (listLoop >= listLoops)
-            listLoop = listLoops;
-
-        if (listLoop >= MAX_SCRIPT_LOOPS)
-            listLoop = MAX_SCRIPT_LOOPS;
     }
 
     public void decrementListIndex() {

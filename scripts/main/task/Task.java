@@ -269,17 +269,12 @@ public abstract class Task {
         if (execute(bot)) {
             // increment loops here as this is where we know the task successfully finished.
             incrementTaskLoop();
-            //TODO remove below setbotstatus()
-//            bot.setBotStatus("isCompleted = " + isComplete()
-//                    + "     |     hasMetEndCondition: " + hasMetEndCondition()
-//                    + "   ||   isStagesCompleted && !hasLoopsLeft(): " + isStagesCompleted() + " && " + !hasLoopsLeft()
-//                    + "     |     condition = " + this.condition
-//                    + "     |     stages = " + getStageString()
-//                    + "     |     loops = " + getLoopsString()
-//                    + "     |     remaining: " + getRemainingTaskLoops());
             if (isComplete()) {
                 bot.setBotStatus("Task complete!");
                 onTaskCompletion();
+                restart();
+                // refresh botMenu to update any loop/attempt counters
+                bot.getBotMenu().refresh();
                 return true;
             } else {
                 bot.setBotStatus("Task loop complete!");
@@ -407,12 +402,12 @@ public abstract class Task {
     }
 
     public void restart() {
-        // throw error if restarting without any task loops left
-        if (isComplete())
-            throw new RuntimeException("[TaskMan Error] Attempted to restart a completed task!");
-
         // restart the task
         setStage(1);
+        // reset task loops
+        loop = 0;
+        // reset task progress
+        getProgress();
     }
 
     ///

@@ -14,6 +14,9 @@ import org.osbot.rs07.utility.ConditionalSleep;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Scanner;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
@@ -119,6 +122,12 @@ public abstract class BotMan extends Script {
      */
     private int delay = 1;
 
+    // monitor tracking (for later user preferences)
+    private int screenCount = 1;          // total monitors detected
+    private int botScreen = 0;     // which monitor OSBot is on (best-effort)
+    private int menuScreen = 0;      // which monitor we chose for BotMenu
+    private int preferredMenuScreen = -1; // optional: user preference (0-based). -1 = auto
+
 
     ///
     ///     CONSTRUCTORS
@@ -143,10 +152,12 @@ public abstract class BotMan extends Script {
         try {
             setStatus("Launching... ETA BotManager");
 
-            ///  setup defaults
-
+            ///  pause the script for loading
             // pause script to prevent bot taking off before tasks are set
             callPause();
+
+            ///  setup defaults
+
             // reset current attempts
             currentAttempt = 0;
             setStatus("Successfully loaded defaults!");
@@ -262,10 +273,10 @@ public abstract class BotMan extends Script {
         if (getCurrentAttempt() >= getMaxAttempts()) {
             if (isDevMode) {
                 setBotStatus("Developer mode enabled. Bypassed maximum attempts...");
-                currentAttempt--;
+                currentAttempt = 0;
             } else {
-                setStatus("Maximum attempt limit reached!");
                 setBotStatus("Exiting...");
+                setStatus("ETABot has safely exited due to the maximum attempt limit being reached.");
                 onExit();
             }
             return MIN_DELAY;
@@ -361,16 +372,20 @@ public abstract class BotMan extends Script {
 
     /**
      * Overrides the default pause function to execute additional logic before pausing the script.
+     * <p>
+     * WARNING: This function is not intended to be used to pause the script, only to add additional logic to the pause.
+     *
+     * @see BotMan#callPause()
      */
     @Override
     public final void pause() {
+        //TODO figure out why this is always called twice? Then we can remove isRunning variable
         if (isRunning) {
-            isRunning = false;
-            //TODO figure out why this is always called twice?
             setBotStatus("Pausing script...");
+            isRunning = false;
+            setStatus("Paused script.");
             pauseScript();
             botMenu.onPause();
-            setStatus("Bot has been paused.");
         }
     }
 
@@ -380,6 +395,7 @@ public abstract class BotMan extends Script {
      * proper execution.
      */
     public final void callResume() {
+        setBotStatus("Calling resume...");
         getBot().getScriptExecutor().resume();
     }
 
@@ -389,8 +405,8 @@ public abstract class BotMan extends Script {
     @Override
     public final void resume() {
         if (!isRunning) {
-            isRunning = true;
             setBotStatus("Resuming script...");
+            isRunning = true;
             botMenu.onResume();
             resumeScript();
             setStatus("Thinking...");
