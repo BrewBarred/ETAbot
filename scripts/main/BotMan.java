@@ -46,8 +46,9 @@ public abstract class BotMan extends Script {
     ///     PUBLIC FIELDS
     ///
     /**
-     * True if this bot instance is currently in its running state, or false if it is paused. This flag is used to
-     * prevent duplicate calls to pause() that can't be adjusted as it is a bug on OSBot's side.
+     * True if this bot instance is currently in its running state, or false if it is paused.
+     * <p>
+     * This flag prevents duplicate calls to pause() and onExit() that can't be adjusted as it is a bug on OSBot's side.
      */
     public boolean isRunning = false;
 
@@ -476,13 +477,17 @@ public abstract class BotMan extends Script {
      */
     @Override
     public final void onExit() throws InterruptedException {
+        // block menu closing twice (due to OSBot calling onExit() twice under the hood)
         if (botMenu != null)
             // force-close the bot menu (forcing prevents infinite loop)
             botMenu.callClose(true);
 
-        // STOP gets called twice?
-        stop(logoutOnExit);
-        log("Successfully exited ETA's (OsBot) Bot Manager");
+        // block main loop and flag bot running state
+        if (isRunning) {
+            isRunning = false;
+            stop(logoutOnExit);
+            log("Successfully exited ETA's (OsBot) Bot Manager");
+        }
     }
 
     /**
