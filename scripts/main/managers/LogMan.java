@@ -317,38 +317,66 @@ public class LogMan {
     }
 
     /**
-     * Refreshes the Log Manager to dynamically update it.
+     * Refreshes the Log Manager to keep it dynamically updated. This function automatically handles any filtering
+     * before logging anything to the console.
      */
     public final void refresh() {
+        // return early if there is no log console
         if (logDoc == null)
             return;
 
         try {
+            // clear any old data
             logDoc.remove(0, logDoc.getLength());
 
+            // for each log entry in the log list
             for (LogEntry e : logList) {
+                // don't print if the user has filtered this text type out
                 if (!matchesFilter(e))
                     continue;
 
-                // time prefix
-                logDoc.insertString(logDoc.getLength(),
-                        "[" + formatTime(e.timeMillis) + "] ",
-                        logDoc.getStyle("TIME"));
+                // insert the time prefix to this log statement
+                log("[" + formatTime(e.timeMillis) + "] ", logDoc.getStyle("TIME"));
 
-                // source + message + tabbed spacing to line up output (extra tabbed space for shorter header (DEBUG))
+                // add some padding based on source prefix length
                 String source = e.source.toString();
                     source += source.contains(HEADER_DEBUG) ? "\t\t" : "\t";
-                Style style = getSelectedStyle(e);
+                // insert the source prefix to this statement
+                log(source, getSelectedStyle(e));
 
-                logDoc.insertString(logDoc.getLength(), source, style);
-                logDoc.insertString(logDoc.getLength(), e.message + "\n", style);
+                // insert the log entry message followed by a new line ready for the next entry
+                log(e);
             }
 
-            // auto-scroll to bottom
+            // reset cursor to the bottom
             logPane.setCaretPosition(logDoc.getLength());
         } catch (BadLocationException ignored) {}
     }
 
+    /**
+     * Helper function to print a {@link LogEntry} message to the console, followed by a new-line character.
+     * @param e The {@link LogEntry} being logged.
+     */
+    private void log(LogEntry e) throws BadLocationException {
+        log(e.message + "\n", getSelectedStyle(e));
+    }
+
+    /**
+     * Helper function to print a {@link String} message to the console, followed by a new-line character.
+     *
+     * @param string The {@link String} being printed to the {@link BotMenu}'s log console.
+     * @param style The {@link Style} to use in the styled document while printing to the log console.
+     */
+    private void log(String string, Style style) throws BadLocationException {
+        logDoc.insertString(logDoc.getLength(), string, style);
+    }
+
+    /**
+     * Helper function to select the style for each different type of log console output
+     *
+     * @param entry The {@link LogEntry} to select a style for.
+     * @return The style associate with the passed {@link LogEntry} type.
+     */
     private Style getSelectedStyle(LogEntry entry) {
         switch (entry.source) {
             // return the source style if any exists
@@ -363,12 +391,18 @@ public class LogMan {
         }
     }
 
+    /**
+     * Formats the passed {@link Long} value into the "HH:mm:ss" time format using the
+     * {@link java.text.SimpleDateFormat} format function.
+     * @param millis
+     * @return
+     */
     private String formatTime(long millis) {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss");
         return sdf.format(new java.util.Date(millis));
     }
 
-    ///  PRIVATE MENU CONTROL FUNCTIONS (e.g., button-click events etc.)
+    ///  MENU CONTROL FUNCTIONS (e.g., button-click events etc.)
 
     /**
      * Copies the log console contents to the users clipboard for pasting elsewhere.
@@ -391,31 +425,57 @@ public class LogMan {
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
     }
 
+    /**
+     * Clears the log console ready for a new output list to be displayed.
+     */
     private void clearLogDocument() {
+        // create a task to remove the length of the log doc
         Runnable r = () -> {
             try {
                 logDoc.remove(0, logDoc.getLength());
             } catch (BadLocationException ignored) {}
         };
 
+        // add the created task to the EDT for thread-safe execution
         if (SwingUtilities.isEventDispatchThread())
             r.run();
         else SwingUtilities.invokeLater(r);
     }
 
+    /**
+     * Logs a player status update to the {@link BotMenu}'s log console output display.
+     *
+     * @param msg The log message to display.
+     */
     public void logStatus(String msg) {
         appendLog(new LogEntry(LogSource.PLAYER_STATUS, msg));
     }
 
+    /**
+     * Logs a bot status update to the {@link BotMenu}'s log console output display.
+     *
+     * @param msg The log message to display.
+     */
     public void logBotStatus(String msg) {
         appendLog(new LogEntry(LogSource.BOT_STATUS, BotMan.getCaller() + msg));
     }
 
+    /**
+     * Logs a debug status update to the {@link BotMenu}'s log console output display.
+     *
+     * @param msg The log message to display.
+     */
     public void logDebug(String msg) {
         appendLog(new LogEntry(LogSource.DEBUG, BotMan.getCaller() + msg));
     }
 
+    /**
+     * Ensure logging information is tracked for {@link BotMenu} log console display.
+     *
+     * @param entry The item currently being added to the log list for tracking.
+     */
     private void appendLog(LogEntry entry) {
+        // if the log is paused we are not tracking the current logs, return early
         if (logPaused)
             return;
 
