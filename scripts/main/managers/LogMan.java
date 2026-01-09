@@ -1,4 +1,4 @@
-package main.tools;
+package main.managers;
 
 import main.BotMan;
 import main.BotMenu;
@@ -27,6 +27,9 @@ public class LogMan {
      * This value represents the maximum number of lines to be displayed in the console at once.
      */
     private static final int LOG_BUFFER = 214700;
+    private static final String HEADER_BOT_STATUS = "BOT STATUS";
+    private static final String HEADER_BOT_NAME = "PLAYER STATUS";
+    private static final String HEADER_DEBUG = "DEBUG";
 
     ///  Private variables
 
@@ -34,7 +37,7 @@ public class LogMan {
     /**
      * Enum to define the different types of log messages
      */
-    public enum LogSource { ALL, STATUS, BOT_STATUS, DEBUG }
+    public enum LogSource { ALL, PLAYER_STATUS, BOT_STATUS, DEBUG }
     /**
      * List to store all logging messages for printing to the {@link BotMenu} console.
      */
@@ -166,7 +169,13 @@ public class LogMan {
         /// Log console: create a styled, scrollable document to output formatted messages
 
         // JTextPane is used instead of JTextArea so we can apply styles/colors.
-        logPane = new JTextPane();
+        logPane = new JTextPane() {
+            @Override
+            public boolean getScrollableTracksViewportWidth() {
+                // return false to enable horizontal scrolling
+                return false;
+            }
+        };
         // make the log console read-only.
         logPane.setEditable(false);
         // Use a monospace font to mimic a real console.
@@ -177,11 +186,9 @@ public class LogMan {
         logDoc = logPane.getStyledDocument();
 
         // Register named styles (TIME, STATUS, BOT_STATUS, NORMAL).
-        setLogStyles(logDoc);
+        defineLogStyles(logDoc);
         // Wrap the log pane in a scroll pane for overflow.
         JScrollPane scroll = new JScrollPane(logPane);
-        // Remove default scroll borders for a cleaner look.
-        scroll.setBorder(BorderFactory.createEmptyBorder());
 
         /// Log panel: (final step) join the header and body together to create the logPanel
 
@@ -237,11 +244,11 @@ public class LogMan {
     }
 
     /**
-     * Defines the different styles for the passed {@link StyledDocument} object.
+     * Defines and registers the different styles for the passed {@link StyledDocument} object.
      *
      * @param doc The {@link StyledDocument} to load the log console styles into.
      */
-    private void setLogStyles(StyledDocument doc) {
+    private void defineLogStyles(StyledDocument doc) {
         Style def = StyleContext.getDefaultStyleContext()
                 .getStyle(StyleContext.DEFAULT_STYLE);
 
@@ -267,24 +274,30 @@ public class LogMan {
     }
 
     /**
+     * Return true if the passed {@link LogEntry entry} should be displayed in the {@link BotMenu}'s log console or not.
      *
-     * @param entry
-     * @param sourceFilter
-     * @param search
-     * @param caseSensitive
+     * @param entry The log entry being validated.
      * @return
      */
-    private boolean matchesFilter(LogEntry entry, LogSource sourceFilter, String search, boolean caseSensitive) {
-        // if the filter is not set to show ALL and
-        //TODO check if this if statement can be simplified to the updated version (uncommented)
-        //if (sourceFilter != LogSource.ALL && entry.source != sourceFilter)
-        // don't filter any text if the source of this log output is ALL
+    private boolean matchesFilter(LogEntry entry) {
+        // get the selected source in the menus filter combo-box
+        LogSource selectedSourceFilter = (LogSource) cbSource.getSelectedItem();
+        // get the users search phrase
+        String search = tbSearch.getText();
+        boolean caseSensitive = chkCaseSensitive.isSelected();
+
+        // there is no match if source filter is set but entry has a different source
+        if (selectedSourceFilter != LogSource.ALL && entry.source != selectedSourceFilter)
             return false;
 
+        // return early if no search phrase has been entered
         if (search == null || search.isEmpty())
             return true;
 
+        // validate the entry message
         String msg = entry.message == null ? "" : entry.message;
+
+        // apply the case sensitivity filter
         if (!caseSensitive) {
             msg = msg.toLowerCase();
             search = search.toLowerCase();
@@ -310,15 +323,11 @@ public class LogMan {
         if (logDoc == null)
             return;
 
-        LogSource sourceFilter = (LogSource) cbSource.getSelectedItem();
-        String search = tbSearch.getText();
-        boolean caseSensitive = chkCaseSensitive.isSelected();
-
         try {
             logDoc.remove(0, logDoc.getLength());
 
             for (LogEntry e : logList) {
-                if (!matchesFilter(e, sourceFilter, search, caseSensitive))
+                if (!matchesFilter(e))
                     continue;
 
                 // time prefix
@@ -326,8 +335,9 @@ public class LogMan {
                         "[" + formatTime(e.timeMillis) + "] ",
                         logDoc.getStyle("TIME"));
 
-                // source + message
-                String source = e.source.toString() + "\t";
+                // source + message + tabbed spacing to line up output (extra tabbed space for shorter header (DEBUG))
+                String source = e.source.toString();
+                    source += source.contains(HEADER_DEBUG) ? "\t\t" : "\t";
                 Style style = getSelectedStyle(e);
 
                 logDoc.insertString(logDoc.getLength(), source, style);
@@ -342,7 +352,7 @@ public class LogMan {
     private Style getSelectedStyle(LogEntry entry) {
         switch (entry.source) {
             // return the source style if any exists
-            case STATUS:
+            case PLAYER_STATUS:
             case BOT_STATUS:
             case DEBUG:
                 return logDoc.getStyle(entry.source.toString());
@@ -394,7 +404,7 @@ public class LogMan {
     }
 
     public void logStatus(String msg) {
-        appendLog(new LogEntry(LogSource.STATUS, msg));
+        appendLog(new LogEntry(LogSource.PLAYER_STATUS, msg));
     }
 
     public void logBotStatus(String msg) {

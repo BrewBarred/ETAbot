@@ -6,7 +6,7 @@ import main.task.Action;
 import main.task.Task;
 import main.tools.ETARandom;
 import main.managers.GraphicsMan;
-import main.tools.LogMan;
+import main.managers.LogMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
@@ -452,7 +452,7 @@ public abstract class BotMan extends Script {
         if (isRunning) {
             setBotStatus("Pausing script...");
             isRunning = false;
-            setStatus("Paused script.");
+            setStatus("Paused script...");
             pauseScript();
             botMenu.onPause();
         }
