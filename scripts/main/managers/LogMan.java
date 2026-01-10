@@ -244,13 +244,13 @@ public class LogMan {
         ///
 
         /// Refresh the log view when the source filter changes.
-        cbSource.addActionListener(e -> refresh());
+        cbSource.addActionListener(e -> callRefresh());
 
         ///  add listeners to search bar
         addSearchBarListeners();
 
         /// Refresh the view when case sensitivity is toggled.
-        chkCaseSensitive.addActionListener(e -> refresh());
+        chkCaseSensitive.addActionListener(e -> callRefresh());
 
         /// Add a listen to pause/resume logging
         btnToggleExecution.addActionListener(e -> {
@@ -354,18 +354,20 @@ public class LogMan {
     ///  Refresh tasks: used to dynamically update data as it comes through.
 
     /**
-     * Perform a refresh() on the logging console using the {@link SwingUtilities#invokeLater(Runnable)} function which
-     * helps to ensure the refresh() executes after swing components are updated.
+     * Dynamically refresh all the log managers display components using the
+     * {@link SwingUtilities#invokeLater(Runnable)} function to ensure thread-safe execution.
      */
     public final void callRefresh() {
-        SwingUtilities.invokeLater(this::refresh);
+        if (SwingUtilities.isEventDispatchThread())
+            this.refresh();
+        else SwingUtilities.invokeLater(this::refresh);
     }
 
     /**
-     * Refreshes the Log Manager to keep it dynamically updated. This function automatically handles any filtering
-     * before logging anything to the console.
+     * Refreshes the {@link LogMan log manager} to keep it dynamically updated. This function automatically handles any
+     * filtering before logging anything to the console.
      */
-    public final void refresh() {
+    private void refresh() {
         // return early if there is no log console
         if (logDoc == null)
             return;
@@ -424,11 +426,11 @@ public class LogMan {
     }
 
     /**
-     * Formats the passed {@link Long} value into the "HH:mm:ss" time format using the
-     * {@link SimpleDateFormat} format function.
+     * Formats the passed {@link Long} value into the "HH:mm:ss" time format using the{@link SimpleDateFormat} format
+     * function.
      *
-     * @param millis
-     * @return
+     * @param millis The millisecond value to convert into a time string.
+     * @return A {@link String} representing the passed value in the equivalent "HH:mm:ss" time format.
      */
     private String formatTime(long millis) {
         java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("HH:mm:ss");
@@ -462,19 +464,27 @@ public class LogMan {
      * Clears the log console ready for a new output list to be displayed.
      */
     private void clearLogDocument() {
-        // create a task to remove the length of the log doc
-        Runnable r = () -> {
-            try {
-                logDoc.remove(0, logDoc.getLength());
-            } catch (BadLocationException ignored) {}
-        };
-
         // add the created task to the EDT for thread-safe execution
         if (SwingUtilities.isEventDispatchThread())
-            r.run();
-        else SwingUtilities.invokeLater(r);
+            this.clear();
+        else SwingUtilities.invokeLater(this::clear);
     }
 
+    /**
+     * Removes all contents from the log document, ready for updating.
+     */
+    private void clear() {
+        try {
+            logDoc.remove(0, logDoc.getLength());
+        } catch (BadLocationException ignored) {}
+    }
+
+    /**
+     * Logs an entry to the console by creating a new {@link LogEntry} using the passed source and string parameters.
+     *
+     * @param source The source of this {@link LogEntry}.
+     * @param string The string contents of this {@link LogEntry}.
+     */
     public void log(LogSource source, String string) {
         log(new LogEntry(source, string));
     }
@@ -505,6 +515,6 @@ public class LogMan {
         }
 
         // update view (respects current filter/search)
-        refresh();
+        callRefresh();
     }
 }

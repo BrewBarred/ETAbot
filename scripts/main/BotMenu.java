@@ -824,7 +824,6 @@ public class BotMenu extends JFrame {
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
     public final void callClose() throws InterruptedException {
-        setBotStatus("Determining close action...");
         // if this is not a forced closed, do some checks before closing the bot menu
         if (!isVisible())
             return;
@@ -964,9 +963,6 @@ public class BotMenu extends JFrame {
     public void refresh() {
         if (bot == null)
             return;
-
-        //bot.log("Refreshing...");
-        //bot.log("List index: " + bot.getListIndex() + ", Selected Task Index: " + bot.getSelectedTaskIndex());
 
         ///  Bot menu refresh tasks
         ///     -- NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!

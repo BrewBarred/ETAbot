@@ -304,7 +304,7 @@ public abstract class BotMan extends Script {
     }
 
     public Runnable refreshLogMan() {
-       return logMan::refresh;
+       return logMan::callRefresh;
     }
 
     private Runnable closeBotMenu() {
@@ -506,9 +506,9 @@ public abstract class BotMan extends Script {
 
         // block main loop and flag bot running state
         if (isRunning) {
-            isRunning = false;
             stop(logoutOnExit);
-            log("Successfully exited ETA's (OsBot) Bot Manager");
+            isRunning = false;
+            //log("Successfully exited ETA's (OsBot) Bot Manager");
         }
     }
 
@@ -750,9 +750,9 @@ public abstract class BotMan extends Script {
         // automatically convert unformatted messages into debug format
         if (message.startsWith("["))
             // log the unformatted message if logman is null, else format the message before logging
-            super.log(message);
+            super.log(message.replace("\t", " "));
         else
-            // else this must be a debug message
+            // else send this message off for formatting first (which recursively comes back and prints)
             logMan.log(DEBUG, message);
     }
 

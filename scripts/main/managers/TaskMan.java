@@ -309,7 +309,7 @@ public final class TaskMan {
         if (getTask() == null)
             throw new RuntimeException("[TaskMan Error] Task is null!");
 
-        bot.setBotStatus("> Task stage (before): " + getTask().getStageString()
+        bot.log(" Task stage (before): " + getTask().getStageString()
                 + "  |  Task Loops: " + bot.getTaskLoopsString()
                 + "  |  List Loops: " + getListLoopsString()
                 + "  |  List index: " + bot.getListLoopsString()
