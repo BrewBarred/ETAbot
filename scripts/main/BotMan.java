@@ -19,6 +19,9 @@ import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
+import static main.managers.LogMan.LogSource.BOT;
+import static main.managers.LogMan.LogSource.DEBUG;
+
 
 /**
  * Main handler for botting scripts, designed to minimize repeated code between scripts for common tasks such as
@@ -103,6 +106,10 @@ public abstract class BotMan extends Script {
      * features while BotMan is running.
      */
     private boolean isDevMode = false;
+    /**
+     * True if debugging mode is currently enabled, else false.
+     */
+    public boolean isDebugging = true;
     /**
      * The type of task currently being performed (if any).
      */
@@ -206,6 +213,9 @@ public abstract class BotMan extends Script {
             setStatus("Successfully loaded listeners!");
 
             setStatus("Initialization complete!");
+            log("1");
+            log("2");
+            log("3");
 
         } catch (Throwable t) {
             log("Error Initializing BotMan: " + t);
@@ -736,12 +746,14 @@ public abstract class BotMan extends Script {
     }
 
     @Override
-    public void log(String message) {        // call parent function to ensure proper execution
-        super.log(message);
-
-        // logging is triggered before log man is created and can't be prevented
-        if (logMan != null)
-            logMan.logDebug(message);
+    public void log(String message) {
+        // automatically convert unformatted messages into debug format
+        if (message.startsWith("["))
+            // log the unformatted message if logman is null, else format the message before logging
+            super.log(message);
+        else
+            // else this must be a debug message
+            logMan.log(DEBUG, message);
     }
 
     /**
@@ -767,12 +779,10 @@ public abstract class BotMan extends Script {
         this.status = status;
 
         // if a bot menu exists
-        if (botMenu != null)
+        if (botMenu != null && logMan != null)
             // update bot menu console log
-            logMan.logStatus(this.status);
+            logMan.log(LogMan.LogSource.PLAYER, this.status);
 
-        // update main console log
-        log(this.status);
         // always return true for one-line return statements
         return true;
     }
@@ -787,10 +797,8 @@ public abstract class BotMan extends Script {
 
         if (botMenu != null)
             // update bot menu console log
-            logMan.logBotStatus(this.botStatus);
+            logMan.log(LogMan.LogSource.BOT, this.botStatus);
 
-        // update main console log
-        log(this.botStatus);
         // always return true for one-line return statements
         return true;
     }

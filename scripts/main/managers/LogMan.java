@@ -5,12 +5,16 @@ import main.BotMenu;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.text.*;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import static main.BotMan.getCaller;
 
 /**
  * The Logger class handles logging messages for all classes including general status updates, error-handling and debug
@@ -27,9 +31,6 @@ public class LogMan {
      * This value represents the maximum number of lines to be displayed in the console at once.
      */
     private static final int LOG_BUFFER = 214700;
-    private static final String HEADER_BOT_STATUS = "BOT STATUS";
-    private static final String HEADER_BOT_NAME = "PLAYER STATUS";
-    private static final String HEADER_DEBUG = "DEBUG";
 
     ///  Private variables
 
@@ -37,7 +38,7 @@ public class LogMan {
     /**
      * Enum to define the different types of log messages
      */
-    public enum LogSource { ALL, PLAYER_STATUS, BOT_STATUS, DEBUG }
+    public enum LogSource { ALL, PLAYER, BOT, DEBUG }
     /**
      * List to store all logging messages for printing to the {@link BotMenu} console.
      */
@@ -94,14 +95,53 @@ public class LogMan {
      * A static class which contains all the data required to print output to the {@link BotMenu}'s log console.
      */
     private static class LogEntry {
-        final long timeMillis;
-        final LogSource source;
-        final String message;
+        private final long timeMillis;
+        private final LogSource source;
+        private final String message;
 
         LogEntry(LogSource source, String message) {
             this.timeMillis = System.currentTimeMillis();
             this.source = source;
             this.message = message;
+        }
+
+        @Override
+        public String toString() {
+            // return the source/message with padding and new-line by default
+            return getSourceHeader() + "\t"
+                    + (source.equals(LogSource.DEBUG) ? getCaller() : "")
+                    // add default padding, debug message and a new-line to prep for next input
+                    + message + "\n";
+        }
+
+        /**
+         * @return A formatted time string denoting the time at which this output message was printed to the console.
+         */
+        private String getTime() {
+            return "[" + formatTime(timeMillis) + "] ";
+        }
+
+        /**
+         * Formats the passed {@link Long} value into the "HH:mm:ss" time format using the
+         * {@link SimpleDateFormat} format function.
+         *
+         * @param millis The time to format.
+         * @return The formatted time string in "HH:mm:SS" format.
+         */
+        private String formatTime(long millis) {
+            SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+            return sdf.format(new java.util.Date(millis));
+        }
+
+        /**
+         * @return This log entries source as a {@link String}.
+         */
+        private String getSource() {
+            return source.toString();
+        }
+
+        private String getSourceHeader() {
+            return "[" + source.toString() + "]";
         }
     }
 
@@ -206,19 +246,8 @@ public class LogMan {
         /// Refresh the log view when the source filter changes.
         cbSource.addActionListener(e -> refresh());
 
-        /// DocumentListener reacts to live changes in the search field.
-        /// Any keystroke triggers a refresh of the filtered log view.
-        DocumentListener dl = new DocumentListener() {
-            @Override public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                refresh(); }
-            @Override public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                refresh(); }
-            @Override public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                refresh(); }
-        };
-
-        /// Attach the document listener to the search field.
-        tbSearch.getDocument().addDocumentListener(dl);
+        ///  add listeners to search bar
+        addSearchBarListeners();
 
         /// Refresh the view when case sensitivity is toggled.
         chkCaseSensitive.addActionListener(e -> refresh());
@@ -244,6 +273,22 @@ public class LogMan {
     }
 
     /**
+     * Add listener to search bar to reach to live changes in the search field. Any keystroke triggers a refresh of the
+     * filtered log view.
+     */
+    private void addSearchBarListeners() {
+        // create a listener that forces a refresh after each insert, remove or change to the search phrase1
+        DocumentListener dl = new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { refresh(); }
+            @Override public void removeUpdate(DocumentEvent e) { refresh(); }
+            @Override public void changedUpdate(DocumentEvent e) { refresh(); }
+        };
+
+        // attach the document listener to the search field.
+        tbSearch.getDocument().addDocumentListener(dl);
+    }
+
+    /**
      * Defines and registers the different styles for the passed {@link StyledDocument} object.
      *
      * @param doc The {@link StyledDocument} to load the log console styles into.
@@ -261,15 +306,15 @@ public class LogMan {
         StyleConstants.setForeground(normal, Color.DARK_GRAY);
 
         // define the style for player status output logs
-        Style status = doc.addStyle("STATUS", def);
+        Style status = doc.addStyle(LogSource.PLAYER.toString(), def);
         StyleConstants.setForeground(status, new Color(30, 90, 200));
 
         // define the style for bot status output logs
-        Style botStatus = doc.addStyle("BOT_STATUS", def);
+        Style botStatus = doc.addStyle(LogSource.BOT.toString(), def);
         StyleConstants.setForeground(botStatus, new Color(0, 120, 70));
 
         // define the style for the debug output logs (any default OsBot logs or log() output)
-        Style debug = doc.addStyle("DEBUG", def);
+        Style debug = doc.addStyle(LogSource.DEBUG.toString(), def);
         StyleConstants.setForeground(debug, new Color(50, 100, 120));
     }
 
@@ -336,29 +381,16 @@ public class LogMan {
                     continue;
 
                 // insert the time prefix to this log statement
-                log("[" + formatTime(e.timeMillis) + "] ", logDoc.getStyle("TIME"));
-
-                // add some padding based on source prefix length
-                String source = e.source.toString();
-                    source += source.contains(HEADER_DEBUG) ? "\t\t" : "\t";
-                // insert the source prefix to this statement
-                log(source, getSelectedStyle(e));
-
-                // insert the log entry message followed by a new line ready for the next entry
-                log(e);
+                log(e.getTime(), logDoc.getStyle("TIME"));
+                // format the text before printing
+                log(e.toString(), getSelectedStyle(e));
             }
 
             // reset cursor to the bottom
-            logPane.setCaretPosition(logDoc.getLength());
-        } catch (BadLocationException ignored) {}
-    }
+            if (logPane != null && logDoc != null)
+                logPane.setCaretPosition(logDoc.getLength());
 
-    /**
-     * Helper function to print a {@link LogEntry} message to the console, followed by a new-line character.
-     * @param e The {@link LogEntry} being logged.
-     */
-    private void log(LogEntry e) throws BadLocationException {
-        log(e.message + "\n", getSelectedStyle(e));
+        } catch (BadLocationException ignored) {}
     }
 
     /**
@@ -380,10 +412,10 @@ public class LogMan {
     private Style getSelectedStyle(LogEntry entry) {
         switch (entry.source) {
             // return the source style if any exists
-            case PLAYER_STATUS:
-            case BOT_STATUS:
+            case PLAYER:
+            case BOT:
             case DEBUG:
-                return logDoc.getStyle(entry.source.toString());
+                return logDoc.getStyle(entry.getSource());
 
             // else return the default style
             default:
@@ -393,7 +425,8 @@ public class LogMan {
 
     /**
      * Formats the passed {@link Long} value into the "HH:mm:ss" time format using the
-     * {@link java.text.SimpleDateFormat} format function.
+     * {@link SimpleDateFormat} format function.
+     *
      * @param millis
      * @return
      */
@@ -442,45 +475,29 @@ public class LogMan {
         else SwingUtilities.invokeLater(r);
     }
 
-    /**
-     * Logs a player status update to the {@link BotMenu}'s log console output display.
-     *
-     * @param msg The log message to display.
-     */
-    public void logStatus(String msg) {
-        appendLog(new LogEntry(LogSource.PLAYER_STATUS, msg));
+    public void log(LogSource source, String string) {
+        log(new LogEntry(source, string));
     }
 
     /**
-     * Logs a bot status update to the {@link BotMenu}'s log console output display.
-     *
-     * @param msg The log message to display.
-     */
-    public void logBotStatus(String msg) {
-        appendLog(new LogEntry(LogSource.BOT_STATUS, BotMan.getCaller() + msg));
-    }
-
-    /**
-     * Logs a debug status update to the {@link BotMenu}'s log console output display.
-     *
-     * @param msg The log message to display.
-     */
-    public void logDebug(String msg) {
-        appendLog(new LogEntry(LogSource.DEBUG, BotMan.getCaller() + msg));
-    }
-
-    /**
-     * Ensure logging information is tracked for {@link BotMenu} log console display.
+     * Adds the passed {@link LogEntry} to the {@link LogMan#logList} for display in the {@link BotMenu}'s log console.
+     * <n>
+     * Note: This {@link LogEntry} is not appended to the {@link LogMan#logList} if {@link LogMan#logPaused} is true.
      *
      * @param entry The item currently being added to the log list for tracking.
      */
-    private void appendLog(LogEntry entry) {
+    private void log(LogEntry entry) {
         // if the log is paused we are not tracking the current logs, return early
         if (logPaused)
             return;
 
+        // print the formatted string to the console
+        bot.log(entry.toString());
+
         // log entries not only to track them but also to limit the total log entries (buffer)
         SwingUtilities.invokeLater(() -> logList.add(entry));
+
+        // limit output size by log buffer value
         if (logList.size() > LOG_BUFFER) {
             int overflow = logList.size() - LOG_BUFFER;
             // drop oldest messages
