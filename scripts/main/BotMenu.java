@@ -386,7 +386,7 @@ public class BotMenu extends JFrame {
                     // trick the script into thinking it's running by using the isRunning flag
                     bot.isRunning = true;
 
-                bot.onExit();
+                bot.exit();
             } catch (Throwable t) {
                 bot.setStatus("Stop failed: " + t);
             }
@@ -828,7 +828,7 @@ public class BotMenu extends JFrame {
         if (bot == null)
             return;
 
-        setBotStatus("Closing BotMenu...");
+        setBotStatus("BotMenu closed.");
         // dispose of this menu
         this.dispose();
     }
@@ -839,6 +839,7 @@ public class BotMenu extends JFrame {
      */
     public final void close() {
         try {
+            setBotStatus("Closing BotMenu...");
             // if this is not a forced closed, do some checks before closing the bot menu
             if (!isVisible())
                 return;
@@ -847,7 +848,7 @@ public class BotMenu extends JFrame {
             // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
             if (this.isExitingOnClose) {
                 // exit the bot instead of just closing the menu
-                bot.onExit();
+                bot.exit();
                 return;
             }
 

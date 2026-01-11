@@ -248,7 +248,7 @@ public abstract class BotMan extends Script {
                     // attempt to complete a stage/task
                     return attempt();
                 // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
-                else onExit();
+                else exit();
 
                 // return a normal delay
                 return delay;
@@ -341,7 +341,7 @@ public abstract class BotMan extends Script {
             } else {
                 setBotStatus("Exiting...");
                 setStatus("ETABot has safely exited due to the maximum attempt limit being reached.");
-                onExit();
+                exit();
             }
             return MIN_DELAY;
 
@@ -494,6 +494,19 @@ public abstract class BotMan extends Script {
             isRunning = false;
             stop(logoutOnExit);
             log("Successfully exited ETA's (OsBot) Bot Manager");
+        }
+    }
+
+    public final void exit() throws InterruptedException {
+        try {
+            // set running to true to prevent paused scripts failing to exit (due to work-around to prevent osbot error)
+            if (!isRunning)
+                isRunning = true;
+
+            // call exit function
+            onExit();
+        } catch (InterruptedException e) {
+            log(e.getMessage());
         }
     }
 
