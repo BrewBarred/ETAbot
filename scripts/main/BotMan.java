@@ -19,7 +19,6 @@ import java.awt.*;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static main.managers.LogMan.LogSource.BOT;
 import static main.managers.LogMan.LogSource.DEBUG;
 
 
@@ -50,12 +49,6 @@ public abstract class BotMan extends Script {
     ///
     ///     PUBLIC FIELDS
     ///
-    /**
-     * True if this bot instance is currently in its running state, or false if it is paused.
-     * <p>
-     * This flag prevents duplicate calls to pause() and onExit() that can't be adjusted as it is a bug on OSBot's side.
-     */
-    public boolean isRunning = false;
 
     ///
     ///     PROTECTED FINAL FIELDS
@@ -110,6 +103,7 @@ public abstract class BotMan extends Script {
      * True if debugging mode is currently enabled, else false.
      */
     public boolean isDebugging = true;
+    protected boolean isRunning = true;
     /**
      * The type of task currently being performed (if any).
      */
@@ -165,10 +159,6 @@ public abstract class BotMan extends Script {
         try {
             setStatus("Launching... ETA BotManager");
 
-            ///  pause the script for loading
-            // pause script to prevent bot taking off before tasks are set
-            callPause();
-
             ///  setup defaults
 
             // reset current attempts
@@ -209,10 +199,15 @@ public abstract class BotMan extends Script {
             logoutOnExit = false; // TODO setup checkbox in menu or constructor to change this value
             setStatus("Successfully loaded menu items!");
 
+            ///  setup listeners
+
             setupListeners();
             setStatus("Successfully loaded listeners!");
 
             setStatus("Initialization complete!");
+
+            // pause the script to prevent the character prematurely taking off before scripts are set
+            callPause();
 
         } catch (Throwable t) {
             log("Error Initializing BotMan: " + t);
@@ -234,33 +229,27 @@ public abstract class BotMan extends Script {
      */
     @Override
     public int onLoop() throws InterruptedException, RuntimeException {
-        if (isRunning) {
-            try {
-                // track the attempts on every loop so the main loop cannot continue indefinitely under abnormal circumstances.
-                currentAttempt++;
-                // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
-                if (!isSafeToBot())
-                    throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
+        try {
+            // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
+            if (!isSafeToBot())
+                throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
 
-                setStatus("Reading task list...");
-                // double check attempts before attempting to complete the next stage/task
-                if (currentAttempt < MAX_ATTEMPTS)
-                    // attempt to complete a stage/task
-                    return attempt();
-                // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
-                else exit();
+            setStatus("Reading task list...");
+            // double check attempts before attempting to complete the next stage/task
+            if (currentAttempt < MAX_ATTEMPTS)
+                // attempt to complete a stage/task
+                return attempt();
+            // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
+            else onExit();
 
-                // return a normal delay
-                return delay;
+            // return a normal delay
+            return delay;
 
-            } catch (RuntimeException i) {
-                if (i.getMessage() != null)
-                    setStatus(i.getMessage());
-                return checkAttempts();
-            }
+        } catch (RuntimeException i) {
+            if (i.getMessage() != null)
+                setStatus(i.getMessage());
+            return checkAttempts();
         }
-
-        return ETARandom.getRandShortDelayInt();
     }
 
     /**
@@ -332,24 +321,28 @@ public abstract class BotMan extends Script {
         return taskMan.getRemainingTaskCount();
     }
 
-    protected int checkAttempts() throws InterruptedException {
-        // exit if attempt limit has been exceeded
-        if (getCurrentAttempt() >= getMaxAttempts()) {
-            if (isDevMode) {
-                setBotStatus("Developer mode enabled. Bypassed maximum attempts...");
-                currentAttempt = 0;
-            } else {
-                setBotStatus("Exiting...");
-                setStatus("ETABot has safely exited due to the maximum attempt limit being reached.");
-                exit();
-            }
-            return MIN_DELAY;
+    protected int checkAttempts() {
+        try {
+            // increment the attempt everytime it is checked for external try/catches to call
+            currentAttempt++;
+            // exit if attempt limit has been exceeded
+            if (getCurrentAttempt() >= getMaxAttempts()) {
+                if (isDevMode)
+                    currentAttempt = 0;
+                else
+                    throw new InterruptedException("[BotMan Error] Too many attempts!");
+                return MIN_DELAY;
 
-        // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
-        } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
+                // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
+            } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
 
-        setStatus("Trying again after " + delay / 1000 + "s");
-        return delay;
+            setStatus("Trying again after " + delay / 1000 + "s");
+            return delay;
+        } catch (InterruptedException e) {
+            this.exit(e.getMessage());
+        }
+
+        return -1;
     }
 
     /**
@@ -428,9 +421,12 @@ public abstract class BotMan extends Script {
      * Uses the script executor to pause the script. This function calls {@link BotMan#pause()} under the hood in order
      * to execute extra pause logic. Any additional pause logic should also be added there instead to ensure proper
      * execution.
+     *
+     * @see BotMan#pause()
      */
     public final void callPause() throws InterruptedException {
         setBotStatus("Calling pause...");
+        // automatically executes additional pause logic (see override)
         bot.getScriptExecutor().pause();
     }
 
@@ -443,13 +439,13 @@ public abstract class BotMan extends Script {
      */
     @Override
     public final void pause() {
-        //TODO figure out why this is always called twice? Then we can remove isRunning variable
-        if (isRunning) {
-            setBotStatus("Pausing script...");
+        if (isRunning()) {
             isRunning = false;
-            setStatus("Paused script...");
+            // run this logic on the swing edt using safeRun() func. to ensure bot menu button is updated
+            setBotStatus("Pausing script...");
             pauseScript();
             botMenu.onPause();
+            setStatus("Script paused.");
         }
     }
 
@@ -468,46 +464,41 @@ public abstract class BotMan extends Script {
      */
     @Override
     public final void resume() {
-        if (!isRunning) {
-            setBotStatus("Resuming script...");
+        // run this logic on the swing edt using safeRun() func. to ensure bot menu button is updated
+        safeRun(() -> {
             isRunning = true;
+            setBotStatus("Resuming script...");
             botMenu.onResume();
             resumeScript();
             setStatus("Thinking...");
-        }
+        });
     }
 
     /**
      * Function used to execute some code before the script stops, useful for last-minute guaranteed disposal.
      */
-    //TODO LATER: inspect why this function is called twice (under the hood?) and see if it can be prevented to remove
-    // isRunning flag
     @Override
     public final void onExit() throws InterruptedException {
-        // block main loop and flag bot running state
-        if (isRunning) {
-            // block menu closing twice (due to OSBot calling onExit() twice under the hood)
-            if (botMenu != null)
-                // force-close the bot menu (forcing prevents infinite loop)
-                botMenu.callClose(true);
+        super.onExit();
+        // block menu closing twice (due to OSBot calling onExit() twice under the hood)
+        if (botMenu != null)
+            // force-close the bot menu (forcing prevents infinite loop)
+            botMenu.forceClose();
 
-            isRunning = false;
-            stop(logoutOnExit);
-            log("Successfully exited ETA's (OsBot) Bot Manager");
-        }
+        log("Successfully exited ETA's (OsBot) Bot Manager");
     }
 
-    public final void exit() throws InterruptedException {
-        try {
-            // set running to true to prevent paused scripts failing to exit (due to work-around to prevent osbot error)
-            if (!isRunning)
-                isRunning = true;
+    /**
+     * Force exits the bot manager, stopping the main loop and closing any open bot menu.
+     */
+    public final void exit(String exitMsg) {
+        if (exitMsg != null && !exitMsg.isEmpty())
+            log(exitMsg);
+        stop(logoutOnExit);
+    }
 
-            // call exit function
-            onExit();
-        } catch (InterruptedException e) {
-            log(e.getMessage());
-        }
+    public final void exit() {
+        exit(null);
     }
 
     /**
@@ -548,6 +539,13 @@ public abstract class BotMan extends Script {
     ///
     ///     GETTERS/SETTERS
     ///
+
+    /**
+     * Return true if this script is currently executing.
+     */
+    protected boolean isRunning() {
+        return isRunning;
+    }
 
     /**
      *  Returns the current {@link BotMenu} instance associated with this {@link BotMan}
@@ -746,10 +744,10 @@ public abstract class BotMan extends Script {
     @Override
     public void log(String message) {
         // automatically convert unformatted messages into debug format
-        if (message.startsWith("["))
+        if (message != null && message.startsWith("["))
             // log the unformatted message if logman is null, else format the message before logging
             super.log(message.replace("\t", " "));
-        else
+        else if (logMan != null)
             // else send this message off for formatting first (which recursively comes back and prints)
             logMan.log(DEBUG, message);
     }
@@ -812,15 +810,16 @@ public abstract class BotMan extends Script {
      */
     public final boolean toggleExecutionMode() throws InterruptedException {
         ScriptExecutor script = getBot().getScriptExecutor();
-        // if the script is currently paused or the passed boolean is true
+        // if the script is currently paused
         if (script.isPaused()) {
-            // pause the script and its menu
+            // resume and return
             this.callResume();
-            return true;
+            return script.isRunning();
         }
 
+        // else, script is running - pause script and return
         this.callPause();
-        return false;
+        return script.isRunning();
     }
 
     /**
@@ -880,36 +879,67 @@ public abstract class BotMan extends Script {
     ///  Static helper functions
     ///
 
+//    public static ArrayList<String> getCallers(int numCallers) {
+//        ArrayList<String> callers = new ArrayList<>();
+//        int i = 1;
+//        numCallers += i;
+//        // iterate until passed
+//        while (i < numCallers) {
+//            callers.add(getCaller(i));
+//            i++;
+//        }
+//
+//        return callers;
+//    }
+//
+//    public static String getCaller() {
+//        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+//
+//        // Walk until we leave the logging call-chain
+//        for (int i = 2; i < stack.length; i++) {
+//            StackTraceElement e = stack[i];
+//
+//            String cls = e.getClassName();
+//            String method = e.getMethodName();
+//
+//            // skip the logger itself
+//            if (cls.contains("Trace") || cls.contains("Event")
+//                || cls.contains("Access") || cls.contains("Protection"))
+//                continue;
+//
+//            if (method.contains("setStatus") || method.contains("setBotStatus")
+//                    || method.contains("log") || method.contains("appendLog"))
+//                continue;
+//
+//            // clean class name
+//            cls = cls.substring(cls.lastIndexOf('.') + 1);
+//
+//            // clean lambda name
+//            if (method.startsWith("lambda$")) {
+//                method = method.substring(7, method.lastIndexOf('$'));
+//            }
+//
+//            return "[" + cls + ":" + method + "()]";
+//        }
+//
+//        return null;
+//    }
     public static String getCaller() {
-        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-
-        // Walk until we leave the logging call-chain
-        for (int i = 2; i < stack.length; i++) {
-            StackTraceElement e = stack[i];
-
-            String cls = e.getClassName();
-            String method = e.getMethodName();
-
-            // skip the logger itself
-            if (cls.contains("Trace"))
-                continue;
-
-            if (method.contains("setStatus") || method.contains("setBotStatus")
-                    || method.contains("log") || method.contains("appendLog"))
-                continue;
-
-            // clean class name
-            cls = cls.substring(cls.lastIndexOf('.') + 1);
-
-            // clean lambda name
-            if (method.startsWith("lambda$")) {
-                method = method.substring(7, method.lastIndexOf('$'));
-            }
-
-            return "[" + cls + ":" + method + "()] ";
+        StackTraceElement[] s = Thread.currentThread().getStackTrace();
+        for (int i = 2; i < s.length; i++) { // skip getStackTrace + this method
+            String c = s[i].getClassName();
+            if (!c.startsWith("java.") && !c.startsWith("sun.") && !c.startsWith("jdk."))
+                return format(s[i]);
         }
+        return "[Unknown]";
+    }
 
-        return "[Unknown] ";
+    private static String format(StackTraceElement e) {
+        String cls = e.getClassName();
+        cls = "[" + cls.substring(cls.lastIndexOf('.') + 1);
+        String method = e.getMethodName();
+        method = method.replace("lambda$", "").replace("$0", "");
+        return cls + "." + method + "():" + e.getLineNumber() + "]";
     }
 
     public void safeRun(Runnable r) {

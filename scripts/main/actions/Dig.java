@@ -155,7 +155,7 @@ public class Dig extends Task {
         Position wizardsTowerDigSpot = new Position(3110, 3152, 0); // wizards tower
 
         return new Task[]{
-                new Dig("perform a standard dig").setStage(10),
+                new Dig("perform a standard dig").setStage(1),
                 new Dig("dig near the wizards tower beginner clue location... (within 1 tile)").near(wizardsTowerDigSpot, 1)
 //            new Dig("Testing dig at wizards tower beginner clue dig-spot...").at(wizardsTowerDigSpot),
 //            new Dig("Testing dig near wizards tower beginner clue dig-spot within a 5 tile radius...").near(wizardsTowerDigSpot, 5),

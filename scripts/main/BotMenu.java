@@ -89,7 +89,7 @@ public class BotMenu extends JFrame {
             // place the bot menu on a different screen to the bot client if possible
             WindowMan.moveToAlternateMonitor(this);
             // set initial toggle button text otherwise it will need to be pressed before labels are displayed
-            btnToggleExecution.setText(bot.isRunning ? "⏸" : "▶");
+            btnToggleExecution.setText(bot.isRunning() ? "⏸" : "▶");
             // display the menu
             this.showMenu();
             // refresh the bot menu to reflect all changes
@@ -380,12 +380,6 @@ public class BotMenu extends JFrame {
         JButton btnStop = new JButton("■");
         btnStop.addActionListener(e -> {
             try {
-                bot.setStatus("Stopping script...");
-                // script needs to be "running" in order to stop properly
-                if (!bot.isRunning)
-                    // trick the script into thinking it's running by using the isRunning flag
-                    bot.isRunning = true;
-
                 bot.exit();
             } catch (Throwable t) {
                 bot.setStatus("Stop failed: " + t);
@@ -828,7 +822,7 @@ public class BotMenu extends JFrame {
         if (bot == null)
             return;
 
-        setBotStatus("BotMenu closed.");
+        setBotStatus("BotMenu closed!");
         // dispose of this menu
         this.dispose();
     }
@@ -838,44 +832,31 @@ public class BotMenu extends JFrame {
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
     public final void close() {
-        try {
-            setBotStatus("Closing BotMenu...");
-            // if this is not a forced closed, do some checks before closing the bot menu
-            if (!isVisible())
-                return;
+        setBotStatus("Closing BotMenu...");
+        // if this is not a forced closed, do some checks before closing the bot menu
+        if (!isVisible())
+            return;
 
-            // if the setting toggle "exit on close" is enabled - stop the bot script.
-            // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
-            if (this.isExitingOnClose) {
-                // exit the bot instead of just closing the menu
-                bot.exit();
-                return;
-            }
-
-            // if setting toggle "hide on exit" is enabled and this is not a forced close
-            if (this.isHidingOnExit) {
-                // hide the menu and exit early to prevent closure
-                this.hideMenu();
-                return;
-            }
-
-            this.closeMenu();
-
-        } catch (InterruptedException e) {
-            bot.log(e.getMessage());
+        // if the setting toggle "exit on close" is enabled - stop the bot script.
+        // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
+        if (this.isExitingOnClose) {
+            // exit the bot instead of just closing the menu
+            bot.exit();
+            return;
         }
+
+        // if setting toggle "hide on exit" is enabled and this is not a forced close
+        if (this.isHidingOnExit) {
+            // hide the menu and exit early to prevent closure
+            this.hideMenu();
+            return;
+        }
+
+        this.closeMenu();
     }
 
-    /**
-     * Helper function which calls {@link BotMenu#callClose(boolean)} passing a false boolean parameter.
-     */
-    public final void callClose(boolean forced) {
-        bot.safeRun(() -> {
-            if (forced)
-                closeMenu();
-            else
-                close();
-        });
+    public void forceClose() {
+        this.closeMenu();
     }
 
     public final void showMenu() {

@@ -266,7 +266,7 @@ public final class TaskMan {
         // go back to the start of the queue to repeat the set again
         setTaskListIndex(0);
 
-        // return early if max loops have been exceeded
+        // pause script when max list loops have been exceeded
         if (getListLoop() >= getListLoops() || getListLoop() >= MAX_SCRIPT_LOOPS)
             bot.callPause();
 

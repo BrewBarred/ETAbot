@@ -14,7 +14,6 @@ import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static main.BotMan.getCaller;
 
 /**
  * The Logger class handles logging messages for all classes including general status updates, error-handling and debug
@@ -109,7 +108,7 @@ public class LogMan {
         public String toString() {
             // return the source/message with padding and new-line by default
             return getSourceHeader() + "\t"
-                    + (source.equals(LogSource.DEBUG) ? getCaller() : "")
+                    + (source.equals(LogSource.DEBUG) ? BotMan.getCaller() + " " : "")
                     // add default padding, debug message and a new-line to prep for next input
                     + message + "\n";
         }
