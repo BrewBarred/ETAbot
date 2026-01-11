@@ -71,8 +71,17 @@ public class BotMenu extends JFrame {
         // call parent constructor to ensure proper instantiation
         super("BotMan: BotMenu");
         this.bot = bot;
+        // run thread-safe setup tasks
+        bot.safeRun(setup());
+    }
 
-        SwingUtilities.invokeLater(() -> {
+    /**
+     * Defines the setup tasks used to set the {@link BotMenu} up, ready for display and user interaction.
+     *
+     * @return A runnable task which can be used to instantiate the {@link BotMenu}.
+     */
+    private Runnable setup() {
+        return () -> {
             // create bot menu
             createMenu();
             // set default settings
@@ -85,7 +94,7 @@ public class BotMenu extends JFrame {
             this.showMenu();
             // refresh the bot menu to reflect all changes
             this.refresh();
-        });
+        };
     }
 
     ///
@@ -372,6 +381,11 @@ public class BotMenu extends JFrame {
         btnStop.addActionListener(e -> {
             try {
                 bot.setStatus("Stopping script...");
+                // script needs to be "running" in order to stop properly
+                if (!bot.isRunning)
+                    // trick the script into thinking it's running by using the isRunning flag
+                    bot.isRunning = true;
+
                 bot.onExit();
             } catch (Throwable t) {
                 bot.setStatus("Stop failed: " + t);
@@ -809,7 +823,7 @@ public class BotMenu extends JFrame {
         return isVisible();
     }
 
-    private void close() {
+    private void closeMenu() {
         // can't close what ain't open
         if (bot == null)
             return;
@@ -823,38 +837,44 @@ public class BotMenu extends JFrame {
     /**
      * Hides the bot menu, preventing the user from interacting with the bot menu
      */
-    public final void callClose() throws InterruptedException {
-        // if this is not a forced closed, do some checks before closing the bot menu
-        if (!isVisible())
-            return;
+    public final void close() {
+        try {
+            // if this is not a forced closed, do some checks before closing the bot menu
+            if (!isVisible())
+                return;
 
-        // if the setting toggle "exit on close" is enabled - stop the bot script.
-        // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
-        if (this.isExitingOnClose) {
-            // exit the bot instead of just closing the menu
-            bot.onExit();
-            return;
+            // if the setting toggle "exit on close" is enabled - stop the bot script.
+            // NOTE: this is called inside !forced closure to prevent infinite loop onExit -> botMenu.close -> onExit
+            if (this.isExitingOnClose) {
+                // exit the bot instead of just closing the menu
+                bot.onExit();
+                return;
+            }
+
+            // if setting toggle "hide on exit" is enabled and this is not a forced close
+            if (this.isHidingOnExit) {
+                // hide the menu and exit early to prevent closure
+                this.hideMenu();
+                return;
+            }
+
+            this.closeMenu();
+
+        } catch (InterruptedException e) {
+            bot.log(e.getMessage());
         }
-
-        // if setting toggle "hide on exit" is enabled and this is not a forced close
-        if (this.isHidingOnExit) {
-            // hide the menu and exit early to prevent closure
-            this.hideMenu();
-            return;
-        }
-
-        this.close();
     }
 
     /**
      * Helper function which calls {@link BotMenu#callClose(boolean)} passing a false boolean parameter.
      */
-    public final void callClose(boolean forced) throws InterruptedException {
-        setBotStatus("Calling menu close...");
-        if (forced)
-            close();
-        else
-            callClose();
+    public final void callClose(boolean forced) {
+        bot.safeRun(() -> {
+            if (forced)
+                closeMenu();
+            else
+                close();
+        });
     }
 
     public final void showMenu() {
@@ -969,10 +989,7 @@ public class BotMenu extends JFrame {
 
         // only refresh the sections of the bot menu that were added to the runnables list
         for (Runnable refreshTask : getRefreshList())
-            if (SwingUtilities.isEventDispatchThread())
-                refreshTask.run();
-            else
-                SwingUtilities.invokeLater(refreshTask);
+            bot.safeRun(refreshTask);
     }
 
     /**

@@ -290,7 +290,7 @@ public abstract class Task {
 
         // refresh botMenu to update any loop/attempt counters
         bot.getBotMenu().refresh();
-        bot.setBotStatus("Task stage (after): " + getStageString()
+        bot.log("Task stage (after): " + getStageString()
                 + "  |  Task Loops: " + getLoopsString()
                 + "  |  List Loops: " + bot.getListLoopsString()
                 + "  |  List index: " + bot.getListIndex()

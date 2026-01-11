@@ -213,9 +213,6 @@ public abstract class BotMan extends Script {
             setStatus("Successfully loaded listeners!");
 
             setStatus("Initialization complete!");
-            log("1");
-            log("2");
-            log("3");
 
         } catch (Throwable t) {
             log("Error Initializing BotMan: " + t);
@@ -285,7 +282,7 @@ public abstract class BotMan extends Script {
         ///  onClose() events
 
         // call the bot menu on close function whenever the user exits the menu (via window 'x' button)
-        windowMan.attachOnCloseEvent(botMenu, closeBotMenu());
+        windowMan.attachOnCloseEvent(botMenu, () -> botMenu.close());
 
         ///  refresh() events
 
@@ -304,19 +301,7 @@ public abstract class BotMan extends Script {
     }
 
     public Runnable refreshLogMan() {
-       return logMan::callRefresh;
-    }
-
-    private Runnable closeBotMenu() {
-        return () -> {
-            try {
-                setBotStatus("Calling close task...");
-                // call normal close (not forced)
-                botMenu.callClose();
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        };
+       return () -> logMan.callRefresh();
     }
 
     /**
@@ -499,16 +484,16 @@ public abstract class BotMan extends Script {
     // isRunning flag
     @Override
     public final void onExit() throws InterruptedException {
-        // block menu closing twice (due to OSBot calling onExit() twice under the hood)
-        if (botMenu != null)
-            // force-close the bot menu (forcing prevents infinite loop)
-            botMenu.callClose(true);
-
         // block main loop and flag bot running state
         if (isRunning) {
-            stop(logoutOnExit);
+            // block menu closing twice (due to OSBot calling onExit() twice under the hood)
+            if (botMenu != null)
+                // force-close the bot menu (forcing prevents infinite loop)
+                botMenu.callClose(true);
+
             isRunning = false;
-            //log("Successfully exited ETA's (OsBot) Bot Manager");
+            stop(logoutOnExit);
+            log("Successfully exited ETA's (OsBot) Bot Manager");
         }
     }
 
@@ -912,6 +897,13 @@ public abstract class BotMan extends Script {
         }
 
         return "[Unknown] ";
+    }
+
+    public void safeRun(Runnable r) {
+        if (SwingUtilities.isEventDispatchThread())
+            r.run();
+        else
+            SwingUtilities.invokeLater(r);
     }
 
 

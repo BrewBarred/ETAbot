@@ -79,26 +79,28 @@ public class Cities4 extends Script {
     }
 
     private void showGUI() {
-        SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("City Walker v4");
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            frame.setSize(600, 450);
-            JTabbedPane tabbedPane = new JTabbedPane();
+        SwingUtilities.invokeLater(this::createTravelManager);
+    }
 
-            // Adding new "Locations" tab
-            tabbedPane.add("Cities", createLocationPanel(cities, f2pCities));
-            tabbedPane.add("Banks", createLocationPanel(banks, f2pBanks));
-            tabbedPane.add("Training", createLocationPanel(trainingAreas, f2pTrainingAreas));
-            tabbedPane.add("Minigames", createLocationPanel(minigames, f2pMinigames));
-            tabbedPane.add("Clue Scrolls", createLocationPanel(clueScrolls, clueScrolls));
-            tabbedPane.add("Locations", createLocationsTab());
-            tabbedPane.add("Recent", createRecentLocationsPanel());
+    private void createTravelManager() {
+        JFrame frame = new JFrame("City Walker v4");
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setSize(600, 450);
+        JTabbedPane tabbedPane = new JTabbedPane();
 
-            frame.add(tabbedPane);
-            frame.pack();
-            frame.setLocationRelativeTo(null);
-            frame.setVisible(true);
-        });
+        // Adding new "Locations" tab
+        tabbedPane.add("Cities", createLocationPanel(cities, f2pCities));
+        tabbedPane.add("Banks", createLocationPanel(banks, f2pBanks));
+        tabbedPane.add("Training", createLocationPanel(trainingAreas, f2pTrainingAreas));
+        tabbedPane.add("Minigames", createLocationPanel(minigames, f2pMinigames));
+        tabbedPane.add("Clue Scrolls", createLocationPanel(clueScrolls, clueScrolls));
+        tabbedPane.add("Locations", createLocationsTab());
+        tabbedPane.add("Recent", createRecentLocationsPanel());
+
+        frame.add(tabbedPane);
+        frame.pack();
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 
     private JPanel createLocationsTab() {

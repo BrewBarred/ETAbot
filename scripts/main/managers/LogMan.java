@@ -259,15 +259,13 @@ public class LogMan {
         });
 
         /// Add a listener to clear all output currently being displayed on
-        btnClear.addActionListener(e -> {
-            SwingUtilities.invokeLater(logList::clear);
-            clearLogDocument();
-        });
+        btnClear.addActionListener(e -> bot.safeRun(this::clear));
 
         /// Add a listener to the copy button to call the function which copies the log console to the clipboard
-        btnCopy.addActionListener(e -> copyLogs());
+        btnCopy.addActionListener(e -> bot.safeRun(this::copyLogs));
+
         // refresh on EDT to ensure proper initialization
-        callRefresh();
+        bot.safeRun(this::refresh);
         /// Return the fully assembled log panel.
         return logPanel;
     }
@@ -358,9 +356,7 @@ public class LogMan {
      * {@link SwingUtilities#invokeLater(Runnable)} function to ensure thread-safe execution.
      */
     public final void callRefresh() {
-        if (SwingUtilities.isEventDispatchThread())
-            this.refresh();
-        else SwingUtilities.invokeLater(this::refresh);
+        bot.safeRun(this::refresh);
     }
 
     /**
@@ -384,7 +380,7 @@ public class LogMan {
 
                 // insert the time prefix to this log statement
                 log(e.getTime(), logDoc.getStyle("TIME"));
-                // format the text before printing
+                // format the output with its associated style before outputting to bot menu log console
                 log(e.toString(), getSelectedStyle(e));
             }
 
@@ -437,48 +433,6 @@ public class LogMan {
         return sdf.format(new java.util.Date(millis));
     }
 
-    ///  MENU CONTROL FUNCTIONS (e.g., button-click events etc.)
-
-    /**
-     * Copies the log console contents to the users clipboard for pasting elsewhere.
-     */
-    private void copyLogs() {
-        // create a string builder for simple & efficient concatenations
-        StringBuilder sb = new StringBuilder(logList.size() * 48);
-
-        // for each log in the log list
-        for (LogEntry e : logList) {
-            // use string builder to group time, source and message contents
-            sb.append('[').append(formatTime(e.timeMillis)).append("] ")
-                    .append(e.source).append(' ')
-                    .append(e.message).append('\n');
-        }
-
-        // use string builder to select and copy console text into a variable
-        StringSelection selection = new StringSelection(sb.toString());
-        // use Toolkit to copy selection to the users clipboard
-        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
-    }
-
-    /**
-     * Clears the log console ready for a new output list to be displayed.
-     */
-    private void clearLogDocument() {
-        // add the created task to the EDT for thread-safe execution
-        if (SwingUtilities.isEventDispatchThread())
-            this.clear();
-        else SwingUtilities.invokeLater(this::clear);
-    }
-
-    /**
-     * Removes all contents from the log document, ready for updating.
-     */
-    private void clear() {
-        try {
-            logDoc.remove(0, logDoc.getLength());
-        } catch (BadLocationException ignored) {}
-    }
-
     /**
      * Logs an entry to the console by creating a new {@link LogEntry} using the passed source and string parameters.
      *
@@ -505,16 +459,49 @@ public class LogMan {
         bot.log(entry.toString());
 
         // log entries not only to track them but also to limit the total log entries (buffer)
-        SwingUtilities.invokeLater(() -> logList.add(entry));
+        bot.safeRun(() -> logList.add(entry));
 
         // limit output size by log buffer value
         if (logList.size() > LOG_BUFFER) {
             int overflow = logList.size() - LOG_BUFFER;
             // drop oldest messages
-            SwingUtilities.invokeLater(() -> logList.subList(0, overflow).clear());
+            bot.safeRun(() -> logList.subList(0, overflow).clear());
         }
 
         // update view (respects current filter/search)
         callRefresh();
+    }
+
+    ///  MENU CONTROL FUNCTIONS (e.g., button-click events etc.)
+
+    /**
+     * Copies the log console contents to the users clipboard for pasting elsewhere.
+     */
+    private void copyLogs() {
+        // create a string builder for simple & efficient concatenations
+        StringBuilder sb = new StringBuilder(logList.size() * 48);
+
+        // for each log in the log list
+        for (LogEntry e : logList) {
+            // use string builder to group time, source and message contents
+            sb.append('[').append(formatTime(e.timeMillis)).append("] ")
+                    .append(e.source).append(' ')
+                    .append(e.message).append('\n');
+        }
+
+        // use string builder to select and copy console text into a variable
+        StringSelection selection = new StringSelection(sb.toString());
+        // use Toolkit to copy selection to the users clipboard
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, null);
+    }
+
+    /**
+     * Removes all contents from the log document, ready for updating.
+     */
+    private void clear() {
+        try {
+            logList.clear();
+            logDoc.remove(0, logDoc.getLength());
+        } catch (BadLocationException ignored) {}
     }
 }
