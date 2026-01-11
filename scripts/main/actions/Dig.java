@@ -75,10 +75,11 @@ public class Dig extends Task {
                 bot.setBotStatus("Checking for required items...");
                 // ensure player has required items for this task
                 if (!bot.hasInvItems(REQUIRED_ITEMS)) // TODO add logic to fetch required items? (set stage to 2 or 4 etc.) 2 = fetch, 3 = buy, 4 = walk to site, 5 = dig. etc.
-                    return !bot.setBotStatus("Unable to find required items!");
+                    throw new DiggingException("Unable to find required items!");
+
                 bot.setBotStatus("Found required items!");
                 setStage(9);
-                return false;
+                break;
 
             case 2:
                 // calculate closest bank and travel

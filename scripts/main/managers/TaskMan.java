@@ -553,7 +553,7 @@ public final class TaskMan {
         Task task = getTask();
         if (task != null) {
             bot.setStatus("Attempting to " + task);
-            bot.setBotStatus("|| Task: " + task + "     |     Stage: " + task.getStageString());        // if the task is done, prepare the next task
+            bot.log("Task: " + task + "     |     Stage: " + task.getStageString());        // if the task is done, prepare the next task
             return task.run(bot);
         }
 

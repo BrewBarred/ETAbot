@@ -240,7 +240,7 @@ public abstract class BotMan extends Script {
                 // attempt to complete a stage/task
                 return attempt();
             // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
-            else onExit();
+            else exit();
 
             // return a normal delay
             return delay;
@@ -330,19 +330,18 @@ public abstract class BotMan extends Script {
                 if (isDevMode)
                     currentAttempt = 0;
                 else
-                    throw new InterruptedException("[BotMan Error] Too many attempts!");
+                    throw new InterruptedException("[BotMan Error] Maximum attempt limit exceeded!");
                 return MIN_DELAY;
 
                 // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
             } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
 
             setStatus("Trying again after " + delay / 1000 + "s");
-            return delay;
         } catch (InterruptedException e) {
             this.exit(e.getMessage());
         }
 
-        return -1;
+        return delay;
     }
 
     /**
