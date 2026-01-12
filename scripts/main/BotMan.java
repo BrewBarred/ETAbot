@@ -237,7 +237,9 @@ public abstract class BotMan extends Script {
             ///  load settings either via local host or supabase server
 
             setStatus("Loading settings...");
-            setBotStatus("Loading settings for: " + myPlayer().getName() + " @ " + loadSettings());
+            setBotStatus(" Loaded settings!"
+                    + "\n  Player: "+ myPlayer().getName()
+                    + "\n  Settings: " + loadSettings());
 
             // pause the script to prevent the character prematurely taking off before scripts are set
             callPause();

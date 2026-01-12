@@ -16,4 +16,10 @@ Tests:
 -> Test supabase/local Client.loadSettings("-1")
 -> Test supabase/local Client.loadSettings("\"malicious code test e.g., getPassword()\"") // maybe use triple quotes @ server
 -> Test supabase/local Client.loadSettings("Player123") // valid params - does not exist
--> Test supabase/local Client.loadsettings("IAmAwake247") // valid params - does exist (should load)
+-> Test supabase/local Client.loadSettings("IAmAwake247") // valid params - does exist (should load)
+
+-> Test supabase Client.getColumnURL(String columnName)
+-> Test supabase Client.getColumnURL(int columnNo)
+-> Test supabase Client.getAllDataURL()
+-> Test supabase Client.getTimestampColumnURL()
+-> Test supabase Client.getSettingsColumnURL()
