@@ -1,0 +1,159 @@
+package main.data.supabase;
+
+import main.BotMan;
+
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+
+public class Client {
+
+    private static final String SUPABASE_URL = "https://ayglfkpojkjwvcsmyblr.supabase.co/rest/v1/";
+    private static final String API_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z2xma3Bvamtqd3Zjc215YmxyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNzUxMDMsImV4cCI6MjA4Mzc1MTEwM30.YJW7H1Kj-tGsYhpQwTk-7ALOF1yXKzO-I3LEt63-rRA";
+    /**
+     * The name of the database table containing the "Settings" data for this player.
+     */
+    private static final String TABLE = "Settings";
+    /**
+     * The name of each column associated with the settings table, starting with the primary key, working left to right.
+     */
+    private static final String[] SETTING_COLUMNS = {"username", "timestamp", "settings"};
+    //TODO: add to botmenu General settings tab
+    /** Connection timeout in milliseconds */
+    private static final int CONNECTION_TIMEOUT = 5000;
+    //TODO: add to botmenu General settings tab
+    /** Read timeout in milliseconds */
+    private static final int READ_TIMEOUT = 5000;
+
+    public static boolean loadSettings() {
+        return false;
+    }
+
+    // Save settings for a user
+    public static boolean saveSettings() {
+        try {
+            HttpURLConnection conn = getHttpURLConnection();
+            String payload = BotMan.getSettingsJSON();
+            BotMan.Log("Saving settings:\n\ngetSettingsJSON():\n\n" + payload+ "\n\ngetPayloadJSON()\n\n" + getPayloadJSON());
+
+            OutputStream os = conn.getOutputStream();
+            os.write(payload.getBytes(StandardCharsets.UTF_8));
+            os.flush();
+            os.close();
+
+            int responseCode = conn.getResponseCode();
+            return responseCode == 201 || responseCode == 200;
+
+        } catch (Exception e) {
+            BotMan.Log(e.getMessage());
+            return false;
+        }
+    }
+
+    private static String getPayloadJSON() {
+        return String.format("{\"user_id\":\"%s\",\"settings\":%s}", BotMan.getPlayerName(), BotMan.fetchData());
+    }
+
+    private static HttpURLConnection getHttpURLConnection() throws IOException {
+        BotMan.Log("#################################################\n#################################################");
+        // create host url
+        URL url = new URL(SUPABASE_URL + TABLE);
+        BotMan.Log("Url: " + url);
+        // connect to host url to access database
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+        // define post method for supa-base server
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("apikey", API_KEY);
+        connection.setRequestProperty("Authorization", "Bearer " + API_KEY);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
+        connection.setDoOutput(true);
+        connection.setConnectTimeout(CONNECTION_TIMEOUT);
+        connection.setReadTimeout(READ_TIMEOUT);
+
+        return connection;
+    }
+
+    private static String getSettings() throws UnsupportedEncodingException {
+        String url = SUPABASE_URL + TABLE +
+                "?username=eq." + URLEncoder.encode(BotMan.getPlayerName(), "UTF-8") +
+                "&select=" + SETTING_COLUMNS[2];
+                //+ "&username="+BotMan.getPlayerName();
+        BotMan.Log("Settings url: " + url);
+        return url;
+    }
+
+    // Load settings for a user
+    public static String fetchSettings() {
+        try {
+            HttpURLConnection connection = fetch(getSettings());
+            int responseCode = connection.getResponseCode();
+            BotMan.Log(connection.getResponseMessage());
+            BotMan.Log(connection.getURL().toString());
+            String response = readResponse(connection);
+            BotMan.Log("Response: " + response);
+            // return early if the response code is invalid
+            if (responseCode != 200)
+                throw new RuntimeException("Error connecting to server, response code: " + responseCode);
+
+            BotMan.Log("JSON: " + response);
+            // Response is like: [{"settings":{"key":"value"}}]
+            // Extract the settings object
+            if (response.contains("\"settings\":")) {
+                int start = response.indexOf("\"settings\":") + 11;
+                int end = response.lastIndexOf("}");
+                if (start > 11 && end > start) {
+                    return response.substring(start, end + 1);
+                }
+            }
+            return "{}";
+
+        } catch (Exception e) {
+            BotMan.Log(e.getMessage());
+            return "{}";
+        }
+    }
+
+    /**
+     * Connect to the server using the host HTTP url generated by {@link #getSettings()}.
+     *
+     * @return The {@link HttpURLConnection} object used to connect to the server.
+     */
+    private static HttpURLConnection fetch(String urlString) throws IOException {
+        // generate the host url for http connection
+        URL url = new URL(urlString);
+
+        // open a new http connection using the generated url
+        HttpURLConnection fetchRequest = (HttpURLConnection) url.openConnection();
+
+        // setup a request
+        fetchRequest.setRequestMethod("GET");
+        fetchRequest.setRequestProperty("apikey", API_KEY);
+        fetchRequest.setRequestProperty("Authorization", "Bearer " + API_KEY);
+        fetchRequest.setConnectTimeout(CONNECTION_TIMEOUT);
+        fetchRequest.setReadTimeout(READ_TIMEOUT);
+
+        return fetchRequest;
+    }
+
+    private static String readResponse(HttpURLConnection connection) throws IOException {
+        // create a reader and feeding the input stream through it
+        InputStream stream = connection.getInputStream();
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+
+        // build the response line-by-line
+        StringBuilder response = new StringBuilder();
+        String line;
+
+        // iterate through the response until the end
+        while ((line = reader.readLine()) != null) {
+            response.append(line);
+        }
+
+        // close the reader since we are finished reading
+        reader.close();
+
+        return response.toString();
+    }
+}

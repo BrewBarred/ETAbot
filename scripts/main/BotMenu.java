@@ -4,12 +4,14 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import main.data.supabase.Client;
 import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
-import main.managers.WindowMan;
+import main.managers.FrameMan;
 
 import java.awt.*;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class BotMenu extends JFrame {
@@ -67,10 +69,23 @@ public class BotMenu extends JFrame {
      *
      * @param bot The {@link BotMan} instance that this menu communicates with.
      */
-    public BotMenu(BotMan bot) {
+    public BotMenu(BotMan bot) throws Exception {
         // call parent constructor to ensure proper instantiation
         super("BotMan: BotMenu");
         this.bot = bot;
+
+        bot.setBotStatus("Starting settings client...");
+
+        try {
+            setBotStatus("Connecting to server... (local example)");
+            // example local save
+            //String data = "{ \"foodId\": 385, \"eatHp\": 25 }";
+            //bot.log((Client.saveSettingsJson(data) ? "Successfully saved" : "Failed to save") + " settings!");
+
+        } catch (Exception e) {
+            bot.log("Settings server not running / unreachable: " + e.getMessage());
+        }
+
         // run thread-safe setup tasks
         bot.safeRun(setup());
     }
@@ -87,7 +102,7 @@ public class BotMenu extends JFrame {
             // set default settings
             setDefaultSettings();
             // place the bot menu on a different screen to the bot client if possible
-            WindowMan.moveToAlternateMonitor(this);
+            FrameMan.moveToAlternateMonitor(this);
             // set initial toggle button text otherwise it will need to be pressed before labels are displayed
             btnToggleExecution.setText(bot.isRunning() ? "⏸" : "▶");
             // display the menu
@@ -876,6 +891,8 @@ public class BotMenu extends JFrame {
 
     /**
      * Helper function to create a titled bordered section to neatly contain components.
+     * <n>
+     * This function is intended to centralize core menu components and to easily change styles later.
      *
      * @param title The title of this section.
      * @return A JPanel section which can be used to neatly contain java swing components.

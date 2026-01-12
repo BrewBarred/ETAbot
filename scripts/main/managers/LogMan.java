@@ -78,32 +78,43 @@ public class LogMan {
      */
     private StyledDocument logDoc;
 
-    /**
-     * Constructs a {@link LogMan Log Manager} object which can be used to print, catch or handle error logs both to the client and
-     * BotMenu console to centralize debugging and output formatting.
-     *
-     * @param bot A reference to the associated {@link BotMan} class, logging errors.
-     */
-    public LogMan(BotMan bot) {
-        this.bot = bot;
-    }
-
-    /// Bot menu log handler
+    /// Nested class: Log entry class defines what can be logged to the bot menu's log console and holds necessary data.
 
     /**
      * A static class which contains all the data required to print output to the {@link BotMenu}'s log console.
      */
     private static class LogEntry {
+        /**
+         * The timestamp at which this entry was created.
+         */
         private final long timeMillis;
+        /**
+         * The source of this logging message, used to filter the log console between different out types. Possible
+         * values include {@link LogSource#PLAYER}, {@link LogSource#BOT} and {@link LogSource#DEBUG}.
+         */
         private final LogSource source;
+        /**
+         * A brief description of the reason for this entry being logged.
+         */
         private final String message;
 
+        /**
+         * Constructs a new log entry using the passed log source and logging message.
+         * @param source The source type of this output message i.e., {@link LogSource#PLAYER}, {@link LogSource#BOT}
+         *               {@link LogSource#DEBUG}.
+         * @param message The output message being printed to the {@link BotMenu}'s log console.
+         */
         LogEntry(LogSource source, String message) {
             this.timeMillis = System.currentTimeMillis();
             this.source = source;
             this.message = message;
         }
 
+        /**
+         * Overrides java's default toString() method to return a formatted log entry instead, ready to display.
+         *
+         * @return A formatted log entry {@link String}.
+         */
         @Override
         public String toString() {
             // return the source/message with padding and new-line by default
@@ -133,15 +144,29 @@ public class LogMan {
         }
 
         /**
-         * @return This log entries source as a {@link String}.
+         * @return This log entries source as a {@link String} value.
          */
         private String getSource() {
             return source.toString();
         }
 
+
+        /**
+         * @return This log entries source as a {@link String} value, formatted as a header by adding square brackets.
+         */
         private String getSourceHeader() {
             return "[" + source.toString() + "]";
         }
+    }
+
+    /**
+     * Constructs a {@link LogMan Log Manager} object which can be used to print, catch or handle error logs both to the client and
+     * BotMenu console to centralize debugging and output formatting.
+     *
+     * @param bot A reference to the associated {@link BotMan} class, logging errors.
+     */
+    public LogMan(BotMan bot) {
+        this.bot = bot;
     }
 
     /**
@@ -184,12 +209,12 @@ public class LogMan {
         /// Header: create the left side (i.e., filter, search bar, case sensitivity)
 
         // creates a "log panel" used to filter the log console output
-        JPanel logPanelFilter = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-            logPanelFilter.add(new JLabel("Show:"));
-            logPanelFilter.add(cbSource);
-            logPanelFilter.add(new JLabel("Search:"));
-            logPanelFilter.add(tbSearch);
-            logPanelFilter.add(chkCaseSensitive);
+        JPanel logPanelFilters = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+            logPanelFilters.add(new JLabel("Filter by:"));
+            logPanelFilters.add(cbSource);
+            logPanelFilters.add(new JLabel("Search:"));
+            logPanelFilters.add(tbSearch);
+            logPanelFilters.add(chkCaseSensitive);
 
         /// Header: create the right side (i.e., copy, clear and pause/resume
 
@@ -202,7 +227,7 @@ public class LogMan {
 
         // BorderLayout keeps filters left and buttons right.
         JPanel logPanelHeader = new JPanel(new BorderLayout(8, 8));
-            logPanelHeader.add(logPanelFilter, BorderLayout.WEST);
+            logPanelHeader.add(logPanelFilters, BorderLayout.WEST);
             logPanelHeader.add(logPanelControls, BorderLayout.EAST);
 
         /// Log console: create a styled, scrollable document to output formatted messages
@@ -319,7 +344,7 @@ public class LogMan {
      * Return true if the passed {@link LogEntry entry} should be displayed in the {@link BotMenu}'s log console or not.
      *
      * @param entry The log entry being validated.
-     * @return
+     * @return True if the passed entries message matches the filtered source type or search phrase.
      */
     private boolean matchesFilter(LogEntry entry) {
         // get the selected source in the menus filter combo-box
@@ -328,7 +353,7 @@ public class LogMan {
         String search = tbSearch.getText();
         boolean caseSensitive = chkCaseSensitive.isSelected();
 
-        // there is no match if source filter is set but entry has a different source
+        // return early if filter is not set to ALL or this entries source doesn't match the filter
         if (selectedSourceFilter != LogSource.ALL && entry.source != selectedSourceFilter)
             return false;
 
@@ -457,18 +482,21 @@ public class LogMan {
         // print the formatted string to the console
         bot.log(entry.toString());
 
-        // log entries not only to track them but also to limit the total log entries (buffer)
-        bot.safeRun(() -> logList.add(entry));
+        // update bot menu log console if menu exists
+        if (bot.getBotMenu() == null) {
+            // log entries not only to track them but also to limit the total log entries (buffer)
+            bot.safeRun(() -> logList.add(entry));
 
-        // limit output size by log buffer value
-        if (logList.size() > LOG_BUFFER) {
-            int overflow = logList.size() - LOG_BUFFER;
-            // drop oldest messages
-            bot.safeRun(() -> logList.subList(0, overflow).clear());
+            // limit output size by log buffer value
+            if (logList.size() > LOG_BUFFER) {
+                int overflow = logList.size() - LOG_BUFFER;
+                // drop oldest messages
+                bot.safeRun(() -> logList.subList(0, overflow).clear());
+            }
+
+            // update view (respects current filter/search)
+            callRefresh();
         }
-
-        // update view (respects current filter/search)
-        callRefresh();
     }
 
     ///  MENU CONTROL FUNCTIONS (e.g., button-click events etc.)

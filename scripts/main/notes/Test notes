@@ -1,0 +1,19 @@
+Tests:
+    - Task class (complete test)
+    - Fetch class (complete test)
+    - Digging at invalid tiles
+    - Check if it's possible to add logic to pauseMenu() to check the bots safety before pausing?
+    -
+      TEST if pauseMenu() can be used to safe your bot from danger before pausing script
+      TEST getTaskList() function, should return a list of tasks in the queue
+      TEST check menu visibility
+      TEST open and close bot menu
+      TEST open and close bot menu
+
+-> Test supabase/local Client.loadSettings(null)
+-> Test supabase/local Client.loadSettings("")
+-> Test supabase/local Client.loadSettings()
+-> Test supabase/local Client.loadSettings("-1")
+-> Test supabase/local Client.loadSettings("\"malicious code test e.g., getPassword()\"") // maybe use triple quotes @ server
+-> Test supabase/local Client.loadSettings("Player123") // valid params - does not exist
+-> Test supabase/local Client.loadsettings("IAmAwake247") // valid params - does exist (should load)

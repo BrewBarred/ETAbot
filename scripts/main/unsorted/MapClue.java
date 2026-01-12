@@ -1,5 +1,5 @@
 //package main.unsorted;
-//// MAP NOTES:
+//// MAP Clue notes:
 //
 //
 //import main.locations.LocationFinder;

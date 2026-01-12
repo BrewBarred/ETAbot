@@ -38,7 +38,7 @@ public class GraphicsMan {
      * @param g The graphics object used for drawing.
      */
     public void draw(Graphics2D g) {
-        if (bot == null)
+        if (bot == null || !bot.isDrawing())
             return;
 
         // always reset layout each frame to prevent drawing off-screen

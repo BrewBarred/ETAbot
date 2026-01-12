@@ -16,9 +16,9 @@ import java.awt.event.WindowEvent;
  * TODO load this class into settings so it displays all detected screens and the player can click which screen
  *  (i.e., Monitor 1, Monitor 2 or Monitor 3) to spawn the BotMenu on then use that instead.
  */
-public class WindowMan {
+public class FrameMan {
     private BotMan bot;
-    public WindowMan(BotMan bot) {
+    public FrameMan(BotMan bot) {
         this.bot = bot;
     }
     /**

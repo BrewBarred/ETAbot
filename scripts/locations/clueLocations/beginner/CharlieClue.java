@@ -1,6 +1,6 @@
 //package locations.clueLocations.beginner;
 //
-//// CHARLIE NOTES:
+//// CHARLIE Clue notes:
 //
 //// TRIGGER CLUE HINT: "Talk to Charlie the Tramp in Varrock."
 //

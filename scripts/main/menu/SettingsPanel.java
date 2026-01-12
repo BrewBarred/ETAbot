@@ -15,28 +15,64 @@ public final class SettingsPanel extends JPanel {
         super(new BorderLayout(12, 12));
         setBorder(new EmptyBorder(12, 12, 12, 12));
 
-        JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
+        JTabbedPane tabs = new JTabbedPane(JTabbedPane.BOTTOM);
         tabs.setFont(new Font("Segoe UI", Font.PLAIN, 13));
 
+        ///  add different settings tabs here
         tabs.addTab("General", buildGeneralSettingsTab(bot));
-        tabs.addTab("Script", buildScriptSettingsTab(bot));
+        tabs.addTab("Script", buildScriptTab(bot));
         tabs.addTab("Developer", buildDeveloperTab(bot)); // real dev/testing controls
 
         add(tabs, BorderLayout.CENTER);
     }
 
-    private JComponent buildScriptSettingsTab(BotMan bot) {
-        JPanel root = new JPanel(new BorderLayout(12, 12));
+    private JComponent buildGeneralSettingsTab(BotMan bot) {
+        // create a general settings tab to store all general setting menu components
+        JPanel generalSettings = new JPanel(new BorderLayout(12, 12));
+        // create a toggle section to store toggle controls
+        JPanel sectionToggles = section("Toggles");
+            //TODO add floating i. "If enabled, in-game overlays will be displayed over the client with real-time logging."
+            JCheckBox chkOverlays = new JCheckBox("Enable overlays");
+            chkOverlays.setSelected(bot.isDrawing());
+            chkOverlays.addActionListener(e -> bot.isDrawing(chkOverlays.isSelected()));
 
-        JPanel exec = section("Toggles");
+        JPanel panelToggles = new JPanel();
+            panelToggles.setLayout(new BoxLayout(panelToggles, BoxLayout.Y_AXIS));
+    //        panelToggles.add(chkDevMode);
+        panelToggles.add(chkOverlays);
+            panelToggles.add(Box.createVerticalStrut(4));
+            panelToggles.add(chkOverlays);
+            panelToggles.add(chkOverlays);
 
+        ///  final construction:
+
+        // add control panel to the toggle section
+        sectionToggles.add(panelToggles);
+        // add toggle section to the general settings tab
+        generalSettings.add(sectionToggles, BorderLayout.CENTER);
+
+        return generalSettings;
+    }
+
+    private JComponent buildScriptTab(BotMan bot) {
+        JPanel scriptSettings = new JPanel(new BorderLayout(12, 12));
+        JPanel sectionToggles = section("Toggles");
+
+        // Script options:
+            // logout when script finishes successfully
+            // logout on script stop (i.e., Logout when the script stops e.g., breached attempt limit or manual stop)
+                // alternatively, have a break, change account, items, location or task-set, and continue
+            //
+
+        //TODO add floating i. "If enabled, the players account will be logged out before the script is stopped."
+        JCheckBox chkLogout = new JCheckBox("Logout on script end");
+        chkLogout.setSelected(bot.isLogOnStop());
+        chkLogout.addActionListener(e -> bot.setLogOnStop(chkLogout.isSelected()));
+
+        //TODO add floating i. "Enables/disables developer mode which gives the bot access to hidden methods and menus."
         JCheckBox chkDevMode = new JCheckBox("Developer mode (bypass attempts)");
         chkDevMode.setSelected(bot.isDevMode());
         chkDevMode.addActionListener(e -> bot.setDevMode(chkDevMode.isSelected()));
-
-        JCheckBox chkLogout = new JCheckBox("Logout on exit");
-        chkLogout.setSelected(bot.isLogoutOnExit());
-        chkLogout.addActionListener(e -> bot.setLogoutOnExit(chkLogout.isSelected()));
 
         JPanel row2 = new JPanel();
         row2.setLayout(new BoxLayout(row2, BoxLayout.Y_AXIS));
@@ -44,8 +80,8 @@ public final class SettingsPanel extends JPanel {
         row2.add(Box.createVerticalStrut(4));
         row2.add(chkLogout);
 
-        exec.setLayout(new BorderLayout(8, 8));
-        exec.add(row2, BorderLayout.CENTER);
+        sectionToggles.setLayout(new BorderLayout(8, 8));
+        sectionToggles.add(row2, BorderLayout.CENTER);
 
         JPanel info = section("Live info");
         info.setLayout(new GridLayout(0, 2, 8, 8));
@@ -66,21 +102,23 @@ public final class SettingsPanel extends JPanel {
         info.add(new JLabel(""));
         info.add(btnRefresh);
 
-        root.add(exec, BorderLayout.NORTH);
-        root.add(info, BorderLayout.CENTER);
-        return root;
-    }
-
-    private JComponent buildGeneralSettingsTab(BotMan bot) {
-        return new JPanel();
+        scriptSettings.add(sectionToggles, BorderLayout.NORTH);
+        scriptSettings.add(info, BorderLayout.CENTER);
+        return scriptSettings;
     }
 
     private JComponent buildDeveloperTab(BotMan bot) {
         JPanel root = new JPanel();
         root.setLayout(new BoxLayout(root, BoxLayout.Y_AXIS));
+        JPanel tm = section("Task Manager");
+
+        // Menu options:
+            // stop on close
+                // i. stops script on menu close (automatically disabled if hide on play enabled)
+            // hide on play
+                // i. opens menu on pause, closes menu on resume (automatically disabled if stop on close enabled)
 
         // ---------- TaskMan controls (real) ----------
-        JPanel tm = section("Task Manager (testing)");
         tm.setLayout(new GridLayout(0, 2, 8, 8));
 
         JLabel lblIdx = new JLabel("Current index:");

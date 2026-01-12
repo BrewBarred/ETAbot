@@ -34,7 +34,7 @@
 //            this.selectionFishingArea.addActionListener(e -> {
 //                FishingArea area = (FishingArea) selectionFishingArea.getSelectedItem();
 //                this.bot.setFishingArea(area);
-//            });
+//            });is
 //
 //            JLabel labelMethod = new JLabel("Select a fishing style:");
 //            this.selectionFishingStyle = new JComboBox<>(FishingStyle.values());

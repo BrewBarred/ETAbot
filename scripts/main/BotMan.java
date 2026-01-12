@@ -1,12 +1,10 @@
 package main;
 
-import main.managers.TaskMan;
-import main.managers.WindowMan;
+import main.data.supabase.Client;
+import main.managers.*;
 import main.task.Action;
 import main.task.Task;
 import main.tools.ETARandom;
-import main.managers.GraphicsMan;
-import main.managers.LogMan;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Item;
@@ -62,13 +60,19 @@ public abstract class BotMan extends Script {
      */
     private int MIN_DELAY = 350;
     /**
+     * Placeholder variable for local-hosting later if I can find a work-around osbots security policies or host a
+     * suitable server.
+     */
+    private boolean LOCAL_HOST = false;
+    private static BotMan instance;
+    /**
      * The log manager, used to handle/display all logging messages/errors.
      */
     private LogMan logMan;
     /**
      * The window manager, used to detect, manipulate and attach listeners to various windows.
      */
-    private WindowMan windowMan;
+    private FrameMan frameMan;
     /**
      * The graphics manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
      */
@@ -77,6 +81,10 @@ public abstract class BotMan extends Script {
      * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
      */
     private TaskMan taskMan;
+    /**
+     * The settings manager, used to easily manipulate/manage in-game, bot-menu or script-specific settings.
+     */
+    private SettingsMan settingsMan;
     /**
      * The bot menu associated with this bot instance - protected since it gains control of player accounts.
      */
@@ -90,10 +98,12 @@ public abstract class BotMan extends Script {
      * know)
      */
     protected String botStatus;
+
+    ///  script settings
     /**
      * True if the bot should log out when the script is complete.
      */
-    private boolean logoutOnExit = false;
+    private boolean isLogOnStop = false;
     /**
      * True if the player is currently in developer mode, which will bypass the attempt counter and enable some extra
      * features while BotMan is running.
@@ -157,13 +167,19 @@ public abstract class BotMan extends Script {
     @Override
     public final void onStart() throws InterruptedException {
         try {
-            setStatus("Launching... ETA BotManager");
+            // provide a static reference to this class on instantiation to provide access for static methods like Log()
+            this.instance = this;
+//            if (localHost) {
+//                ///  Example local host (start server on start, then use GET/POST requests triggered by menu buttons)
+//                try {
+//                    Server.main(null);
+//                } catch (Exception e) {
+//                    log(e.getMessage());
+//                    exit();
+//                }
+//            }
 
-            ///  setup defaults
-
-            // reset current attempts
-            currentAttempt = 0;
-            setStatus("Successfully loaded defaults!");
+            log("Launching... ETA BotManager");
 
             /// setup managers
 
@@ -171,20 +187,26 @@ public abstract class BotMan extends Script {
             logMan = new LogMan(this);
 
             setBotStatus("Creating WindowMan...");
-            windowMan = new WindowMan(this);
+            frameMan = new FrameMan(this);
 
             setBotStatus("Creating GraphicsMan...");
             // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
             graphicsMan = new GraphicsMan(this);
 
             setBotStatus("Creating TaskMan...");
-            // initiates a task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
+            // initiates a new task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
+
+            setBotStatus("Creating SettingsMan...");
+            // initiates a new settings manager to easily manipulate/manage settings
+            settingsMan = new SettingsMan(this);
 
             setBotStatus("Creating BotMenu...");
             botMenu = new BotMenu(this);
 
             setStatus("Successfully loaded managers!");
+
+            ///  setup child classes
 
             // force-load child scripts to prevent accidental overrides
             // (only load children after loading managers since children use managers)
@@ -193,10 +215,16 @@ public abstract class BotMan extends Script {
                 throw new RuntimeException("Failed to load child script!");
             setStatus("Successfully loaded children!");
 
+            ///  set default field values
+
+            // reset current attempts
+            currentAttempt = 0;
+            setStatus("Successfully loaded defaults!");
+
             ///  setup menu items
 
             setBotStatus("Setting up menu items...");
-            logoutOnExit = false; // TODO setup checkbox in menu or constructor to change this value
+            isLogOnStop = false; // TODO setup checkbox in menu or constructor to change this value
             setStatus("Successfully loaded menu items!");
 
             ///  setup listeners
@@ -206,12 +234,31 @@ public abstract class BotMan extends Script {
 
             setStatus("Initialization complete!");
 
+            ///  load settings either via local host or supabase server
+
+            setStatus("Loading settings...");
+            setBotStatus("Loading settings for: " + myPlayer().getName() + " @ " + loadSettings());
+
             // pause the script to prevent the character prematurely taking off before scripts are set
             callPause();
 
         } catch (Throwable t) {
             log("Error Initializing BotMan: " + t);
         }
+    }
+
+    /**
+     * @return A {@link String} value which denotes the host URL for the ETA server, used to save/load player, script
+     * and menu settings.
+     * <n>
+     * This function returns a different value depending on whether local host is enables or not.
+     *
+     * @see BotMan#LOCAL_HOST
+     */
+    private String loadSettings() {
+        if (myPlayer() == null)
+            throw new RuntimeException("Attempted to load settings for a null player!");
+        return Client.fetchSettings();
     }
 
     /**
@@ -264,14 +311,14 @@ public abstract class BotMan extends Script {
         ///  list listeners - attach listeners to lists to reflect changes in bot menu
 
         // refresh bot menu anytime the task list is manipulated (index change, add, remove)
-        windowMan.attachMenuListListeners(getTaskList());
+        frameMan.attachMenuListListeners(getTaskList());
         // refresh bot menu anytime the task library is manipulated (index change, add, remove)
-        windowMan.attachMenuListListeners(getTaskLibrary());
+        frameMan.attachMenuListListeners(getTaskLibrary());
 
         ///  onClose() events
 
         // call the bot menu on close function whenever the user exits the menu (via window 'x' button)
-        windowMan.attachOnCloseEvent(botMenu, () -> botMenu.close());
+        frameMan.attachOnCloseEvent(botMenu, () -> botMenu.close());
 
         ///  refresh() events
 
@@ -333,11 +380,12 @@ public abstract class BotMan extends Script {
                     throw new InterruptedException("[BotMan Error] Maximum attempt limit exceeded!");
                 return MIN_DELAY;
 
-                // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
+              // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
             } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
 
             setStatus("Trying again after " + delay / 1000 + "s");
         } catch (InterruptedException e) {
+
             this.exit(e.getMessage());
         }
 
@@ -493,7 +541,7 @@ public abstract class BotMan extends Script {
     public final void exit(String exitMsg) {
         if (exitMsg != null && !exitMsg.isEmpty())
             log(exitMsg);
-        stop(logoutOnExit);
+        stop(isLogOnStop);
     }
 
     public final void exit() {
@@ -534,10 +582,54 @@ public abstract class BotMan extends Script {
     public void pauseScript() {}
     public void resumeScript() {}
 
+    ///
+    ///     STATIC HELPERS
+    ///
+
+    /**
+     * This function provides a global way to log messages to the console and menu where possible, as long as a valid
+     * instance can be created.
+     *
+     * @param msg The message to log to the console.
+     */
+    public static void Log(String msg) {
+        try {
+            BotMan bot = BotMan.getInstance();
+            bot.log(msg);
+        } catch (Exception e) {
+            throw new RuntimeException("Error logging global message: " + msg);
+        }
+    }
+
+    public static String getSettingsJSON() {
+        return getInstance().settingsMan.getSettingsJSON();
+    }
 
     ///
     ///     GETTERS/SETTERS
     ///
+
+    /**
+     * @return A private reference to this {@link BotMan} instance for static access within this class.
+     */
+    private static BotMan getInstance() {
+        if (instance == null)
+            throw new RuntimeException("Attempted to fetch a null BotMan instance!");
+        return instance;
+    }
+
+    /**
+     * Provides global access to a {@link String} object denoting the current settings for the current ETA bot instance.
+     *
+     * @return A {@link String} in JSON format used to save/load player settings.
+     */
+    public static String fetchData() {
+        return Client.fetchSettings();
+    }
+
+    public static boolean updateData() {
+        return Client.saveSettings();
+    }
 
     /**
      * Return true if this script is currently executing.
@@ -593,20 +685,30 @@ public abstract class BotMan extends Script {
 
     /// Getters/setters: bot menu
 
-    public boolean isLogoutOnExit() {
-        return logoutOnExit;
+    ///  script
+
+    public boolean isDrawing() {
+        return settingsMan.isDrawingOverlays();
     }
 
-    public void setLogoutOnExit(boolean logout) {
-        logoutOnExit = logout;
-        setBotStatus("Logout on exit: " + (logoutOnExit ? "ON" : "OFF"));
+    public void isDrawing(boolean draw) {
+        settingsMan.setDrawingOverlays(draw);
+    }
+
+    public boolean isLogOnStop() {
+        return isLogOnStop;
+    }
+
+    public void setLogOnStop(boolean logout) {
+        isLogOnStop = logout;
+        setBotStatus("Log on stop: " + (isLogOnStop() ? "Enabled" : "Disabled"));
     }
 
     ///  Getters/setters: dev console
 
     public void setDevMode(boolean devMode) {
         isDevMode = devMode;
-        setBotStatus("Dev mode: " + (isDevMode ? "ON" : "OFF"));
+        setBotStatus("Dev mode: " + (isDevMode ? "Enabled" : "Disabled"));
     }
 
     public boolean isDevMode() {
@@ -923,6 +1025,19 @@ public abstract class BotMan extends Script {
 //
 //        return null;
 //    }
+
+    /**
+     * Provides global access to the username of the account that this ETA bot instance is controlling.
+     * //TODO encrypt this value before spitting it out for better security for players
+     *
+     * @return The player name for the account that the current ETA bot instance is controlling.
+     */
+    public static String getPlayerName() {
+        if (instance == null)
+            throw new RuntimeException("Attempted to fetch the name of a null instance!");
+        return instance.myPlayer().getName();
+    }
+
     public static String getCaller() {
         StackTraceElement[] s = Thread.currentThread().getStackTrace();
         for (int i = 2; i < s.length; i++) { // skip getStackTrace + this method

@@ -1,0 +1,14 @@
+Add feature to:
+- Check world before logging in
+    - Use worldman to determine if world is suitable for player using bot menu settings
+- Check if player is logged in, if not login and sleep until logged in @ BotMan.onStart() before starting anything else
+    - This should fix an error causing botmenu not to launch when starting script while player is logged out
+
+
+/// Settings:
+
+Auto-loot drops
+Auto-loot nearby
+Tick-cast
+    i. Every few ticks, if runes available, cast a spell like enchant, stationary spells, high alch if alchables in inv
+        (Set by player in menu), coal if in inv, or air strike if nearby enemy) this is to 0-time level magic and seem more human like
