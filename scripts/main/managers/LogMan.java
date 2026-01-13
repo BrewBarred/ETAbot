@@ -37,7 +37,7 @@ public class LogMan {
     /**
      * Enum to define the different types of log messages
      */
-    public enum LogSource { ALL, PLAYER, BOT, DEBUG }
+    public enum LogSource { ALL, PLAYER, BOT, GET, PATCH, POST, DEBUG }
     /**
      * List to store all logging messages for printing to the {@link BotMenu} console.
      */

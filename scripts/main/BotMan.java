@@ -903,11 +903,36 @@ public abstract class BotMan extends Script {
             return false;
 
         // update bot status variable for later reference
-        this.botStatus = botStatus;
+        this.botStatus = botStatus; //TODO check if this is still necessary now that logman handles the printing? I think graphics man still prints via this variable but it should be handed over to logMan really
 
         if (botMenu != null)
             // update bot menu console log
             logMan.log(LogMan.LogSource.BOT, this.botStatus);
+
+        // always return true for one-line return statements
+        return true;
+    }
+
+    public boolean setPostStatus(String postStatus) {
+        return setStatus(LogMan.LogSource.POST, postStatus);
+    }
+
+    public boolean setPatchStatus(String patchStatus) {
+        return setStatus(LogMan.LogSource.PATCH, patchStatus);
+    }
+
+    public boolean setGetStatus(String getStatus) {
+        return setStatus(LogMan.LogSource.GET, getStatus);
+    }
+
+    public boolean setStatus(LogMan.LogSource source, String status) {
+        // no point in printing nothing!
+        if (status != null && status.isEmpty() || source == null)
+            return false;
+
+        if (botMenu != null)
+            // update bot menu console log
+            logMan.log(source, status);
 
         // always return true for one-line return statements
         return true;
