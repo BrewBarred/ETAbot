@@ -106,7 +106,7 @@ public class LogMan {
          */
         LogEntry(LogSource source, String message) {
             if (source == null || message == null)
-                throw new RuntimeException("Error creating log entry due to null parameters! Source: " + source + ", message: " + null);
+                throw new RuntimeException("Error creating log entry due to null parameters! Source: " + source + ", message: " + message);
 
             this.timeMillis = System.currentTimeMillis();
             this.source = source;
@@ -422,7 +422,10 @@ public class LogMan {
             if (logPane != null && logDoc != null)
                 logPane.setCaretPosition(logDoc.getLength());
 
-        } catch (BadLocationException ignored) {}
+        } catch (BadLocationException e) {
+            bot.log(e.getMessage());
+            bot.checkAttempts();
+        }
     }
 
     /**
@@ -464,25 +467,26 @@ public class LogMan {
      * Logs an entry to the console by creating a new {@link LogEntry} using the passed source and string parameters.
      *
      * @param source The source of this {@link LogEntry}.
-     * @param string The string contents of this {@link LogEntry}.
+     * @param lines The string contents of this {@link LogEntry}.
      */
-    public void log(LogSource source, String... string) {
-        // return early if there is nothing to print
-        if (string.length < 1)
+    public void log(LogSource source, String... lines) {
+        if (lines == null || lines.length == 0 || lines[0] == null)
             return;
 
-        // create a string builder to tidily append each line to the returning string and load the first string into it
-        StringBuilder sb = new StringBuilder(string[0]);
+        // initialize string builder with first line, unformatted
+        StringBuilder sb = new StringBuilder();
 
-        // starting from the 2nd string, add all strings to the builder with new lines and tab escapes for better formatting
-        int i = 1;
-        // for each string
-        while (i < string.length) {
-            if (string[i] != null) {
-                log(new LogEntry(source, string[i++]));
-            }
+        // for every additional line provided in the String... array, insert a newline and two tab returns at the front.
+        for (String line : lines) {
+            if (line == null)
+                continue;
+            sb.append(line).append("\n\t");
         }
+
+        log(new LogEntry(source, sb.substring(0, sb.toString().length() - 6)));
     }
+
+
 
     /**
      * Adds the passed {@link LogEntry} to the {@link LogMan#logList} for display in the {@link BotMenu}'s log console.

@@ -181,8 +181,6 @@ public abstract class BotMan extends Script {
     @Override
     public final void onStart() throws InterruptedException {
         try {
-            // provide a static reference to this class on instantiation to provide access for static methods like Log()
-            instance = this;
 //            if (localHost) {
 //                ///  Example local host (start server on start, then use GET/POST requests triggered by menu buttons)
 //                try {
@@ -192,7 +190,9 @@ public abstract class BotMan extends Script {
 //                    exit();
 //                }
 //            }
-            log("Launching... ETA BotManager");
+            log("Launching ETA BotMan instance...");
+            // provide a static reference to this class on instantiation to provide access for static methods like Log()
+            instance = this;
 
             /// setup managers
 
@@ -258,7 +258,7 @@ public abstract class BotMan extends Script {
                     + "\t\t\n  Player: "+ myPlayer().getName()
                     + "\n  Settings: " + downloadSettings());
 
-            log(getCaller());
+            //log(getCaller());
 
             // pause the script to prevent the character prematurely taking off before scripts are set
             callPause();
@@ -374,7 +374,7 @@ public abstract class BotMan extends Script {
         return taskMan.getRemainingTaskCount();
     }
 
-    protected int checkAttempts() {
+    public int checkAttempts() {
         try {
             // increment the attempt everytime it is checked for external try/catches to call
             currentAttempt++;
@@ -941,7 +941,8 @@ public abstract class BotMan extends Script {
             } else this.callPause();
 
         } catch (Exception e) {
-            BotMan.Log(e.getMessage());
+            log(e.getMessage());
+            checkAttempts();
         }
 
         return script.isRunning();
@@ -1034,7 +1035,7 @@ public abstract class BotMan extends Script {
         for (int i = 2; i < stack.length; i++) {
             String className = stack[i].getClassName();
 
-            if (!IS_INTERNAL.test(className))
+            if (!IS_INTERNAL.test(className) && !className.contains("GetCaller"))
                 return Format(stack[i]);
         }
         return "[Unknown Caller]";
