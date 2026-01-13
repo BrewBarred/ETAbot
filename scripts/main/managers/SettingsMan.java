@@ -2,9 +2,9 @@ package main.managers;
 
 import main.BotMan;
 import main.BotMenu;
-import main.data.supabase.Client;
 import org.osbot.rs07.api.Settings;
 
+import java.io.IOException;
 import java.time.Instant;
 
 /**
@@ -32,9 +32,10 @@ public class SettingsMan {
 
     ///  Developer settings
 
-    public SettingsMan(BotMan bot) {
+    public SettingsMan(BotMan bot) throws IOException {
         this.bot = bot;
-        this.settings = "{}";
+        this.settings = bot.getServerSettings();
+        bot.setBotStatus("Settings:\n\n\n" + settings);
     }
 
     ///
@@ -77,49 +78,58 @@ public class SettingsMan {
     public final String getSettingsJSON() {
         return "{" +
                 String.format("user_id:\"%s\",", BotMan.getPlayerName()) +
-                String.format("settings:\"%s\"", BotMan.getSettingsJSON()) +
+                String.format("settings:\"%s\"", convertToJSON()) +
                 String.format("updated_at:\"%s\"", Instant.now()) +
                 "}";
     }
 
-    private final String convertSettingsToJSON() {
+    /**
+     * Converts all settings into a JSON-styled {@link String} ready for storage on the ETA Bot database.
+     */
+    private String convertToJSON() {
+        //TODO change example to actual settings once settings menu design is complete
+        return "{\"Settings\":false}";
+    }
+
+    private final String getAsJSON() {
         // TODO: implement a way to efficiently and ideally dynamically compile all settings in this class and return as
         //  a string with key/values of some sort for later loading, reading and setting.
         return "{}";
     }
 
-    private String convertJSONToSettings(String jsonArray) {
-        // if the passed json array contains a settings header
-        if (jsonArray.contains("\"settings\":")) {
-            // move pointer to the position after settings colon ":"
-            int start = jsonArray.indexOf("\"settings\":") + 11;
-            int end = jsonArray.lastIndexOf("}");
-            // return spliced results
-            if (start > 11 && end > start) {
-                return jsonArray.substring(start, end + 1);
-            }
-        }
+//    private String convertJSONToSettings(String jsonArray) {
+//        // if the passed json array contains a settings header
+//        if (jsonArray.contains("\"settings\":")) {
+//            // move pointer to the position after settings colon ":"
+//            int start = jsonArray.indexOf("\"settings\":") + 11;
+//            int end = jsonArray.lastIndexOf("}");
+//            // return spliced results
+//            if (start > 11 && end > start) {
+//                return jsonArray.substring(start, end + 1);
+//            }
+//        }
+//
+//        return null;
+//    }
 
-        return null;
-    }
-
+    ///
     ///  Save/Load functions
     ///
-    public void saveSettings() {
-        //TODO: in future, consider changing this so that player is the key, settings are the value (or one of the
-        // values), and a username links each entry. So each person will have 1 user, 1 user will have many players, and
-        // each player will have 1 value representing the settings, and maybe some other key/value pairs later down the
-        // track.
-
-        // use player name as primary key for database storage so users don't need to create database accounts
-        String player = bot.getName();
-        bot.log("Saving settings for: " + bot.getBot() + player);
-        String exampleSettings = "{\"attack_style\":\"aggressive\",\"food\":\"shark\"}";
-
-        Client.saveSettings();
-        bot.log("Saved settings for: " + player); // {"attack_style":"aggressive","food":"shark"}
-        bot.setBotStatus("Successfully saved settings!");
-    }
+//    public void saveSettings() {
+//        //TODO: in future, consider changing this so that player is the key, settings are the value (or one of the
+//        // values), and a username links each entry. So each person will have 1 user, 1 user will have many players, and
+//        // each player will have 1 value representing the settings, and maybe some other key/value pairs later down the
+//        // track.
+//
+//        // use player name as primary key for database storage so users don't need to create database accounts
+//        String player = bot.getName();
+//        bot.log("Saving settings for: " + bot.getBot() + player);
+//        String exampleSettings = "{\"attack_style\":\"aggressive\",\"food\":\"shark\"}";
+//
+//        bot.putServerSetting()/
+//        bot.log("Saved settings for: " + player); // {"attack_style":"aggressive","food":"shark"}
+//        bot.setBotStatus("Successfully saved settings!");
+//    }
 
     /**
      * // TODO: setup local hosting later for better server control, tailored multi-user access and to remove 3rd party
@@ -127,10 +137,10 @@ public class SettingsMan {
      *
      * Load the preferred settings for this player by fetching any existing settings from the ETA Bot server.
      */
-    public void loadSettings() {
+    public void loadSettings() throws IOException {
         // fetch the settings for this player from the server (automatically handles local or supa host)
         bot.log("Fetching settings for: " + bot.getName());
-        settings = Client.fetchSettings();
+        settings = bot.getServerSettings();
         // output fetched settings as a debug log entry
         bot.log("Loaded settings:\n" + settings);
         bot.setBotStatus("Successfully loaded settings!");

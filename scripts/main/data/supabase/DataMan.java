@@ -1,0 +1,376 @@
+package main.data.supabase;
+
+import main.BotMan;
+
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+
+public class DataMan {
+    ///
+    ///     HTTP REQUEST/DATABASE ENUMS
+    ///
+
+    /**
+     * An enum containing all available database tables in the ETA Bot server for quick-reference.
+     */
+    public enum Database { Settings };
+    /**
+     * An enum containing all available HTTP request methods used to interface the ETA Bot server.
+     */
+    public enum REQUEST_METHOD {POST, PATCH, GET}
+    /**
+     * The public key used to access the Supabase database that ETA Bot uses to dynamically save/load settings.
+     */
+    private final String SUPABASE_KEY;
+
+    private final String BASE_URL;
+    private final String FILTER;
+    /**
+     * A list of all settings columns in the settings database listed in order as they appear in the table,
+     * from left-to-right except for the 0th item, which is always the tables primary key(s).
+     */
+    private static final String[] SETTINGS_COLUMNS = {"username", "timestamp", "settings"};
+    //TODO: add to botmenu General settings tab
+    /**
+     * Connection timeout in milliseconds
+     */
+    private static final int CONNECTION_TIMEOUT = 5000;
+    //TODO: add to botmenu General settings tab
+    /** Read timeout in milliseconds */
+    private static final int READ_TIMEOUT = 5000;
+
+    public DataMan() throws UnsupportedEncodingException {
+        /// set default values
+        SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5Z2xma3Bvamtqd3Zjc215Ym"
+                + "xyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgxNzUxMDMsImV4cCI6MjA4Mzc1MTEwM30.YJW7H1Kj-tGsYhpQwTk-7ALOF1yXK"
+                + "zO-I3LEt63-rRA";
+        BASE_URL = getBase();
+        FILTER = filterByPlayerName();
+    }
+
+    /**
+     * @return The base URL for ETA Bot database requests.
+     */
+    private String getBase() {
+        // coded this way for easier encryption later
+        String projectID = "ayglfkpojkjwvcsmyblr";
+        return String.format("https://%s.supabase.co/rest/v1/", projectID);
+    }
+
+    /**
+     * Return a URL ready to be extended with a path in the database. This function provides the
+     * {@link DataMan#BASE_URL} + <Database enum> + {@link DataMan#FILTER}.
+     * <n>
+     * By default, this function filters by comparing this players account name against the databases primary key.
+     *
+     * @param table The database to filt
+     * @return
+     */
+    private String getTableURL(Database table) {
+        return BASE_URL + table + FILTER;
+    }
+
+    private String getColumnURL(Database table, String columnName) {
+        return BASE_URL + table + FILTER + "&select=" + columnName;
+    }
+
+    // Save settings for a user
+    public String generatePOST(Database table, String columnName, String value) throws IOException {
+        String url = getTableURL(table);
+        String payload = convertToJsonString(columnName, value);
+
+        // log info to console for debugging
+        BotMan.Log("Posting setting:"
+                + "\n URL: " + url
+                + "\n Payload: " + payload
+                + "\n Column: " + columnName
+                + "\n Data: " + value);
+
+        return POST(url, payload);
+    }
+
+    private String generatePATCH(Database table, String columnName, String value) throws IOException {
+        String url = getTableURL(table);
+        String payload = convertToJsonString(columnName, value);
+
+        // log info to console for debugging
+        BotMan.Log("Patching setting:"
+                + "\n URL: " + url
+                + "\n Payload: " + payload
+                + "\n Column: " + columnName
+                + "\n Data: " + value);
+
+        return PATCH(url, payload);
+    }
+
+    /**
+     * Generate a URL to fetch the passed column data from the passed table in the ETA Bot database and return the
+     * response.
+     *
+     * @return A {@link String} containing the data from the requested column - if it exists in the database.
+     */
+    private String generateGET(Database table, String columnName) {
+        String url = getColumnURL(table, columnName);
+
+        // log info to console for debugging
+        BotMan.Log("Selecting setting \"" + columnName
+                    + "\" from \"" + table + "\"."
+                    + "\n @ Url: "+ url);
+
+        return url;
+    }
+
+    /**
+     * Builds a JSON payload like {"column": value} where value must already be valid JSON.
+     */
+    private String convertToJsonString(String columnName, String jsonData) {
+        return "{\"" + columnName + "\":" + jsonData + "}";
+    }
+
+    /**
+     * Returns a filter for the HTTP request which compares the tables primary key against the players username before
+     * returning a row of results.
+     *
+     * @return A {@link String} which can be added to an HTTP url request to filter data by player name, reducing load.
+     */
+    private String filterByPlayerName() throws UnsupportedEncodingException {
+        // filter table by comparing table primary key (username), which is always column 0, against this players name
+        return "?" + SETTINGS_COLUMNS[0] + "=eq." + URLEncoder.encode(BotMan.getPlayerName(), "UTF-8");
+    }
+
+    /**
+     * Create and execute a GET request to retrieve the requested setting column.
+     * <n>
+     * Note: passing a null, empty or "*" columnName will return all settings.
+     *
+     * @return The HTTP GET response from the ETA Bot's server request.
+     */
+    public String getServerSettings(String columnName) throws IOException {
+        // clean column name to prevent invalid references
+        columnName = (columnName == null || columnName.isEmpty()) ? "*" : columnName;
+        // get "settings" column data from "Settings" table
+        String getSettingURL = generateGET(Database.Settings, columnName);
+
+        // format a new HTTP fetch request url that fetches all settings for the current player
+        BotMan.Log("Getting setting:"
+                + "\n URL: " + getSettingURL
+                + "\n Column: " + columnName);
+
+        // send the patch request to the server
+        return GET(getSettingURL);
+    }
+
+    /**
+     * Create and execute a PATCH request to update the passed (existing) column with the passed data value.
+     *
+     * @return The HTTP PATCH response from the ETA Bot's server request.
+     */
+    public String patchServerSetting(String columnName, String jsonData) throws IOException {
+        // generate a URL suitable for a PATCH HTTP request
+        String patchSettingURL = getTableURL(Database.Settings);
+        // convert the column header name and data provided into a payload to update database
+        String payload =  convertToJsonString(columnName, jsonData);
+
+        BotMan.Log("Patching setting:"
+                + "\n URL: " + patchSettingURL
+                + "\n Column: " + columnName
+                + "\n JSON Data: " + jsonData
+                + "\n Payload: + " + payload);
+
+        // send the patch request to the server
+        return PATCH(patchSettingURL, payload);
+    }
+
+    /**
+     * Create and execute a POST request to create or update the passed column with the passed data value.
+     *
+     * @return The HTTP POST response from the ETA Bot's server request.
+     */
+    public String postServerSetting(String columnName, String jsonData) throws IOException {
+        // generate a URL suitable for a POST HTTP request
+        String postSettingURL = getTableURL(Database.Settings);
+        // convert the column header name and data provided into a payload to update/insert into database
+        String payload = convertToJsonString(columnName, jsonData);
+
+        BotMan.Log("Posting setting:"
+                + "\n URL: " + postSettingURL
+                + "\n Column: " + columnName
+                + "\n JSON Data: " + jsonData
+                + "\n Payload: + " + payload);
+
+        // send the post request to the server
+        return POST(postSettingURL, payload);
+    }
+
+    /**
+     * Generates an HTTP connection request using the passed parameters, and if valid, connects to the host
+     * using the generated connection, and returns the connection response.
+     *
+     * @param method The {@link REQUEST_METHOD HTTP request method} to use for this request.
+     * @param url The location path of the data on the server-side.
+     * @return A {@link String} value denoting the connection response.
+     */
+    private String request(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
+        HttpURLConnection request = generateRequest(method, url);
+        BotMan.Log("Generated request: "
+                    + "\n connection: " + request
+                    + "\n method: " + request.getRequestMethod()
+                    + "\n properties: " + request.getRequestProperties());
+
+        // Write body only if provided (POST/PATCH)
+        if (jsonBody != null) {
+            byte[] bytes = jsonBody.getBytes(StandardCharsets.UTF_8);
+            try (OutputStream os = request.getOutputStream()) {
+                os.write(bytes);
+                os.flush();
+            }
+        }
+
+        // validate response code before continuing
+        int responseCode = request.getResponseCode();
+        // return early if the response code is invalid
+        if (responseCode < 200 || responseCode >= 300)
+            throw new RuntimeException("Error connecting to server!");
+
+        return readResponse(request);
+    }
+
+    /**
+     * Generates, executes and returns the result of an HTTP PUT request url connection suitable for the ETA Bot's
+     * server interpretation.
+     *
+     * @param path A {@link String} value denoting the full HTTP path to the data being updated/inserted.
+     * @return The connection response as a {@link String} value.
+     */
+    private String POST(String path, String payload) throws IOException {
+        return request(REQUEST_METHOD.POST, path, payload);
+    }
+
+    /**
+     * Generates and returns an HTTP PATCH request url connection suitable for ETA Bot's server to interpret, returning
+     * the result as a {@link String}.
+     */
+    private String PATCH(String path, String payload) throws IOException {
+        return request(REQUEST_METHOD.PATCH, path, payload);
+    }
+
+    private String GET(String path) throws IOException {
+        // no payload passed with GET requests
+        return request(REQUEST_METHOD.GET, path, null);
+    }
+
+    /**
+     * Generate a POST, PATCH OR GET HTTP connection request URL using the passed path and request method.
+     *
+     * @param connectionURL The url defining the path to collect data from the server.
+     * @param method The HTTP request to use in this response
+     * @return A {@link String} value representing a connection request URL ready for HTTP transmission.
+     */
+    private HttpURLConnection generateRequest(REQUEST_METHOD method, String connectionURL) throws IOException {
+        // connect to the database using the passed connection URL
+        HttpURLConnection request = connect(connectionURL);
+            // set HTTP request method type
+            request.setRequestMethod(method.toString());
+            // set API key & authorization
+            request.setRequestProperty("apikey", SUPABASE_KEY);
+            request.setRequestProperty("Authorization", "Bearer " + SUPABASE_KEY);
+            // reduce load by merging duplicates
+            //TODO check fault ?
+            // ask Supabase to return the updated row (prevents empty 204 responses)
+            request.setRequestProperty("Prefer", // set preferences for this request
+                          "return=representation," + // return object to prevent numerous empty response error codes
+                          "resolution=merge-duplicates,"); // auto-merge data to prevent duplicates and wasted resources
+            // set safety timeouts to prevent endless loops
+            request.setConnectTimeout(CONNECTION_TIMEOUT);
+            request.setReadTimeout(READ_TIMEOUT);
+
+        // extra logic for patch/put since they have bodies too
+        if (method == REQUEST_METHOD.PATCH ||  method == REQUEST_METHOD.POST) {
+            request.setRequestProperty("Content-Type", "application/json");
+            request.setDoOutput(true);
+        }
+
+        return request;
+    }
+//
+//    /**
+//     * Generates and returns an HTTP GET request url connection suitable for ETA Bot's server to interpret.
+//     */
+//    private HttpURLConnection generateRequest(String path) throws IOException {
+//        BotMan.Log("Generated request with request method: " + REQUEST_METHOD.GET);
+//        // generate a request that will GET data from the passed host if it is a valid connection
+//        return generateRequest(REQUEST_METHOD.GET, path);
+//    }
+
+    /**
+     * Create a url using the passed request string and try open a connection to it, returning the connection object.
+     *
+     * @param path The URL used to GET/POST data from/to the ETA Bot database.
+     * @return A reference to the connection if it was successful.
+     */
+    private HttpURLConnection connect(String path) throws IOException {
+        // create a url using the passed request string and connect to it, returning the connection
+        return (HttpURLConnection) new URL(path).openConnection();
+    }
+//
+//    /**
+//     * Reads the input stream for the passed HTTP connection and returns it as a {@link String} in the form of a
+//     * {@link com.google.gson.JsonArray}.
+//     *
+//     * @param fetchRequestURL A {@link String} value denoting the url to connect to before reading the resulting input
+//     *                      stream.
+//     * @return The response as a {@link String}
+//     */
+//    private String query(String fetchRequestURL) throws IOException {
+//        // try to connect to the specified http request path
+//        HttpURLConnection request = connect(fetchRequestURL);
+//        // read the connection response line-by-line and return the full result
+//        String response = readResponse(request);
+//
+//        // TODO: consider loading each column into a dictionary for quick and efficient management
+//
+//        // log some response info for debugging purposes
+//        BotMan.Log("Query Response:" +
+//                "\n[" + request.getRequestMethod() + "] Response code: " + request.getResponseCode() + " [" + request.getResponseMessage() + "]:");
+//        // TODO: add the following lines back in once isDebugging is setup properly to avoid accidental printing errors during development
+//        //          + "\n  Fetch URL: " + request.getURL()
+//        //          + "\n  Response: " + response);
+//
+//        return response;
+//    }
+
+    /**
+     * Reads the passed {@link HttpURLConnection connection request result}, logging and returning the full text.
+     *
+     * @param request The {@link HttpURLConnection} to read.
+     * @return The response of the {@link HttpURLConnection} connection request, if successful.
+     */
+    private String readResponse(HttpURLConnection request) throws IOException {
+        // validate response code before continuing
+        int code = request.getResponseCode();
+
+        // use error stream on failure, input stream on success
+        InputStream stream = (code >= 200 && code < 300)
+                ? request.getInputStream()
+                : request.getErrorStream();
+
+        // some responses (e.g., 204) may have no body
+        if (stream == null)
+            return "";
+
+        InputStreamReader streamReader = new InputStreamReader(stream);
+        BufferedReader reader = new BufferedReader(streamReader);
+
+        // create a string builder to append each line of the response to a string
+        StringBuilder response = new StringBuilder();
+        // read the response until the end
+        for (String line = ""; line != null; line = reader.readLine())
+            response.append(line);
+
+        // close the reader since we are finished reading to reduce overheads
+        reader.close();
+
+        return response.toString();
+    }
+}

@@ -483,7 +483,7 @@ public class LogMan {
         bot.log(entry.toString());
 
         // update bot menu log console if menu exists
-        if (bot.getBotMenu() == null) {
+        if (bot.getBotMenu() != null) {
             // log entries not only to track them but also to limit the total log entries (buffer)
             bot.safeRun(() -> logList.add(entry));
 

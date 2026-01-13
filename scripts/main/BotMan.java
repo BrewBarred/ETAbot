@@ -1,6 +1,6 @@
 package main;
 
-import main.data.supabase.Client;
+import main.data.supabase.DataMan;
 import main.managers.*;
 import main.task.Action;
 import main.task.Task;
@@ -14,7 +14,10 @@ import org.osbot.rs07.utility.ConditionalSleep;
 
 import javax.swing.*;
 import java.awt.*;
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.function.BooleanSupplier;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import static main.managers.LogMan.LogSource.DEBUG;
@@ -44,6 +47,13 @@ import static main.managers.LogMan.LogSource.DEBUG;
  * @see BotMan#sleep(long, BooleanSupplier)
  */
 public abstract class BotMan extends Script {
+    private static final String[] SKIP_PREFIXES = {"java.", "org."}; // "jdk.", "org.", "com.", "javax.", "kotlin."
+
+    private static final Predicate<String> IS_INTERNAL =
+            s -> Arrays.stream(SKIP_PREFIXES).anyMatch(s::startsWith);
+
+    private static final Predicate<String> IS_TOSTRING =
+            s -> s.contains("toString()");
     ///
     ///     PUBLIC FIELDS
     ///
@@ -81,6 +91,10 @@ public abstract class BotMan extends Script {
      * The task manager, used to submit tasks to the queue, or to remove/manipulate existing tasks.
      */
     private TaskMan taskMan;
+    /**
+     * The database manager, used to save/load data to/from the ETA Bot database.
+     */
+    private DataMan dataMan;
     /**
      * The settings manager, used to easily manipulate/manage in-game, bot-menu or script-specific settings.
      */
@@ -168,7 +182,7 @@ public abstract class BotMan extends Script {
     public final void onStart() throws InterruptedException {
         try {
             // provide a static reference to this class on instantiation to provide access for static methods like Log()
-            this.instance = this;
+            instance = this;
 //            if (localHost) {
 //                ///  Example local host (start server on start, then use GET/POST requests triggered by menu buttons)
 //                try {
@@ -178,7 +192,6 @@ public abstract class BotMan extends Script {
 //                    exit();
 //                }
 //            }
-
             log("Launching... ETA BotManager");
 
             /// setup managers
@@ -196,6 +209,10 @@ public abstract class BotMan extends Script {
             setBotStatus("Creating TaskMan...");
             // initiates a new task manager which can optionally queue tasks one after the other, later allowing for scripting from the menu and AI automation
             taskMan = new TaskMan();
+
+            setBotStatus("Creating DataMan...");
+            // initiates a new database manager which can be used to save/load data to remember settings and tasks etc.
+            dataMan = new DataMan();
 
             setBotStatus("Creating SettingsMan...");
             // initiates a new settings manager to easily manipulate/manage settings
@@ -218,7 +235,7 @@ public abstract class BotMan extends Script {
             ///  set default field values
 
             // reset current attempts
-            currentAttempt = 0;
+            currentAttempt = 1;
             setStatus("Successfully loaded defaults!");
 
             ///  setup menu items
@@ -236,10 +253,19 @@ public abstract class BotMan extends Script {
 
             ///  load settings either via local host or supabase server
 
-            setStatus("Loading settings...");
-            setBotStatus(" Loaded settings!"
+            setBotStatus("Attempting to load settings...");
+            setBotStatus("Loaded settings!"
                     + "\n  Player: "+ myPlayer().getName()
-                    + "\n  Settings: " + loadSettings());
+                    + "\n  Settings: " + getServerSettings());
+
+            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+            for (StackTraceElement s : stack) {
+                BotMan.Log(s.getClassName());
+            }
+
+            setStatus("Calling set status as 2nd to last and last stack item...");
+            for (int i = 0; i < stack.length; i++)
+                setStatus(" ->" + i + ". " + stack[i]);
 
             // pause the script to prevent the character prematurely taking off before scripts are set
             callPause();
@@ -247,20 +273,6 @@ public abstract class BotMan extends Script {
         } catch (Throwable t) {
             log("Error Initializing BotMan: " + t);
         }
-    }
-
-    /**
-     * @return A {@link String} value which denotes the host URL for the ETA server, used to save/load player, script
-     * and menu settings.
-     * <n>
-     * This function returns a different value depending on whether local host is enables or not.
-     *
-     * @see BotMan#LOCAL_HOST
-     */
-    private String loadSettings() {
-        if (myPlayer() == null)
-            throw new RuntimeException("Attempted to load settings for a null player!");
-        return Client.fetchSettings();
     }
 
     /**
@@ -285,20 +297,20 @@ public abstract class BotMan extends Script {
 
             setStatus("Reading task list...");
             // double check attempts before attempting to complete the next stage/task
-            if (currentAttempt < MAX_ATTEMPTS)
+            if (currentAttempt <= MAX_ATTEMPTS)
                 // attempt to complete a stage/task
                 return attempt();
-            // if no attempts left, player must be stuck or bug found - exit the bot to reduce ban rates
-            else exit();
-
-            // return a normal delay
-            return delay;
+            // if no attempts left, player must be stuck or bug found - pause bot to safe player going haywire
+            else pause();
 
         } catch (RuntimeException i) {
             if (i.getMessage() != null)
                 setStatus(i.getMessage());
             return checkAttempts();
         }
+
+        setBotStatus("Sleeping for " + delay);
+        return delay;
     }
 
     /**
@@ -358,8 +370,7 @@ public abstract class BotMan extends Script {
      * @return An {@link Integer} value denoting the remaining {@link BotMan#currentAttempt} for this cycle.
      */
     public int getRemainingAttempts() {
-        // add 1 to the result because all attempts are pre-incremented
-        return (getMaxAttempts() - getCurrentAttempt()) + 1;
+        return (getMaxAttempts() - getCurrentAttempt());
     }
 
     public String getRemainingAttemptsString() {
@@ -375,9 +386,9 @@ public abstract class BotMan extends Script {
             // increment the attempt everytime it is checked for external try/catches to call
             currentAttempt++;
             // exit if attempt limit has been exceeded
-            if (getCurrentAttempt() >= getMaxAttempts()) {
+            if (getCurrentAttempt() > getMaxAttempts()) {
                 if (isDevMode)
-                    currentAttempt = 0;
+                    currentAttempt = 1;
                 else
                     throw new InterruptedException("[BotMan Error] Maximum attempt limit exceeded!");
                 return MIN_DELAY;
@@ -387,7 +398,6 @@ public abstract class BotMan extends Script {
 
             setStatus("Trying again after " + delay / 1000 + "s");
         } catch (InterruptedException e) {
-
             this.exit(e.getMessage());
         }
 
@@ -493,7 +503,8 @@ public abstract class BotMan extends Script {
             // run this logic on the swing edt using safeRun() func. to ensure bot menu button is updated
             setBotStatus("Pausing script...");
             pauseScript();
-            botMenu.onPause();
+            if (botMenu != null)
+                botMenu.onPause();
             setStatus("Script paused.");
         }
     }
@@ -621,16 +632,12 @@ public abstract class BotMan extends Script {
     }
 
     /**
-     * Provides global access to a {@link String} object denoting the current settings for the current ETA bot instance.
+     * Queries the ETA Bot server to return all settings for the current player.
      *
-     * @return A {@link String} in JSON format used to save/load player settings.
+     * @return The players settings as a {@link String} in JSON format.
      */
-    public static String fetchData() {
-        return Client.fetchSettings();
-    }
-
-    public static boolean updateData() {
-        return Client.saveSettings();
+    public String getServerSettings() throws IOException {
+        return dataMan.getServerSettings("*");
     }
 
     /**
@@ -638,6 +645,10 @@ public abstract class BotMan extends Script {
      */
     protected boolean isRunning() {
         return isRunning;
+    }
+    
+    protected void isRunning(boolean running) {
+        isRunning = running;
     }
 
     /**
@@ -812,7 +823,7 @@ public abstract class BotMan extends Script {
         }
 
         // only reset attempts on success, errors should skip this step and get triggered by the attempt count,
-        currentAttempt = 0;
+        currentAttempt = 1;
         setStatus("Sleeping for: " + delay / 1000 + "s");
 
         return delay;
@@ -908,20 +919,21 @@ public abstract class BotMan extends Script {
 
     /**
      * Toggles the execution mode of the script (i.e., if the script is running, this function will pause it)
-     *
-     * @return True if the execution is resumed by this function, else returns false if paused.
      */
-    public final boolean toggleExecutionMode() throws InterruptedException {
+    public final boolean toggleExecutionMode() {
         ScriptExecutor script = getBot().getScriptExecutor();
-        // if the script is currently paused
-        if (script.isPaused()) {
-            // resume and return
-            this.callResume();
-            return script.isRunning();
+        try {
+            // if the script is currently paused
+            if (script.isPaused()) {
+                // resume and return
+                this.callResume();
+                // else, script is running - pause script and return
+            } else this.callPause();
+
+        } catch (Exception e) {
+            BotMan.Log(e.getMessage());
         }
 
-        // else, script is running - pause script and return
-        this.callPause();
         return script.isRunning();
     }
 
@@ -1041,11 +1053,14 @@ public abstract class BotMan extends Script {
     }
 
     public static String getCaller() {
-        StackTraceElement[] s = Thread.currentThread().getStackTrace();
-        for (int i = 2; i < s.length; i++) { // skip getStackTrace + this method
-            String c = s[i].getClassName();
-            if (!c.startsWith("java.") && !c.startsWith("sun.") && !c.startsWith("jdk."))
-                return format(s[i]);
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+
+        // start from the 2nd caller to ignoree this function call
+        for (int i = 2; i < stack.length; i++) {
+            String className = stack[i].getClassName();
+
+            if (!IS_INTERNAL.test(className))
+                return format(stack[i]);
         }
         return "[Unknown]";
     }

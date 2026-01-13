@@ -4,14 +4,12 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
-import main.data.supabase.Client;
 import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
 import main.managers.FrameMan;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 
 public class BotMenu extends JFrame {
@@ -103,8 +101,12 @@ public class BotMenu extends JFrame {
             setDefaultSettings();
             // place the bot menu on a different screen to the bot client if possible
             FrameMan.moveToAlternateMonitor(this);
-            // set initial toggle button text otherwise it will need to be pressed before labels are displayed
-            btnToggleExecution.setText(bot.isRunning() ? "⏸" : "▶");
+            // pause/play script on action press + chain with isRunning to automatically update isRunning bool
+            btnToggleExecution.addActionListener(e -> bot.toggleExecutionMode());
+            // listen to isRunning bool and automatically update button text on boolean value change
+            btnToggleExecution.addPropertyChangeListener("isRunning", e -> {
+                    bot.log("Property changed! isRunning = " + bot.isRunning);
+            });
             // display the menu
             this.showMenu();
             // refresh the bot menu to reflect all changes
@@ -384,14 +386,6 @@ public class BotMenu extends JFrame {
     }
 
     private JPanel getExecutionPanel() {
-        btnToggleExecution.addActionListener(e -> {
-            try {
-                btnToggleExecution.setText(bot.toggleExecutionMode() ?  "⏸" : "▶");
-            } catch (Throwable t) {
-                bot.setStatus("Toggle failed: " + t);
-            }
-        });
-
         JButton btnStop = new JButton("■");
         btnStop.addActionListener(e -> {
             try {

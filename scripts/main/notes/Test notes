@@ -23,3 +23,9 @@ Tests:
 -> Test supabase Client.getAllDataURL()
 -> Test supabase Client.getTimestampColumnURL()
 -> Test supabase Client.getSettingsColumnURL()
+-> Test supabase Client.get(String table, String column)
+    - ensure column can be extracted
+    - throws error on invalid column, or table first
+    - throws error on either value null
+    - throws custom error on table doesn't exist
+    - throws custom error on column doesn't exist
