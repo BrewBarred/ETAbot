@@ -106,7 +106,7 @@ public abstract class BotMan extends Script {
     /**
      * A short, broad description of what the bot is currently attempting to do. (i.e., what BotMan knows)
      */
-    private String status;
+    private String playerStatus;
     /**
      * A short, detailed description of what the bot is currently attempting to do. (i.e., what BotMan's counter-parts
      * know)
@@ -221,7 +221,7 @@ public abstract class BotMan extends Script {
             setBotStatus("Creating BotMenu...");
             botMenu = new BotMenu(this);
 
-            setStatus("Successfully loaded managers!");
+            setPlayerStatus("Successfully loaded managers!");
 
             ///  setup child classes
 
@@ -230,42 +230,35 @@ public abstract class BotMan extends Script {
             setBotStatus("Checking children...");
             if (!onLoad())
                 throw new RuntimeException("Failed to load child script!");
-            setStatus("Successfully loaded children!");
+            setPlayerStatus("Successfully loaded children!");
 
             ///  set default field values
 
             // reset current attempts
             currentAttempt = 1;
-            setStatus("Successfully loaded defaults!");
+            setPlayerStatus("Successfully loaded defaults!");
 
             ///  setup menu items
 
             setBotStatus("Setting up menu items...");
             isLogOnStop = false; // TODO setup checkbox in menu or constructor to change this value
-            setStatus("Successfully loaded menu items!");
+            setPlayerStatus("Successfully loaded menu items!");
 
             ///  setup listeners
 
             setupListeners();
-            setStatus("Successfully loaded listeners!");
+            setPlayerStatus("Successfully loaded listeners!");
 
-            setStatus("Initialization complete!");
+            setPlayerStatus("Initialization complete!");
 
             ///  load settings either via local host or supabase server
 
             setBotStatus("Attempting to load settings...");
-            setBotStatus("Loaded settings!"
-                    + "\n  Player: "+ myPlayer().getName()
-                    + "\n  Settings: " + getServerSettings());
+            logMan.log(LogMan.LogSource.GET, "Successfully downloaded player settings!"
+                    + "\t\t\n  Player: "+ myPlayer().getName()
+                    + "\n  Settings: " + downloadSettings());
 
-            StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-            for (StackTraceElement s : stack) {
-                BotMan.Log(s.getClassName());
-            }
-
-            setStatus("Calling set status as 2nd to last and last stack item...");
-            for (int i = 0; i < stack.length; i++)
-                setStatus(" ->" + i + ". " + stack[i]);
+            log(getCaller());
 
             // pause the script to prevent the character prematurely taking off before scripts are set
             callPause();
@@ -295,7 +288,7 @@ public abstract class BotMan extends Script {
             if (!isSafeToBot())
                 throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
 
-            setStatus("Reading task list...");
+            setPlayerStatus("Reading task list...");
             // double check attempts before attempting to complete the next stage/task
             if (currentAttempt <= MAX_ATTEMPTS)
                 // attempt to complete a stage/task
@@ -305,7 +298,7 @@ public abstract class BotMan extends Script {
 
         } catch (RuntimeException i) {
             if (i.getMessage() != null)
-                setStatus(i.getMessage());
+                setPlayerStatus(i.getMessage());
             return checkAttempts();
         }
 
@@ -396,7 +389,7 @@ public abstract class BotMan extends Script {
               // else, increase the delay time with each failed attempt to give the user/player time to correct the mistake
             } else delay = LOOP_DELAY.get() * (getCurrentAttempt() * 2);
 
-            setStatus("Trying again after " + delay / 1000 + "s");
+            setPlayerStatus("Trying again after " + delay / 1000 + "s");
         } catch (InterruptedException e) {
             this.exit(e.getMessage());
         }
@@ -412,7 +405,7 @@ public abstract class BotMan extends Script {
      * @return True if the player arrives at the destination.
      */
     public boolean walkTo(Position position, String name) throws InterruptedException {
-        setStatus("Walking to: " + name);
+        setPlayerStatus("Walking to: " + name);
         //TODO: complete this method using a WalkMan class
         return getWalking().webWalk(position.getArea(1));
     }
@@ -425,7 +418,7 @@ public abstract class BotMan extends Script {
      * @return True if the player arrives at the destination.
      */
     public boolean walkTo(Area area, String name) throws InterruptedException {
-        setStatus("Walking to: " + name);
+        setPlayerStatus("Walking to: " + name);
         //TODO: complete this method using a WalkMan class
         return getWalking().webWalk(area.getCentralPosition());
     }
@@ -471,7 +464,7 @@ public abstract class BotMan extends Script {
     public static class TaskFailedException extends RuntimeException {
         public TaskFailedException(BotMan bot, String message) {
             super(message);
-            bot.setStatus(message);
+            bot.setPlayerStatus(message);
             bot.setBotStatus("Thinking...");
         }
     }
@@ -505,7 +498,7 @@ public abstract class BotMan extends Script {
             pauseScript();
             if (botMenu != null)
                 botMenu.onPause();
-            setStatus("Script paused.");
+            setPlayerStatus("Script paused.");
         }
     }
 
@@ -530,7 +523,7 @@ public abstract class BotMan extends Script {
             setBotStatus("Resuming script...");
             botMenu.onResume();
             resumeScript();
-            setStatus("Thinking...");
+            setPlayerStatus("Thinking...");
         });
     }
 
@@ -614,6 +607,17 @@ public abstract class BotMan extends Script {
         }
     }
 
+    public static void Log(LogMan.LogSource source, String msg) {
+        try {
+            BotMan bot = BotMan.getInstance();
+            if (bot.logMan != null)
+                bot.logMan.log(source, msg);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error logging global message: " + msg + ", source: " + source);
+        }
+    }
+
     public static String getSettingsJSON() {
         return getInstance().settingsMan.getSettingsJSON();
     }
@@ -636,7 +640,7 @@ public abstract class BotMan extends Script {
      *
      * @return The players settings as a {@link String} in JSON format.
      */
-    public String getServerSettings() throws IOException {
+    public String downloadSettings() throws IOException {
         return dataMan.getServerSettings("*");
     }
 
@@ -661,7 +665,7 @@ public abstract class BotMan extends Script {
     /**
      * Returns a short, broad description of what the bot is currently attempting to do.
      */
-    public final String getStatus() { return status; }
+    public final String getPlayerStatus() { return playerStatus; }
 
     public final String getBotStatus() { return botStatus; }
 
@@ -824,7 +828,7 @@ public abstract class BotMan extends Script {
 
         // only reset attempts on success, errors should skip this step and get triggered by the attempt count,
         currentAttempt = 1;
-        setStatus("Sleeping for: " + delay / 1000 + "s");
+        setPlayerStatus("Sleeping for: " + delay / 1000 + "s");
 
         return delay;
     }
@@ -880,36 +884,17 @@ public abstract class BotMan extends Script {
      *          return !setStatus("...")
      * }
      */
-    public boolean setStatus(String status) {
-        // no point in printing nothing!
-        if (status != null && status.isEmpty())
-            return false;
-
-        // update status variable for later reference
-        this.status = status;
-
-        // if a bot menu exists
-        if (botMenu != null && logMan != null)
-            // update bot menu console log
-            logMan.log(LogMan.LogSource.PLAYER, this.status);
-
-        // always return true for one-line return statements
+    public boolean setPlayerStatus(String playerStatus) {
+        setStatus(LogMan.LogSource.PLAYER, playerStatus);
+        // bot player status variable for later reference
+        this.playerStatus = playerStatus; //TODO check if this is still necessary now that logman handles the printing?
         return true;
     }
 
     public boolean setBotStatus(String botStatus) {
-        // no point in printing nothing!
-        if (botStatus != null && botStatus.isEmpty())
-            return false;
-
+        setStatus(LogMan.LogSource.BOT, botStatus);
         // update bot status variable for later reference
         this.botStatus = botStatus; //TODO check if this is still necessary now that logman handles the printing? I think graphics man still prints via this variable but it should be handed over to logMan really
-
-        if (botMenu != null)
-            // update bot menu console log
-            logMan.log(LogMan.LogSource.BOT, this.botStatus);
-
-        // always return true for one-line return statements
         return true;
     }
 
@@ -977,9 +962,9 @@ public abstract class BotMan extends Script {
      *
      * @return True, once the passed timeout has expired.
      */
-    public boolean setStatus(String status, int sleepTimeout) {
+    public boolean setPlayerStatus(String status, int sleepTimeout) {
         // update status via main functions
-        setStatus(status);
+        setPlayerStatus(status);
 
         // additionally, sleep for the passed duration
         if (sleepTimeout > 0)
@@ -1016,87 +1001,8 @@ public abstract class BotMan extends Script {
     }
 
     ///
-    ///  Static helper functions
+    ///     Instanced helper functions
     ///
-
-//    public static ArrayList<String> getCallers(int numCallers) {
-//        ArrayList<String> callers = new ArrayList<>();
-//        int i = 1;
-//        numCallers += i;
-//        // iterate until passed
-//        while (i < numCallers) {
-//            callers.add(getCaller(i));
-//            i++;
-//        }
-//
-//        return callers;
-//    }
-//
-//    public static String getCaller() {
-//        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-//
-//        // Walk until we leave the logging call-chain
-//        for (int i = 2; i < stack.length; i++) {
-//            StackTraceElement e = stack[i];
-//
-//            String cls = e.getClassName();
-//            String method = e.getMethodName();
-//
-//            // skip the logger itself
-//            if (cls.contains("Trace") || cls.contains("Event")
-//                || cls.contains("Access") || cls.contains("Protection"))
-//                continue;
-//
-//            if (method.contains("setStatus") || method.contains("setBotStatus")
-//                    || method.contains("log") || method.contains("appendLog"))
-//                continue;
-//
-//            // clean class name
-//            cls = cls.substring(cls.lastIndexOf('.') + 1);
-//
-//            // clean lambda name
-//            if (method.startsWith("lambda$")) {
-//                method = method.substring(7, method.lastIndexOf('$'));
-//            }
-//
-//            return "[" + cls + ":" + method + "()]";
-//        }
-//
-//        return null;
-//    }
-
-    /**
-     * Provides global access to the username of the account that this ETA bot instance is controlling.
-     * //TODO encrypt this value before spitting it out for better security for players
-     *
-     * @return The player name for the account that the current ETA bot instance is controlling.
-     */
-    public static String getPlayerName() {
-        if (instance == null)
-            throw new RuntimeException("Attempted to fetch the name of a null instance!");
-        return instance.myPlayer().getName();
-    }
-
-    public static String getCaller() {
-        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-
-        // start from the 2nd caller to ignoree this function call
-        for (int i = 2; i < stack.length; i++) {
-            String className = stack[i].getClassName();
-
-            if (!IS_INTERNAL.test(className))
-                return format(stack[i]);
-        }
-        return "[Unknown]";
-    }
-
-    private static String format(StackTraceElement e) {
-        String cls = e.getClassName();
-        cls = "[" + cls.substring(cls.lastIndexOf('.') + 1);
-        String method = e.getMethodName();
-        method = method.replace("lambda$", "").replace("$0", "");
-        return cls + "." + method + "():" + e.getLineNumber() + "]";
-    }
 
     public void safeRun(Runnable r) {
         if (SwingUtilities.isEventDispatchThread())
@@ -1105,28 +1011,46 @@ public abstract class BotMan extends Script {
             SwingUtilities.invokeLater(r);
     }
 
+    ///
+    ///  Static helper functions
+    ///
 
-//    /**
-//     * Reads the stack trace to return the name of the calling class and function at the time this function is called.
-//     *
-//     * @return [Unknown] or [BotMan:onStart()] styled headers for bot-status logs.
-//     */
-//    public static String getCaller() {
-//        // fetch the stack trace and read down it to fetch the calling function
-//        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-//        StackTraceElement caller = stack.length > 3 ? stack[3] : null;
-//
-//        // return early if no caller is found to prevent null reference errors
-//        if (caller == null)
-//            return "[Unknown] ";
-//
-//        // strip package name from the front e.g., main.BotMan:onLoop -> BotMan:onLoop
-//        String className = caller.getClassName();
-//        int start = className.lastIndexOf('.') + 1;
-//
-//        // return the formatted class/function names
-//        return "[" + className.substring(start) + ":" + caller.getMethodName() + "()] ";
-//    }
+    /**
+     * Provides global access to the username of the account that this ETA bot instance is controlling.
+     * //TODO encrypt this value before spitting it out for better security for players
+     *
+     * @return The player name for the account that the current ETA bot instance is controlling.
+     */
+    public static String GetPlayerName() {
+        if (instance == null)
+            throw new RuntimeException("Attempted to fetch the name of a null instance!");
+        return instance.myPlayer().getName();
+    }
+
+    public String getCaller() {
+        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
+
+        // start from the most recent function call and work through until you find a non (Most accurate seems to be stack [2]) // TODO keep monitoring this value and see if it's always stack 2 then hard-code it
+        for (int i = 2; i < stack.length; i++) {
+            String className = stack[i].getClassName();
+
+            if (!IS_INTERNAL.test(className))
+                return Format(stack[i]);
+        }
+        return "[Unknown Caller]";
+    }
+
+    public static String GetCaller() {
+        return getInstance().getCaller();
+    }
+
+    private static String Format(StackTraceElement e) {
+        String cls = e.getClassName();
+        cls = "[" + cls.substring(cls.lastIndexOf('.') + 1);
+        String method = e.getMethodName();
+        method = method.replace("lambda$", "").replace("$0", "");
+        return cls + "." + method + "():" + e.getLineNumber() + "]";
+    }
 
     ///
     ///  Abstract functions

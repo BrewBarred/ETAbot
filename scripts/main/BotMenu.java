@@ -391,7 +391,7 @@ public class BotMenu extends JFrame {
             try {
                 bot.exit();
             } catch (Throwable t) {
-                bot.setStatus("Stop failed: " + t);
+                bot.setPlayerStatus("Stop failed: " + t);
             }
         });
         JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -471,7 +471,7 @@ public class BotMenu extends JFrame {
         ///  create a 2x2 grid using GridLayout, adding 4x statCards()
         //TODO update status displays as these are just placeholders for now
         JPanel grid = new JPanel(new GridLayout(2, 2, 12, 12));
-        grid.add(statCard("Status", bot.getStatus(), bot.getBotStatus()));
+        grid.add(statCard("Status", bot.getPlayerStatus(), bot.getBotStatus()));
         grid.add(statCard("Uptime", "01:42:13", "Since last restart"));
         grid.add(statCard("Profit/hr", "?", "?"));
         grid.add(statCard("Tasks", bot.getSelectedTaskIndex() + "/" + bot.getTaskListModel().size(), bot.getTaskProgress() + "%"));
@@ -1038,7 +1038,7 @@ public class BotMenu extends JFrame {
      * @param status The status to display on-screen (if enabled) and in the {@link BotMenu}
      */
     private boolean setStatus(String status) {
-        return bot != null && bot.setStatus(status);
+        return bot != null && bot.setPlayerStatus(status);
     }
 
     private boolean setBotStatus(String botStatus) {

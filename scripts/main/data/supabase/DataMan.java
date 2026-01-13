@@ -1,6 +1,7 @@
 package main.data.supabase;
 
 import main.BotMan;
+import main.managers.LogMan;
 
 import java.io.*;
 import java.net.*;
@@ -110,22 +111,18 @@ public class DataMan {
      *
      * @return A {@link String} containing the data from the requested column - if it exists in the database.
      */
-    private String generateGET(Database table, String columnName) {
-        String url = getColumnURL(table, columnName);
-
+    private String generateGET(Database table, String column) {
+        String url = getColumnURL(table, column);
         // log info to console for debugging
-        BotMan.Log("Selecting setting \"" + columnName
-                    + "\" from \"" + table + "\"."
-                    + "\n @ Url: "+ url);
-
+        BotMan.Log(LogMan.LogSource.GET, String.format("Selecting \"%s\" from \"%s\".", column, table));
         return url;
     }
 
     /**
      * Builds a JSON payload like {"column": value} where value must already be valid JSON.
      */
-    private String convertToJsonString(String columnName, String jsonData) {
-        return "{\"" + columnName + "\":" + jsonData + "}";
+    private String convertToJsonString(String column, String jsonData) {
+        return "{\"" + column + "\":" + jsonData + "}";
     }
 
     /**
@@ -136,7 +133,7 @@ public class DataMan {
      */
     private String filterByPlayerName() throws UnsupportedEncodingException {
         // filter table by comparing table primary key (username), which is always column 0, against this players name
-        return "?" + SETTINGS_COLUMNS[0] + "=eq." + URLEncoder.encode(BotMan.getPlayerName(), "UTF-8");
+        return "?" + SETTINGS_COLUMNS[0] + "=eq." + URLEncoder.encode(BotMan.GetPlayerName(), "UTF-8");
     }
 
     /**
@@ -151,12 +148,6 @@ public class DataMan {
         columnName = (columnName == null || columnName.isEmpty()) ? "*" : columnName;
         // get "settings" column data from "Settings" table
         String getSettingURL = generateGET(Database.Settings, columnName);
-
-        // format a new HTTP fetch request url that fetches all settings for the current player
-        BotMan.Log("Getting setting:"
-                + "\n URL: " + getSettingURL
-                + "\n Column: " + columnName);
-
         // send the patch request to the server
         return GET(getSettingURL);
     }
@@ -172,7 +163,7 @@ public class DataMan {
         // convert the column header name and data provided into a payload to update database
         String payload =  convertToJsonString(columnName, jsonData);
 
-        BotMan.Log("Patching setting:"
+        BotMan.Log(LogMan.LogSource.PATCH, "Patching setting:"
                 + "\n URL: " + patchSettingURL
                 + "\n Column: " + columnName
                 + "\n JSON Data: " + jsonData
@@ -193,7 +184,7 @@ public class DataMan {
         // convert the column header name and data provided into a payload to update/insert into database
         String payload = convertToJsonString(columnName, jsonData);
 
-        BotMan.Log("Posting setting:"
+        BotMan.Log(LogMan.LogSource.POST, "Posting setting:"
                 + "\n URL: " + postSettingURL
                 + "\n Column: " + columnName
                 + "\n JSON Data: " + jsonData
@@ -211,12 +202,12 @@ public class DataMan {
      * @param url The location path of the data on the server-side.
      * @return A {@link String} value denoting the connection response.
      */
-    private String request(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
+    private String sendRequest(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
         HttpURLConnection request = generateRequest(method, url);
-        BotMan.Log("Generated request: "
-                    + "\n connection: " + request
-                    + "\n method: " + request.getRequestMethod()
-                    + "\n properties: " + request.getRequestProperties());
+        BotMan.Log("\nGenerated request: "
+                    + "\n  Connection: " + request
+                    + "\n  Properties: " + request.getRequestProperties()
+                    + "\n  Method: " + request.getRequestMethod());
 
         // Write body only if provided (POST/PATCH)
         if (jsonBody != null) {
@@ -244,7 +235,7 @@ public class DataMan {
      * @return The connection response as a {@link String} value.
      */
     private String POST(String path, String payload) throws IOException {
-        return request(REQUEST_METHOD.POST, path, payload);
+        return sendRequest(REQUEST_METHOD.POST, path, payload);
     }
 
     /**
@@ -252,12 +243,12 @@ public class DataMan {
      * the result as a {@link String}.
      */
     private String PATCH(String path, String payload) throws IOException {
-        return request(REQUEST_METHOD.PATCH, path, payload);
+        return sendRequest(REQUEST_METHOD.PATCH, path, payload);
     }
 
     private String GET(String path) throws IOException {
         // no payload passed with GET requests
-        return request(REQUEST_METHOD.GET, path, null);
+        return sendRequest(REQUEST_METHOD.GET, path, null);
     }
 
     /**

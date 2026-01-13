@@ -59,7 +59,7 @@ public class GraphicsMan {
         g.setFont(this.DEFAULT_FONT_NORMAL);
 
         // draw current task
-        drawMainMenuText(g,"Player status: " + bot.getStatus());
+        drawMainMenuText(g,"Player status: " + bot.getPlayerStatus());
         drawMainMenuText(g, ("  Progress: " + bot.getTaskProgress() + "%"));
         // draw the bots status
         drawMainMenuText(g, "Bot status: " + bot.getBotStatus());

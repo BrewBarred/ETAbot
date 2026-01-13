@@ -321,7 +321,7 @@ public final class TaskMan {
                 + "  |  List Index: " + getListIndex());
 
         if (work(bot)) {
-            bot.setStatus("Finished work!");
+            bot.setPlayerStatus("Finished work!");
             bot.setBotStatus("Preparing next task...");
             // if this is the last task in the task-list
             if (getRemainingTaskCount() <= 0) {
@@ -552,7 +552,7 @@ public final class TaskMan {
         // fetch the current task
         Task task = getTask();
         if (task != null) {
-            bot.setStatus("Attempting to " + task);
+            bot.setPlayerStatus("Attempting to " + task);
             bot.log("Task: " + task + "     |     Stage: " + task.getStageString());        // if the task is done, prepare the next task
             return task.run(bot);
         }

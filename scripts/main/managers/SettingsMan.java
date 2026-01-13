@@ -34,7 +34,7 @@ public class SettingsMan {
 
     public SettingsMan(BotMan bot) throws IOException {
         this.bot = bot;
-        this.settings = bot.getServerSettings();
+        this.settings = bot.downloadSettings();
         bot.setBotStatus("Settings:\n\n\n" + settings);
     }
 
@@ -77,7 +77,7 @@ public class SettingsMan {
 
     public final String getSettingsJSON() {
         return "{" +
-                String.format("user_id:\"%s\",", BotMan.getPlayerName()) +
+                String.format("user_id:\"%s\",", BotMan.GetPlayerName()) +
                 String.format("settings:\"%s\"", convertToJSON()) +
                 String.format("updated_at:\"%s\"", Instant.now()) +
                 "}";
@@ -140,7 +140,7 @@ public class SettingsMan {
     public void loadSettings() throws IOException {
         // fetch the settings for this player from the server (automatically handles local or supa host)
         bot.log("Fetching settings for: " + bot.getName());
-        settings = bot.getServerSettings();
+        settings = bot.downloadSettings();
         // output fetched settings as a debug log entry
         bot.log("Loaded settings:\n" + settings);
         bot.setBotStatus("Successfully loaded settings!");

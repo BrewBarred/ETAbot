@@ -367,7 +367,7 @@ public abstract class Task {
      * @return True if this Task is complete, else returns false.
      */
     public boolean until(BotMan bot, BooleanSupplier condition) throws InterruptedException {
-        bot.setStatus("Sleeping until: " + condition, 1000);
+        bot.setPlayerStatus("Sleeping until: " + condition, 1000);
 
         if (condition.getAsBoolean())
             return true;

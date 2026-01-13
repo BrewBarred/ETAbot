@@ -28,7 +28,7 @@ public class Wait extends Task {
     ///
     @Override
     public boolean execute(BotMan bot) {
-        bot.setStatus("Sleeping");
+        bot.setPlayerStatus("Sleeping");
         bot.sleep(ETARandom.getRandShortDelayInt());
         return true; // mark as successful
     }
@@ -62,9 +62,9 @@ public class Wait extends Task {
      */
     public boolean test(BotMan bot) throws InterruptedException {
         for (Task test : getTestScript()) {
-            bot.setStatus("Testing : " + test.getDescription());
+            bot.setPlayerStatus("Testing : " + test.getDescription());
             boolean result = test.run(bot);
-            bot.setStatus("--------------------result: " + result);
+            bot.setPlayerStatus("--------------------result: " + result);
         }
 
         // return true since test completed without crashing

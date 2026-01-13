@@ -105,6 +105,9 @@ public class LogMan {
          * @param message The output message being printed to the {@link BotMenu}'s log console.
          */
         LogEntry(LogSource source, String message) {
+            if (source == null || message == null)
+                throw new RuntimeException("Error creating log entry due to null parameters! Source: " + source + ", message: " + null);
+
             this.timeMillis = System.currentTimeMillis();
             this.source = source;
             this.message = message;
@@ -118,8 +121,8 @@ public class LogMan {
         @Override
         public String toString() {
             // return the source/message with padding and new-line by default
-            return getSourceHeader() + "\t"
-                    + (source.equals(LogSource.DEBUG) ? BotMan.getCaller() + " " : "")
+            return "[" + source.toString() + "]\t"
+                    + (source.equals(LogSource.DEBUG) ? BotMan.GetCaller() + " " : "")
                     // add default padding, debug message and a new-line to prep for next input
                     + message + "\n";
         }
@@ -151,12 +154,7 @@ public class LogMan {
         }
 
 
-        /**
-         * @return This log entries source as a {@link String} value, formatted as a header by adding square brackets.
-         */
-        private String getSourceHeader() {
-            return "[" + source.toString() + "]";
-        }
+
     }
 
     /**
@@ -335,6 +333,18 @@ public class LogMan {
         Style botStatus = doc.addStyle(LogSource.BOT.toString(), def);
         StyleConstants.setForeground(botStatus, new Color(0, 120, 70));
 
+        // define the style for post http request status updates
+        Style postStatus = doc.addStyle(LogSource.POST.toString(), def);
+        StyleConstants.setForeground(postStatus, new Color(95, 17, 108));
+
+        // define the style for patch http request status updates
+        Style patchStatus = doc.addStyle(LogSource.PATCH.toString(), def);
+        StyleConstants.setForeground(patchStatus, new Color(140, 29, 30));
+
+        // define the style for get http request status updates
+        Style getStatus = doc.addStyle(LogSource.GET.toString(), def);
+        StyleConstants.setForeground(getStatus, new Color(90, 80, 0));
+
         // define the style for the debug output logs (any default OsBot logs or log() output)
         Style debug = doc.addStyle(LogSource.DEBUG.toString(), def);
         StyleConstants.setForeground(debug, new Color(50, 100, 120));
@@ -432,17 +442,10 @@ public class LogMan {
      * @return The style associate with the passed {@link LogEntry} type.
      */
     private Style getSelectedStyle(LogEntry entry) {
-        switch (entry.source) {
-            // return the source style if any exists
-            case PLAYER:
-            case BOT:
-            case DEBUG:
-                return logDoc.getStyle(entry.getSource());
-
-            // else return the default style
-            default:
-                return logDoc.getStyle("NORMAL");
-        }
+        // try fetch the style based on log entry type
+        Style style = logDoc.getStyle(entry.getSource());
+        // return log entry style if any is loaded into Style, else return default style
+        return style != null ? style : logDoc.getStyle("NORMAL");
     }
 
     /**
@@ -463,8 +466,22 @@ public class LogMan {
      * @param source The source of this {@link LogEntry}.
      * @param string The string contents of this {@link LogEntry}.
      */
-    public void log(LogSource source, String string) {
-        log(new LogEntry(source, string));
+    public void log(LogSource source, String... string) {
+        // return early if there is nothing to print
+        if (string.length < 1)
+            return;
+
+        // create a string builder to tidily append each line to the returning string and load the first string into it
+        StringBuilder sb = new StringBuilder(string[0]);
+
+        // starting from the 2nd string, add all strings to the builder with new lines and tab escapes for better formatting
+        int i = 1;
+        // for each string
+        while (i < string.length) {
+            if (string[i] != null) {
+                log(new LogEntry(source, string[i++]));
+            }
+        }
     }
 
     /**
