@@ -14,6 +14,7 @@ import java.time.Instant;
  * centralized for easier manipulation and management.
  */
 public class SettingsMan {
+    private SettingsMan settingsMan;
     ///  link to the calling bot instance
     private BotMan bot;
     private String settings;
@@ -33,9 +34,14 @@ public class SettingsMan {
     ///  Developer settings
 
     public SettingsMan(BotMan bot) throws IOException {
-        this.bot = bot;
-        this.settings = bot.downloadSettings();
-        bot.setBotStatus("Settings:\n\n\n" + settings);
+        //TODO check this singleton implementation works, just to prevent players loading multiple instances of settings
+        // and confusing them
+        if (settingsMan == null) {
+            this.settingsMan = this;
+            this.bot = bot;
+            this.settings = bot.downloadSettings();
+            bot.setBotStatus("Settings:\n\n\n" + settings);
+        }
     }
 
     ///
