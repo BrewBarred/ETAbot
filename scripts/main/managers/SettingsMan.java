@@ -39,7 +39,7 @@ public class SettingsMan {
         if (settingsMan == null) {
             this.settingsMan = this;
             this.bot = bot;
-            this.settings = bot.downloadSettings();
+            this.settings = loadSettings();
             bot.setBotStatus("Settings:\n\n\n" + settings);
         }
     }
@@ -144,7 +144,7 @@ public class SettingsMan {
      *
      * Load the preferred settings for this player by fetching any existing settings from the ETA Bot server.
      */
-    public void loadSettings() throws IOException {
+    public String loadSettings() throws IOException {
         // fetch the settings for this player from the server
         bot.log("Fetching settings for: " + bot.getName());
         settings = bot.downloadSettings();
@@ -152,6 +152,7 @@ public class SettingsMan {
         // output fetched settings as a debug log entry
         bot.log("Loaded settings:\n" + settings);
         bot.setBotStatus("Successfully loaded settings!");
+        return settings;
     }
 
     private String GetDefault() {

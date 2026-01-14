@@ -216,9 +216,9 @@ public class DataMan {
         HttpURLConnection request = setPropertiesHTTP(method, url);
         BotMan.Log(LogMan.LogSource.GET, "Generated request: ",
                     "Method: " + request.getRequestMethod(),
-                    "URL: " + url,
                     "Body: " + jsonBody,
-                    "Connection: " + request,
+                    "URL: " + url,
+                    //"Connection: " + request, //TODO consider deleting
                     "Properties: " + request.getRequestProperties());
 
         // write body only if provided (POST/PATCH)
@@ -370,7 +370,6 @@ public class DataMan {
             String line;
             while ((line = reader.readLine()) != null)
                 response.append(line);
-            BotMan.Log(source, response.toString());
             return response.toString();
         }
     }

@@ -302,9 +302,7 @@ public abstract class BotMan extends Script {
             ///  load settings either via local host or supabase server
 
             setBotStatus("Attempting to load settings...");
-            logMan.log(LogMan.LogSource.GET, "Successfully downloaded player settings!",
-                        "Player: "+ myPlayer().getName(),
-                        "Settings: " + downloadSettings());
+            settingsMan.loadSettings();
 
             //log(getCaller());
 
@@ -719,7 +717,13 @@ public abstract class BotMan extends Script {
      */
     public String downloadSettings() throws IOException {
         setGetStatus("Downloading player settings...");
-        return dataMan.getServerSettings("*");
+        String settings = dataMan.getServerSettings("*");
+
+        logMan.log(LogMan.LogSource.GET, "Successfully fetched player settings from server!",
+                "Player: "+ myPlayer().getName(),
+                "Settings: " + settings);
+
+        return settings;
     }
 
     /**

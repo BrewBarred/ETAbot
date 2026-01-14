@@ -3,12 +3,36 @@ Add feature to:
     - Use worldman to determine if world is suitable for player using bot menu settings
 - Check if player is logged in, if not login and sleep until logged in @ BotMan.onStart() before starting anything else
     - This should fix an error causing botmenu not to launch when starting script while player is logged out
+- Add copy() function to Task class or TaskMan which copies the task quickly for a snapshot of a task to duplicate later.
 
+Later down the track:
+- Track the GET/PATCH/POST requests every step of the way, including server response messages perhaps?
 
-/// Settings:
+/// Settings to add:
 
-Auto-loot drops
-Auto-loot nearby
-Tick-cast
+// Safety settings
+* Auto-check Prayer
+* Auto-check HP
+
+// General settings (interactive/player/world)
+* Auto-reply:
+    i. Generic chats contain(string) then reply with generic reply (1 of 5 randomly rolled?)
+    ii. AI chats to setup later, reading players messages and determining how to respond or connect to chatgpt?
+* Auto-loot drops:
+* Auto-loot nearby:
+* Tick-cast: (trigger each action (or each stage of a task) to occur on the next 'x' tick multiple"
     i. Every few ticks, if runes available, cast a spell like enchant, stationary spells, high alch if alchables in inv
         (Set by player in menu), coal if in inv, or air strike if nearby enemy) this is to 0-time level magic and seem more human like
+    ii. Setup 3-tick fishing by creating a Fish(fish) task or actions that executes every 3rd tick. (need to look at how I can guarantee everything is complete before tick x arrives)
+
+// combat settings
+* Auto-attack:
+* Auto-switch
+    i. Pray flick against incoming atk style
+    ii. Change armor based on incoming atk style
+    iii. Change atk style/gear based on incoming atk style
+* Auto-pk:
+    i. Auto fight back
+    ii. Lure to multi-zone
+    iii. Trigger multiple bots to login on same spot and pk
+    iv. Bot will never enter wilderness until at least a few bots are in position ready to login (urgent tasks, removed on completion)

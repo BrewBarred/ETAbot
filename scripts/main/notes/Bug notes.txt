@@ -5,6 +5,9 @@ GET request:
 - I think /t is removed before display stuff to the console preventing me from further formatting when it comes to
 printing GET messages neatly, look into better formatting rules
 
+TaskMan:
+
+- Queue needs to be duplicated on start, and refreshed on end so that each task is as it was when it started
 
 Task/BotMenu:
 
