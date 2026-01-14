@@ -204,19 +204,15 @@ public class DataMan {
      * @return A {@link String} value denoting the connection response.
      */
     private String generateRequest(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
-        BotMan.Log(LogMan.LogSource.GET, "\nGenerating request: "
-                + "\n  Method: " + method
-                + "\n  URL: " + url
-                + "\n  Body: " + jsonBody);
-
         HttpURLConnection request = setPropertiesHTTP(method, url);
+        BotMan.Log(LogMan.LogSource.GET, "Generated request: ",
+                    "Method: " + request.getRequestMethod(),
+                    "URL: " + url,
+                    "Body: " + jsonBody,
+                    "Connection: " + request,
+                    "Properties: " + request.getRequestProperties());
 
-        BotMan.Log(LogMan.LogSource.GET, "\nGenerated request: "
-                    + "\n  Connection: " + request
-                    + "\n  Properties: " + request.getRequestProperties()
-                    + "\n  Method: " + request.getRequestMethod());
-
-        // Write body only if provided (POST/PATCH)
+        // write body only if provided (POST/PATCH)
         if (jsonBody != null) {
             byte[] bytes = jsonBody.getBytes(StandardCharsets.UTF_8);
             try (OutputStream os = request.getOutputStream()) {
@@ -224,8 +220,6 @@ public class DataMan {
                 os.flush();
             }
         }
-
-        BotMan.Log(LogMan.LogSource.GET, "");
 
         return sendRequest(request);
     }
@@ -346,7 +340,7 @@ public class DataMan {
         int code = request.getResponseCode();
         // convert HTTP Request into LogSource for better debugging
         LogMan.LogSource source = LogMan.getSource(request.getRequestMethod().toString());
-        BotMan.Log(source, "Response ["+request.getResponseCode()+"]: " + request.getResponseMessage());
+        BotMan.Log(source, "Response ["+request.getResponseCode()+"] " + request.getResponseMessage());
         // use error stream on failure, input stream on success
         InputStream stream = (code >= 200 && code < 300)
                 ? request.getInputStream()

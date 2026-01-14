@@ -51,13 +51,14 @@ import static main.managers.LogMan.LogSource.DEBUG;
  * @see BotMan#sleep(long, BooleanSupplier)
  */
 public abstract class BotMan extends Script {
-    private static final String[] SKIP_PREFIXES = {"java.", "org."}; // "jdk.", "org.", "com.", "javax.", "kotlin."
+    private static final String[] IGNORED_PREFIX = {"java."}; // "jdk.", "org.", "com.", "javax.", "kotlin."
+    private static final String[] IGNORED_FUNC = {"GetCaller", "toString", "refresh"};
+    
+    private static final Predicate<String> IS_JAVA_INTERNAL =
+            s -> Arrays.stream(IGNORED_PREFIX).anyMatch(s::startsWith);
 
-    private static final Predicate<String> IS_INTERNAL =
-            s -> Arrays.stream(SKIP_PREFIXES).anyMatch(s::startsWith);
-
-    private static final Predicate<String> IS_TOSTRING =
-            s -> s.contains("toString()");
+    private static final Predicate<String> IS_DEBUGGING_FUN =
+            s -> Arrays.stream(IGNORED_FUNC).anyMatch(s::contains);
     ///
     ///     PUBLIC FIELDS
     ///
@@ -344,27 +345,35 @@ public abstract class BotMan extends Script {
      */
     @Override
     public int onLoop() throws InterruptedException, RuntimeException {
-        try {
-            // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
-            if (!isSafeToBot())
-                throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
+        while (isRunning()) {
+            try {
+                // randomize delay every loop to prevent duplicate sleeps (faster detection)
+                delay = LOOP_DELAY.get();
+                // perform safety checks to prevent penalties such as bot detection, player losses or death etc.
+                if (!isSafeToBot())
+                    throw new RuntimeException("[BotMan Error] Unsafe to bot!! Check logs for more information...");
 
-            setPlayerStatus("Reading task list...");
-            // double check attempts before attempting to complete the next stage/task
-            if (currentAttempt <= MAX_ATTEMPTS)
-                // attempt to complete a stage/task
-                return attempt();
-            // if no attempts left, player must be stuck or bug found - pause bot to safe player going haywire
-            else pause();
+                setPlayerStatus("Reading task list...");
+                // double check attempts before attempting to complete the next stage/task
+                if (currentAttempt <= MAX_ATTEMPTS)
+                    // attempt to complete a stage/task
+                    return attempt();
+                    // if no attempts left, player must be stuck or bug found - pause bot to safe player going haywire
+                else callPause();
 
-        } catch (RuntimeException i) {
-            if (i.getMessage() != null)
-                setPlayerStatus(i.getMessage());
-            return checkAttempts();
+                // only outputs this line if callPause() doesn't throw an error to pause
+                setBotStatus("Sleeping for " + delay / 1000 + "s");
+
+            } catch(RuntimeException i){
+                if (i.getMessage() != null)
+                    setPlayerStatus(i.getMessage());
+                return checkAttempts();
+            }
+
+            return delay;
         }
 
-        setBotStatus("Sleeping for " + delay);
-        return delay;
+        return 1;
     }
 
     /**
@@ -453,6 +462,7 @@ public abstract class BotMan extends Script {
             setPlayerStatus("Trying again after " + delay / 1000 + "s");
         } catch (InterruptedException e) {
             this.exit(e.getMessage());
+            return 0;
         }
 
         return delay;
@@ -599,7 +609,7 @@ public abstract class BotMan extends Script {
             // force-close the bot menu (forcing prevents infinite loop)
             botMenu.forceClose();
 
-        log("Successfully exited ETA's (OsBot) Bot Manager");
+        Log("Successfully exited ETA's (OsBot) Bot Manager");
     }
 
     /**
@@ -677,7 +687,7 @@ public abstract class BotMan extends Script {
 //        }
 //    }
 
-    public static void Log(LogMan.LogSource source, String msg) {
+    public static void Log(LogMan.LogSource source, String... msg) {
         try {
             BotMan bot = BotMan.getInstance();
             if (bot.logMan != null)
@@ -932,35 +942,72 @@ public abstract class BotMan extends Script {
 
     @Override
     public void log(String message) {
-        // never log null or empty messages to the console
         if (message == null || message.isEmpty())
-            return;
+            throw new IllegalArgumentException("[Log Error] Message cannot be null or empty!");
 
-        // try log a pre-validated message to the console
-        try {
-            ///  validate log request
-
-            // set DEBUG as default log source
-            LogMan.LogSource source = DEBUG;
-            // split headers e.g., [GET] -> GET to extract LogSource value for String -> LogSource conversion
-            String[] values = message.split("[\\[\\]]");
-            // split MUST be 3 or more to valid format i.e., [<source>] <message> -> blank, <source>, <format>)
-            if (values.length >= 3)
-                // this line will throw an error if log source doesn't exist in the LogSource enum - forcing a DEBUG print
-                source = LogMan.LogSource.valueOf(values[1]);
-
-            // if logman is unavailable for printing
-            if (logMan == null)
-                // throw an exception to use default printer instead
-                throw new IllegalArgumentException();
-
-            logMan.log(source, message);
-
-        } catch (IllegalArgumentException ignored) {
-            // log the unformatted message if no pattern match is found
-            super.log("[DEBUG] " + message); // .replace("\t", " " //TODO add this back? fault ?
+        // if message is pre-formatted, print and return early as it's probably been called by logman already distributed
+        if (isValidSource(message) || message.startsWith("\n=> ")) {
+            super.log(message.trim().replace("\t", " "));
         }
+        // if log manager can process
+        else if (logMan != null)
+            // send to log manager for processing before returning here and getting yoinked by if statement above
+            logMan.log(DEBUG, message);
     }
+
+    private boolean isValidSource(String message) {
+        if (logMan != null) {
+            // can safely declare a default log source now that its been null checked above
+            LogMan.LogSource source = DEBUG;
+            // try split the string
+            String[] values = message.split("[\\[\\]]");
+            // if split seems correct, try convert value into a LogSource object by comparing string against enum
+            if (values.length >= 3) {
+                // this line will throw an error if log source doesn't exist in the LogSource enum - forcing a DEBUG print
+                LogMan.LogSource.valueOf(values[1]);
+                // return to prevent runtime error being thrown
+                return true;
+            }
+        }
+
+        return false;
+    }
+//    @Override
+//    public void log(String message) {
+//        // never log null or empty messages to the console
+//        if (message == null || message.isEmpty())
+//            return;
+//
+//        ///  try validate log request
+//
+//        // try log a pre-validated message to the console
+//        try {
+//            // set DEBUG as default log source
+//            LogMan.LogSource source = DEBUG;
+//            // split headers e.g., [GET] -> GET to extract LogSource value for String -> LogSource conversion
+//            String[] values = message.split("[\\[\\]]");
+//            // split MUST be 3 or more to valid format i.e., [<source>] <message> -> blank, <source>, <format>)
+//            if (values.length >= 3)
+//                // this line will throw an error if log source doesn't exist in the LogSource enum - forcing a DEBUG print
+//                source = LogMan.LogSource.valueOf(values[1]);
+//
+//            // if logman is unavailable for printing
+//            if (logMan == null)
+//                // throw an exception to use default printer instead
+//                throw new IllegalArgumentException();
+//
+//            logMan.log(source, message);
+//
+//        } catch (IllegalArgumentException ignored) {
+//            ///  default to debug for log source
+//            // log the unformatted message if no pattern match is found
+//            //super.log("[DEBUG] " + message); // .replace("\t", " " //TODO add this back? fault ?
+//        }
+//
+//        ///  default to debug for log source
+//
+//        super.log("[DEBUG] " + message); // .replace("\t", " " //TODO add this back? fault ?
+//    }
 
     //private final ThreadLocal<Integer> logDepth = ThreadLocal.withInitial(() -> 0);
 
@@ -1171,15 +1218,18 @@ public abstract class BotMan extends Script {
 
         // start from the most recent function call and work through until you find a non (Most accurate seems to be stack [2]) // TODO keep monitoring this value and see if it's always stack 2 then hard-code it
         for (int i = 2; i < stack.length; i++) {
-            String className = stack[i].getClassName();
+            String cls =  stack[i].getClassName();
+            String method = stack[i].getMethodName();
 
-            if (!IS_INTERNAL.test(className) && !className.contains("GetCaller"))
-                return Format(stack[i]);
+            // ensure returned caller is not a java internal function or used to output debugging statement (or they'll be useless!)
+            if (!IS_JAVA_INTERNAL.test(cls) && !IS_DEBUGGING_FUN.test(method))
+                return Format(stack[i]) + "\n raw stack: " + stack[i] + "\n  method:" + stack[i].getMethodName();
         }
         return "[Unknown Caller]";
     }
 
     public static String GetCaller() {
+        // fetches caller from active instance, throws error if no active instance found
         return getInstance().getCaller();
     }
 

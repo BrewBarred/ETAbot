@@ -8,6 +8,7 @@ printing GET messages neatly, look into better formatting rules
 
 Task/BotMenu:
 
+- LogConsole search fuinction didn't work the other day, test it still works for strings in the middle of text
 - I think /t is removed before display stuff to the console preventing me from further formatting when it comes to
 printing GET messages neatly, look into better formatting rules
 - I think there's a function that automatically adds /n/t to a multiline string by passing each line as an array item to

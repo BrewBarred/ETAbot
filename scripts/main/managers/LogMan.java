@@ -30,6 +30,8 @@ public class LogMan {
      * This value represents the maximum number of lines to be displayed in the console at once.
      */
     private static final int LOG_BUFFER = 214700;
+    private String multiLineHeader = "=> ";
+    private String multiLinePrefix = "\n\t\t\t";
 
     ///  Private variables
 
@@ -113,19 +115,49 @@ public class LogMan {
             this.message = message;
         }
 
-        /**
-         * Overrides java's default toString() method to return a formatted log entry instead, ready to display.
-         *
-         * @return A formatted log entry {@link String}.
-         */
         @Override
         public String toString() {
-            // return the source/message with padding and new-line by default
-            return "[" + source.toString() + "]\t"
-                    + (source.equals(LogSource.DEBUG) ? BotMan.GetCaller() + " " : "")
-                    // add default padding, debug message and a new-line to prep for next input
-                    + message + "\n";
+            String caller = "";
+            if (source == LogSource.DEBUG) {
+                caller = BotMan.GetCaller();
+                if (caller == null)
+                    caller = "";
+
+                if (!caller.isEmpty())
+                    caller += " ";
+            }
+
+            return "[" + source + "]\t" + caller + message + "\n";
         }
+
+        ///  OWN LINE
+//        @Override
+//        public String toString() {
+//            if (source != LogSource.DEBUG)
+//                return "[" + source + "]\t" + message + "\n";
+//
+//            String caller = BotMan.GetCaller();
+//            if (caller == null) caller = "";
+//            caller = caller.replace("\r", "").replace("\n", " ").trim();
+//
+//            return "[" + source + "]\t" + message + "\n\t\t" + caller + "\n";
+//        }
+
+
+        ///  o.g
+//        /**
+//         * Overrides java's default toString() method to return a formatted log entry instead, ready to display.
+//         *
+//         * @return A formatted log entry {@link String}.
+//         */
+//        @Override
+//        public String toString() {
+//            // return the source/message with padding and new-line by default
+//            return "[" + source.toString() + "]\t"
+//                    + (source.equals(LogSource.DEBUG) ? BotMan.GetCaller() + " " : "")
+//                    // add default padding, debug message and a new-line to prep for next input
+//                    + message + "\n";
+//        }
 
         /**
          * @return A formatted time string denoting the time at which this output message was printed to the console.
@@ -389,7 +421,7 @@ public class LogMan {
             return true;
 
         // validate the entry message
-        String msg = entry.message == null ? "" : entry.message;
+        String msg = entry.message;
 
         // apply the case sensitivity filter
         if (!caseSensitive) {
@@ -479,19 +511,13 @@ public class LogMan {
         return sdf.format(new java.util.Date(millis));
     }
 
-    /**
-     * Logs an entry to the console by creating a new {@link LogEntry} using the passed source and string parameters.
-     *
-     * @param source The source of this {@link LogEntry}.
-     * @param lines The string contents of this {@link LogEntry}.
-     */
     public void log(LogSource source, String... lines) {
         // validate lines array at least up to the first value
-        if (lines == null || lines.length < 1 || lines[0] == null)
+        if (lines == null || lines.length < 1)
             return;
 
         // if there is only the 1 item we validated, return that, or try format the other lines
-        String message = lines.length == 1 ?  lines[0] : formatMultiLog(lines);
+        String message = formatMultiLog(lines);
         // use the passed source and formatted message to create a log entry
         LogEntry e =  new LogEntry(source, message);
         // log this entry
@@ -499,14 +525,18 @@ public class LogMan {
     }
 
     private String formatMultiLog(String[] lines) {
+        // lines should never be null, empty or single values - code/input bug
+        if (lines == null || lines.length < 1)
+            throw new IllegalArgumentException();
+
+        // if single value, validate before returning
+        if (lines.length == 1 && lines[0] != null)
+            return lines[0];
+
         // otherwise, init a string builder to format multi-line logs
-        StringBuilder sb = new StringBuilder(lines[0]);
-        // define custom formatting for first line header
-        String firstLineHeader = "\n=> ";
-        // this doesn't seem like a prefix, but it is!! it's just tailed on the end of the last line
-        String prefix = "\n\t\t";
+        StringBuilder sb = new StringBuilder(multiLineHeader);
         // apply custom formatting for first line e.g., drop to next line etc.
-        sb.append(firstLineHeader).append(lines[0]).append(prefix);
+        sb.append(lines[0]).append(multiLinePrefix);
 
         // for every additional line provided in the String... array, insert prefixes
         for (int i = 1; i < lines.length; i++) {
@@ -514,7 +544,7 @@ public class LogMan {
                 continue;
 
             // don't append prefix to the last item in the lines list
-            sb.append(lines[i]).append(i == lines.length - 1 ? "" : prefix);
+            sb.append(lines[i]).append(i == lines.length - 1 ? "" : multiLinePrefix);
         }
 
         return sb.toString();
@@ -534,10 +564,10 @@ public class LogMan {
         if (logPaused)
             return;
 
-        // print the formatted string to the console
-        //bot.log(entry.toString());
+        // handle console logging (this does not infinitely recurse since it gets formatted with "[" start char)
+        bot.log(entry.toString());
 
-        // update bot menu log console if menu exists
+        // handle bot menu logging (if a menu exists)
         if (bot.getBotMenu() != null) {
             // log entries not only to track them but also to limit the total log entries (buffer)
             bot.safeRun(() -> logList.add(entry));
