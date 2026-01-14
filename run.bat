@@ -2,9 +2,9 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 REM Usage:
-REM   .\run.bat hi.java
-REM   .\run.bat hi.java "https://explv.github.io/?centreX=2798&centreY=3347&centreZ=0&zoom=7"
-REM   .\run.bat hi.java ""arg1" "arg2" "arg3""
+REM   .\run.bat Hello_World.java
+REM   .\run.bat Hello_World.java "https://explv.github.io/?centreX=2798&centreY=3347&centreZ=0&zoom=7"
+REM   .\run.bat Hello_World.java ""arg1" "arg2" "arg3""
 REM
 REM NOTE:
 REM - Anything after the first argument is forwarded to the Java program.

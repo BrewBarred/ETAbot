@@ -6,10 +6,14 @@ import java.util.List;
  * Launcher class for ETAbot.
  * Handles the hand-off between Java and the Windows Batch environment.
  */
-public class hi {
+public class ProcessMan {
     public final static String BUILD_DIR = "build\\";
     public final static String URL_EXPLVS_MAP = "https://explv.github.io/?centreX=2798&centreY=3347&centreZ=0&zoom=7";
 
+    /**
+     * Temp main func bypasses potential osbot sandbox restrictions while I get this class working.
+     * @param args
+     */
     public static void main(String[] args) {
         System.out.println("Total arguments received: " + args.length);
 
