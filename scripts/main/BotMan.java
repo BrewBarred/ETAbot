@@ -52,7 +52,7 @@ import static main.managers.LogMan.LogSource.DEBUG;
  */
 public abstract class BotMan extends Script {
     private static final String[] IGNORED_PREFIX = {"java."}; // "jdk.", "org.", "com.", "javax.", "kotlin."
-    private static final String[] IGNORED_FUNC = {"GetCaller", "toString", "refresh"};
+    private static final String[] IGNORED_FUNC = {"GetCaller", "toString", "refresh", "log"};
     
     private static final Predicate<String> IS_JAVA_INTERNAL =
             s -> Arrays.stream(IGNORED_PREFIX).anyMatch(s::startsWith);

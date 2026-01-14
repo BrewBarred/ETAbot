@@ -370,6 +370,7 @@ public class DataMan {
             String line;
             while ((line = reader.readLine()) != null)
                 response.append(line);
+            BotMan.Log(source, response.toString());
             return response.toString();
         }
     }
