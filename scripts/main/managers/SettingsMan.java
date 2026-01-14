@@ -42,6 +42,7 @@ public class SettingsMan {
     ///  Menu settings:
     ///
 
+
     ///
     ///  Script settings:
     ///
@@ -138,11 +139,16 @@ public class SettingsMan {
      * Load the preferred settings for this player by fetching any existing settings from the ETA Bot server.
      */
     public void loadSettings() throws IOException {
-        // fetch the settings for this player from the server (automatically handles local or supa host)
+        // fetch the settings for this player from the server
         bot.log("Fetching settings for: " + bot.getName());
         settings = bot.downloadSettings();
+        settings = settings == null ? GetDefault() : settings;
         // output fetched settings as a debug log entry
         bot.log("Loaded settings:\n" + settings);
         bot.setBotStatus("Successfully loaded settings!");
+    }
+
+    private String GetDefault() {
+        return "{Settings: Default}";
     }
 }

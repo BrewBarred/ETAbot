@@ -148,8 +148,17 @@ public class DataMan {
         // get "settings" column data from "Settings" table
         String getSettingURL = generateGET(Database.Settings, columnName);
         BotMan.Log(LogMan.LogSource.GET, "Generated SELECT \"Settings\" URL: " + getSettingURL);
-        // send the patch request to the server
-        return GET(getSettingURL);
+
+        // generate and send the GET request to the server and collect the response for validation
+        String settings = GET(getSettingURL);
+        //
+        if (isEmptySelectResult(settings)) {
+            BotMan.Log(LogMan.LogSource.GET, "No settings found for player: " + BotMan.GetPlayerName() + " (no data exists for this player!)");
+            return null;
+        }
+
+        // validate settings here
+        return settings;
     }
 
     /**
@@ -247,6 +256,12 @@ public class DataMan {
         BotMan.Log(LogMan.LogSource.GET, "Fetching data from: " + path);
         // no payload passed with GET requests
         return generateRequest(REQUEST_METHOD.GET, path, null);
+    }
+
+    private boolean isEmptySelectResult(String body) {
+        if (body == null) return true;
+        String s = body.trim();
+        return s.isEmpty() || s.equals("[]");
     }
 
     /**
@@ -350,18 +365,12 @@ public class DataMan {
         if (stream == null)
             return "";
 
-        InputStreamReader streamReader = new InputStreamReader(stream);
-        BufferedReader reader = new BufferedReader(streamReader);
-
-        // create a string builder to append each line of the response to a string
-        StringBuilder response = new StringBuilder();
-        // read the response until the end
-        for (String line = ""; line != null; line = reader.readLine())
-            response.append(line);
-
-        // close the reader since we are finished reading to reduce overheads
-        reader.close();
-
-        return response.toString();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            StringBuilder response = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null)
+                response.append(line);
+            return response.toString();
+        }
     }
 }

@@ -361,9 +361,6 @@ public abstract class BotMan extends Script {
                     // if no attempts left, player must be stuck or bug found - pause bot to safe player going haywire
                 else callPause();
 
-                // only outputs this line if callPause() doesn't throw an error to pause
-                setBotStatus("Sleeping for " + delay / 1000 + "s");
-
             } catch(RuntimeException i){
                 if (i.getMessage() != null)
                     setPlayerStatus(i.getMessage());
@@ -909,8 +906,8 @@ public abstract class BotMan extends Script {
 
         // only reset attempts on success, errors should skip this step and get triggered by the attempt count,
         currentAttempt = 1;
-        setPlayerStatus("Sleeping for: " + delay / 1000 + "s");
 
+        setPlayerStatus("Sleeping for " + delay / 1000 + "s");
         return delay;
     }
 
