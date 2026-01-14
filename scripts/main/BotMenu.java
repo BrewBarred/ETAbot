@@ -315,6 +315,9 @@ public class BotMenu extends JFrame {
         ///     and (in some cases) their own submenus, then finally, place the status' messages along the bottom
         ///
 
+        ///  set default size
+        setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         ///  create a bot menu panel to store all the created components
         JPanel menu = new JPanel(new BorderLayout());
         menu.setBorder(new EmptyBorder(12, 12, 12, 12));

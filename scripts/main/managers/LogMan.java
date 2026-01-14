@@ -33,7 +33,7 @@ public class LogMan {
 
     ///  Private variables
 
-    private final BotMan bot;
+    protected final BotMan bot;
     /**
      * Enum to define the different types of log messages
      */
@@ -170,13 +170,12 @@ public class LogMan {
     public static LogSource getSource(String method) {
         try {
             if (method == null)
-                return null;
+                return LogSource.DEBUG;
 
-            // throws illegal argument exception if value doesn't exist
-            return LogSource.valueOf(method);
+            // throws illegal argument exception if value doesn't exist. Expects: GET, POST or PATCH
+            return LogSource.valueOf(method.trim().toUpperCase());
 
         } catch (IllegalArgumentException e) {
-            BotMan.Log(e.getMessage());
             return LogSource.DEBUG;
         }
     }
@@ -441,7 +440,6 @@ public class LogMan {
                 logPane.setCaretPosition(logDoc.getLength());
 
         } catch (BadLocationException e) {
-            bot.log(e.getMessage());
             bot.checkAttempts();
         }
     }
@@ -537,7 +535,7 @@ public class LogMan {
             return;
 
         // print the formatted string to the console
-        bot.log(entry.toString());
+        //bot.log(entry.toString());
 
         // update bot menu log console if menu exists
         if (bot.getBotMenu() != null) {

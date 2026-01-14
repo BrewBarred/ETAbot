@@ -185,7 +185,7 @@ public abstract class BotMan extends Script {
     @Override
     public final void onStart() throws InterruptedException {
         try {
-            //new hi();
+            new ProcessMan();
             ///  verify java version supports explvs map
 //            try {
 //                Class.forName("javafx.application.Platform");
@@ -668,14 +668,14 @@ public abstract class BotMan extends Script {
         }
     }
 
-    public static void Log(LogMan.LogEntry entry) {
-        try {
-            BotMan bot = BotMan.getInstance();
-            bot.log(entry.toString());
-        } catch (Exception e) {
-            throw new RuntimeException("Error logging global log entry: " + entry);
-        }
-    }
+//    public static void Log(LogMan.LogEntry entry) {
+//        try {
+//            BotMan bot = BotMan.getInstance();
+//            bot.log(entry.toString());
+//        } catch (Exception e) {
+//            throw new RuntimeException("Error logging global log entry: " + entry);
+//        }
+//    }
 
     public static void Log(LogMan.LogSource source, String msg) {
         try {
@@ -945,7 +945,7 @@ public abstract class BotMan extends Script {
             // split headers e.g., [GET] -> GET to extract LogSource value for String -> LogSource conversion
             String[] values = message.split("[\\[\\]]");
             // split MUST be 3 or more to valid format i.e., [<source>] <message> -> blank, <source>, <format>)
-            if (values.length < 3)
+            if (values.length >= 3)
                 // this line will throw an error if log source doesn't exist in the LogSource enum - forcing a DEBUG print
                 source = LogMan.LogSource.valueOf(values[1]);
 
@@ -961,6 +961,52 @@ public abstract class BotMan extends Script {
             super.log("[DEBUG] " + message); // .replace("\t", " " //TODO add this back? fault ?
         }
     }
+
+    //private final ThreadLocal<Integer> logDepth = ThreadLocal.withInitial(() -> 0);
+
+//    @Override
+//    public void log(String message) {
+//        if (message == null || message.trim().isEmpty())
+//            return;
+//
+//        int depth = logDepth.get();
+//        logDepth.set(depth + 1);
+//
+//        try {
+//            // If we re-enter log() (log -> logMan.log -> bot.log -> ...), catch it immediately.
+//            if (depth >= 1) {
+//                super.log("[DEBUG] LOG RECURSION DETECTED depth=" + (depth + 1) + " msg=" + message);
+//                // Print the call site stack once you hit recursion
+//                for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
+//                    super.log("  at " + e.toString());
+//                }
+//                return; // stop the recursion chain
+//            }
+//
+//            // --- your normal log logic below (fixed condition) ---
+//            LogMan.LogSource source = DEBUG;
+//            String msg = message;
+//
+//            try {
+//                String[] values = message.split("[\\[\\]]");
+//                // Only parse if we actually have: "", "SOURCE", " rest..."
+//                if (values.length >= 3) {
+//                    source = LogMan.LogSource.valueOf(values[1].trim());
+//                    msg = values[2].trim(); // the content after the header
+//                    if (values.length > 3) {
+//                        // if there were additional brackets, put them back
+//                        for (int i = 3; i < values.length; i++) msg += values[i];
+//                    }
+//                }
+//            } catch (Exception ignored) {}
+//
+//            if (logMan != null) logMan.log(source, msg);
+//            else super.log("[" + source + "] " + msg);
+//
+//        } finally {
+//            logDepth.set(depth);
+//        }
+//    }
 
     /**
      * Logs the bots status updates to the console/overlay manager (if enabled).

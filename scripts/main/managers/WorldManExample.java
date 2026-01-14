@@ -76,7 +76,7 @@ public class WorldManExample extends Script {
             frame = new JFrame("SettingsPanel Preview (Safe)");
             frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
             frame.setContentPane(buildRoot());
-            frame.setSize(980, 700);
+            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
             frame.setLocationRelativeTo(null);
             frame.setVisible(true);
         });
