@@ -339,8 +339,8 @@ public class DataMan {
         // validate response code before continuing
         int code = request.getResponseCode();
         // convert HTTP Request into LogSource for better debugging
-        LogMan.LogSource source = LogMan.getSource(request.getRequestMethod().toString());
-        BotMan.Log(source, "Response ["+request.getResponseCode()+"] " + request.getResponseMessage());
+        LogMan.LogSource source = LogMan.getSource(request.getRequestMethod());
+        BotMan.Log(source, "Response [" + code + "] " + request.getResponseMessage());
         // use error stream on failure, input stream on success
         InputStream stream = (code >= 200 && code < 300)
                 ? request.getInputStream()

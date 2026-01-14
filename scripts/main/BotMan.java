@@ -302,9 +302,9 @@ public abstract class BotMan extends Script {
             ///  load settings either via local host or supabase server
 
             setBotStatus("Attempting to load settings...");
-            logMan.log(LogMan.LogSource.GET, "Successfully downloaded player settings!"
-                    + "\t\t\n  Player: "+ myPlayer().getName()
-                    + "\n  Settings: " + downloadSettings());
+            logMan.log(LogMan.LogSource.GET, "Successfully downloaded player settings!",
+                        "Player: "+ myPlayer().getName(),
+                        "Settings: " + downloadSettings());
 
             //log(getCaller());
 
