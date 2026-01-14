@@ -348,6 +348,7 @@ public class LogMan {
     private void addSearchBarListeners() {
         // create a listener that forces a refresh after each insert, remove or change to the search phrase1
         DocumentListener dl = new DocumentListener() {
+            // add direct refreshes instead of waiting for swing EDT to prevent delays between keystrokes and results
             @Override public void insertUpdate(DocumentEvent e) { refresh(); }
             @Override public void removeUpdate(DocumentEvent e) { refresh(); }
             @Override public void changedUpdate(DocumentEvent e) { refresh(); }
@@ -421,7 +422,7 @@ public class LogMan {
             return true;
 
         // validate the entry message
-        String msg = entry.message;
+        String msg = entry.toString();
 
         // apply the case sensitivity filter
         if (!caseSensitive) {
