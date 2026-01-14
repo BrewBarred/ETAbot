@@ -83,7 +83,7 @@ public class LogMan {
     /**
      * A static class which contains all the data required to print output to the {@link BotMenu}'s log console.
      */
-    private static class LogEntry {
+    public static class LogEntry {
         /**
          * The timestamp at which this entry was created.
          */
@@ -165,6 +165,24 @@ public class LogMan {
      */
     public LogMan(BotMan bot) {
         this.bot = bot;
+    }
+
+    public static LogSource getSource(String method) {
+        try {
+            if (method == null)
+                return null;
+
+            // throws illegal argument exception if value doesn't exist
+            return LogSource.valueOf(method);
+
+        } catch (IllegalArgumentException e) {
+            BotMan.Log(e.getMessage());
+            return LogSource.DEBUG;
+        }
+    }
+
+    public static LogSource getSource(DataMan.REQUEST_METHOD method) {
+        return getSource(method.toString());
     }
 
     /**
@@ -470,20 +488,38 @@ public class LogMan {
      * @param lines The string contents of this {@link LogEntry}.
      */
     public void log(LogSource source, String... lines) {
-        if (lines == null || lines.length == 0 || lines[0] == null)
+        // validate lines array at least up to the first value
+        if (lines == null || lines.length < 1 || lines[0] == null)
             return;
 
-        // initialize string builder with first line, unformatted
-        StringBuilder sb = new StringBuilder();
+        // if there is only the 1 item we validated, return that, or try format the other lines
+        String message = lines.length == 1 ?  lines[0] : formatMultiLog(lines);
+        // use the passed source and formatted message to create a log entry
+        LogEntry e =  new LogEntry(source, message);
+        // log this entry
+        log(e);
+    }
 
-        // for every additional line provided in the String... array, insert a newline and two tab returns at the front.
-        for (String line : lines) {
-            if (line == null)
+    private String formatMultiLog(String[] lines) {
+        // otherwise, init a string builder to format multi-line logs
+        StringBuilder sb = new StringBuilder(lines[0]);
+        // define custom formatting for first line header
+        String firstLineHeader = "\n=> ";
+        // this doesn't seem like a prefix, but it is!! it's just tailed on the end of the last line
+        String prefix = "\n\t\t";
+        // apply custom formatting for first line e.g., drop to next line etc.
+        sb.append(firstLineHeader).append(lines[0]).append(prefix);
+
+        // for every additional line provided in the String... array, insert prefixes
+        for (int i = 1; i < lines.length; i++) {
+            if (lines[i] == null)
                 continue;
-            sb.append(line).append("\n\t");
+
+            // don't append prefix to the last item in the lines list
+            sb.append(lines[i]).append(i == lines.length - 1 ? "" : prefix);
         }
 
-        log(new LogEntry(source, sb.substring(0, sb.toString().length() - 6)));
+        return sb.toString();
     }
 
 

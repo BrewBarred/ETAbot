@@ -1,7 +1,8 @@
 <component name="libraryTable">
   <library name="osbot 2.7.67">
     <CLASSES>
-      <root url="jar://$USER_HOME$/Desktop/osbot 2.7.67.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../osbot 2.7.67.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/jfxrt.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />

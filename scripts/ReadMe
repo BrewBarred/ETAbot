@@ -1,0 +1,10 @@
+Automatically compile then run .java files
+1. Compile then run java files by moving to the base directory: "cd ETABot/"
+
+2. "ls" should show "run.bat"
+
+3. If you see run.bat, you're in the right place:
+    usage: "./run <java class name or file>"
+    example: "./run main" or "./run main.java"
+
+    note: ./ is required to trust the executable

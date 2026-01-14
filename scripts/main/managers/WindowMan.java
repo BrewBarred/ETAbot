@@ -1,25 +1,57 @@
 package main.managers;
 
 import main.BotMan;
+import main.BotMenu;
 import main.task.Task;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
- * The Window-Manager provides functions used to detect, use and manipulate various windows applications and processes.
+ * The Window-Manager provides functions used to detect, create, activate, select, use and manipulate various windows
+ * applications and processes.
  * <p>
- * This class is mainly used to spawn windows on alternate screens and to attach listeners to the client/menu.
+ * This class is mainly used to spawn windows on alternate screens and to attach listeners to the client/menu for
+ * real-time updates. It is also used to launch cmd.exe processes required for advanced features' external jars such as
+ * JFX and web-viewer, which is used to load Explvs map inside the BotMenu.
  *
  * TODO load this class into settings so it displays all detected screens and the player can click which screen
  *  (i.e., Monitor 1, Monitor 2 or Monitor 3) to spawn the BotMenu on then use that instead.
  */
-public class FrameMan {
-    private BotMan bot;
-    public FrameMan(BotMan bot) {
-        this.bot = bot;
+public class WindowMan {
+    //TODO investigate security liabilities associate with having a public static function that can start any process
+    // on someones pc
+    public static void startProcess(File path, boolean createFile, boolean exit, String... processArgs) {
+        try {
+            // ensure the path exists, or is created if create bool is true
+            if (!path.exists() && !(createFile && path.createNewFile()))
+                return;
+
+            // create a list for process arrangement
+            List<String> cmd = new ArrayList<>();
+                cmd.add("cmd.exe"); // use cmd executor to start process
+                cmd.add(exit ? "/c" : "/k"); // c = run then exit, k = run then stay open, "" = run and wait input
+                cmd.add("start"); // start the process
+                cmd.add(""); // window title (must be present)
+                cmd.add(path.getAbsolutePath()); // the file path to the process we are trying to execute
+
+            // dynamically extend process list with additional arguments.
+            // NOTE: fetch arguments in cmd via %1 = 1st arg, %2 = 2nd arg, etc.
+            if (processArgs != null)
+                cmd.addAll(Arrays.asList(processArgs));
+
+            boolean isLaunched = new ProcessBuilder(cmd).start().isAlive();
+            BotMan.Log("Process launched: " + (isLaunched ? "Success" : "Failed"));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     /**
      * Attaches an onClosing() listener to the passed {@link JFrame window} to call the passed {@link Runnable function}.
@@ -62,26 +94,26 @@ public class FrameMan {
         list.getModel().addListDataListener(new javax.swing.event.ListDataListener() {
             @Override
             public void intervalAdded(javax.swing.event.ListDataEvent e) {
-                bot.setBotStatus("Added task!");
+                BotMan.Log("Added task!");
                 refreshBotMenu();
             }
 
             @Override
             public void intervalRemoved(javax.swing.event.ListDataEvent e) {
-                bot.setBotStatus("Removed task!");
+                BotMan.Log("Removed task!");
                 refreshBotMenu();
             }
 
             @Override
             public void contentsChanged(javax.swing.event.ListDataEvent e) {
-                bot.setBotStatus("Changed contents of task!");
+                BotMan.Log("Changed contents of task!");
                 refreshBotMenu();
             }
         });
     }
 
     public void refreshBotMenu() {
-        bot.getBotMenu().refresh();
+        BotMenu.refresh();
     }
 
     /** Move menuFrame to a different screen than the OSBot client window (best-effort). */

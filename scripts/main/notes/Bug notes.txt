@@ -1,13 +1,24 @@
 /// General bugs:
 
+GET request:
+
+- I think /t is removed before display stuff to the console preventing me from further formatting when it comes to
+printing GET messages neatly, look into better formatting rules
+
+
 Task/BotMenu:
 
+- I think /t is removed before display stuff to the console preventing me from further formatting when it comes to
+printing GET messages neatly, look into better formatting rules
+- I think there's a function that automatically adds /n/t to a multiline string by passing each line as an array item to
+a String... param function. Consider extracting that part of the function into its own method
 - Setting task stage via bot menu settings -> developer menu to stage 10/10 throws an error which isn't caught
 	- Catch the error or cap the value (I think 10 should be allowed, 0 and 11 shouldn't).
 
 BotMan
 
-- I think I changed the attempt count from pre-increment to post-increment but I think its only half done. Check that the attempts counter starts from 1 and still ends after X attempts and check max attempts.
+- I think I changed the attempt count from pre-increment to post-increment but I think its only half done. Check that
+the attempts counter starts from 1 and still ends after X attempts and check max attempts.
 
 BotMan/BotMenu
 
@@ -18,7 +29,8 @@ BotMan/BotMenu
 
 (iF2P) Air/Earth/Essence..
     - Successfully withdraws the selected pickaxe but fails to equip it
-        - should check players attack level and compare against pickaxe requirement somehow, either items cache or maybe osbot api has a function for this
+        - should check players attack level and compare against pickaxe requirement somehow, either items cache or maybe
+        osbot api has a function for this
 
 Iron banker:
     - Always banks if started in bank (even if items required already obtained), just opens and closes for no reason

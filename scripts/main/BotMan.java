@@ -1,6 +1,10 @@
 package main;
 
-import main.data.supabase.DataMan;
+//import javafx.application.Platform;
+//import javafx.embed.swing.JFXPanel;
+//import javafx.scene.Scene;
+//import javafx.scene.web.WebView;
+import main.managers.DataMan;
 import main.managers.*;
 import main.task.Action;
 import main.task.Task;
@@ -14,7 +18,7 @@ import org.osbot.rs07.utility.ConditionalSleep;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 import java.util.function.BooleanSupplier;
 import java.util.function.Predicate;
@@ -82,7 +86,7 @@ public abstract class BotMan extends Script {
     /**
      * The window manager, used to detect, manipulate and attach listeners to various windows.
      */
-    private FrameMan frameMan;
+    private WindowMan windowMan;
     /**
      * The graphics manager, used to draw informative/decorative on-screen graphics (e.g., bot/script overlays).
      */
@@ -181,6 +185,49 @@ public abstract class BotMan extends Script {
     @Override
     public final void onStart() throws InterruptedException {
         try {
+            //new hi();
+            ///  verify java version supports explvs map
+//            try {
+//                Class.forName("javafx.application.Platform");
+//                // If no error, continue to launch your app
+//            } catch (ClassNotFoundException e) {
+//                JOptionPane.showMessageDialog(null,
+//                        "Error: JavaFX not found. Please use a Java version that includes JavaFX (e.g., Oracle JDK 8 or Azul Zulu Full).",
+//                        "Missing Components",
+//                        JOptionPane.ERROR_MESSAGE);
+//                System.exit(1);
+//            }
+//
+//            try {
+//                // 1. Get a reference to where OSBot stores data
+//                File libFile = new File(getDirectoryData(), "jfxrt.jar");
+//
+//                // 2. Extract the JAR from your script to the OSBot folder if it's not there
+//                if (!libFile.exists()) {
+//                    try (InputStream in = getClass().getResourceAsStream("/jfxrt.jar");
+//                         OutputStream out = new FileOutputStream(libFile)) {
+//                        byte[] buffer = new byte[4096];
+//                        int read;
+//                        while ((read = in.read(buffer)) != -1) {
+//                            out.write(buffer, 0, read);
+//                        }
+//                    }
+//                }
+//
+//                // 3. Load the JAR into the current script's memory
+//                Method method = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+//                method.setAccessible(true);
+//                method.invoke(getClass().getClassLoader(), libFile.toURI().toURL());
+//
+//                log("Map library loaded successfully!");
+//
+//                // 4. Now open your map window
+//                SwingUtilities.invokeLater(this::openMapWindow);
+//
+//            } catch (Exception e) {
+//                log("Error loading map: " + e.getMessage());
+//                e.printStackTrace();
+//            }
 //            if (localHost) {
 //                ///  Example local host (start server on start, then use GET/POST requests triggered by menu buttons)
 //                try {
@@ -200,7 +247,7 @@ public abstract class BotMan extends Script {
             logMan = new LogMan(this);
 
             setBotStatus("Creating WindowMan...");
-            frameMan = new FrameMan(this);
+            windowMan = new WindowMan();
 
             setBotStatus("Creating GraphicsMan...");
             // create a new graphics manager to draw on-screen graphics, passing an instance of this bot for easier value reading.
@@ -268,6 +315,20 @@ public abstract class BotMan extends Script {
         }
     }
 
+//    private void openMapWindow() {
+//        JFrame frame = new JFrame("OSBot Interactive Map");
+//        final JFXPanel fxPanel = new JFXPanel();
+//        frame.add(fxPanel);
+//        frame.setSize(800, 600);
+//        frame.setVisible(true);
+//
+//        Platform.runLater(() -> {
+//            WebView webView = new WebView();
+//            webView.getEngine().load("https://explv.github.io/?centreX=2688&centreY=3391&centreZ=0&zoom=7");
+//            fxPanel.setScene(new Scene(webView));
+//        });
+//    }
+
     /**
      * The main loop for everything responsible for this bot instance. This loop runs forever, checking for tasks to
      * complete which are submitted by the script-user, to the {@link TaskMan}, via the {@link BotMenu}.
@@ -318,14 +379,14 @@ public abstract class BotMan extends Script {
         ///  list listeners - attach listeners to lists to reflect changes in bot menu
 
         // refresh bot menu anytime the task list is manipulated (index change, add, remove)
-        frameMan.attachMenuListListeners(getTaskList());
+        windowMan.attachMenuListListeners(getTaskList());
         // refresh bot menu anytime the task library is manipulated (index change, add, remove)
-        frameMan.attachMenuListListeners(getTaskLibrary());
+        windowMan.attachMenuListListeners(getTaskLibrary());
 
         ///  onClose() events
 
         // call the bot menu on close function whenever the user exits the menu (via window 'x' button)
-        frameMan.attachOnCloseEvent(botMenu, () -> botMenu.close());
+        windowMan.attachOnCloseEvent(botMenu, () -> botMenu.close());
 
         ///  refresh() events
 
@@ -607,6 +668,15 @@ public abstract class BotMan extends Script {
         }
     }
 
+    public static void Log(LogMan.LogEntry entry) {
+        try {
+            BotMan bot = BotMan.getInstance();
+            bot.log(entry.toString());
+        } catch (Exception e) {
+            throw new RuntimeException("Error logging global log entry: " + entry);
+        }
+    }
+
     public static void Log(LogMan.LogSource source, String msg) {
         try {
             BotMan bot = BotMan.getInstance();
@@ -629,9 +699,9 @@ public abstract class BotMan extends Script {
     /**
      * @return A private reference to this {@link BotMan} instance for static access within this class.
      */
-    private static BotMan getInstance() {
+    static BotMan getInstance() {
         if (instance == null)
-            throw new RuntimeException("Attempted to fetch a null BotMan instance!");
+            throw new RuntimeException("BotMan instance fetched while BotMan was null!");
         return instance;
     }
 
@@ -641,6 +711,7 @@ public abstract class BotMan extends Script {
      * @return The players settings as a {@link String} in JSON format.
      */
     public String downloadSettings() throws IOException {
+        setGetStatus("Downloading player settings...");
         return dataMan.getServerSettings("*");
     }
 
@@ -861,13 +932,34 @@ public abstract class BotMan extends Script {
 
     @Override
     public void log(String message) {
-        // automatically convert unformatted messages into debug format
-        if (message != null && message.startsWith("["))
-            // log the unformatted message if logman is null, else format the message before logging
-            super.log(message.replace("\t", " "));
-        else if (logMan != null)
-            // else send this message off for formatting first (which recursively comes back and prints)
-            logMan.log(DEBUG, message);
+        // never log null or empty messages to the console
+        if (message == null || message.isEmpty())
+            return;
+
+        // try log a pre-validated message to the console
+        try {
+            ///  validate log request
+
+            // set DEBUG as default log source
+            LogMan.LogSource source = DEBUG;
+            // split headers e.g., [GET] -> GET to extract LogSource value for String -> LogSource conversion
+            String[] values = message.split("[\\[\\]]");
+            // split MUST be 3 or more to valid format i.e., [<source>] <message> -> blank, <source>, <format>)
+            if (values.length < 3)
+                // this line will throw an error if log source doesn't exist in the LogSource enum - forcing a DEBUG print
+                source = LogMan.LogSource.valueOf(values[1]);
+
+            // if logman is unavailable for printing
+            if (logMan == null)
+                // throw an exception to use default printer instead
+                throw new IllegalArgumentException();
+
+            logMan.log(source, message);
+
+        } catch (IllegalArgumentException ignored) {
+            // log the unformatted message if no pattern match is found
+            super.log("[DEBUG] " + message); // .replace("\t", " " //TODO add this back? fault ?
+        }
     }
 
     /**

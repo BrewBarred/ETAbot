@@ -1,7 +1,6 @@
-package main.data.supabase;
+package main.managers;
 
 import main.BotMan;
-import main.managers.LogMan;
 
 import java.io.*;
 import java.net.*;
@@ -148,6 +147,7 @@ public class DataMan {
         columnName = (columnName == null || columnName.isEmpty()) ? "*" : columnName;
         // get "settings" column data from "Settings" table
         String getSettingURL = generateGET(Database.Settings, columnName);
+        BotMan.Log(LogMan.LogSource.GET, "Generated SELECT \"Settings\" URL: " + getSettingURL);
         // send the patch request to the server
         return GET(getSettingURL);
     }
@@ -200,11 +200,18 @@ public class DataMan {
      *
      * @param method The {@link REQUEST_METHOD HTTP request method} to use for this request.
      * @param url The location path of the data on the server-side.
+     * @param jsonBody The body to attach to this request (required for PATCH & POST requests).
      * @return A {@link String} value denoting the connection response.
      */
-    private String sendRequest(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
-        HttpURLConnection request = generateRequest(method, url);
-        BotMan.Log("\nGenerated request: "
+    private String generateRequest(REQUEST_METHOD method, String url, String jsonBody) throws IOException {
+        BotMan.Log(LogMan.LogSource.GET, "\nGenerating request: "
+                + "\n  Method: " + method
+                + "\n  URL: " + url
+                + "\n  Body: " + jsonBody);
+
+        HttpURLConnection request = setPropertiesHTTP(method, url);
+
+        BotMan.Log(LogMan.LogSource.GET, "\nGenerated request: "
                     + "\n  Connection: " + request
                     + "\n  Properties: " + request.getRequestProperties()
                     + "\n  Method: " + request.getRequestMethod());
@@ -218,13 +225,9 @@ public class DataMan {
             }
         }
 
-        // validate response code before continuing
-        int responseCode = request.getResponseCode();
-        // return early if the response code is invalid
-        if (responseCode < 200 || responseCode >= 300)
-            throw new RuntimeException("Error connecting to server!");
+        BotMan.Log(LogMan.LogSource.GET, "");
 
-        return readResponse(request);
+        return sendRequest(request);
     }
 
     /**
@@ -235,7 +238,7 @@ public class DataMan {
      * @return The connection response as a {@link String} value.
      */
     private String POST(String path, String payload) throws IOException {
-        return sendRequest(REQUEST_METHOD.POST, path, payload);
+        return generateRequest(REQUEST_METHOD.POST, path, payload);
     }
 
     /**
@@ -243,12 +246,13 @@ public class DataMan {
      * the result as a {@link String}.
      */
     private String PATCH(String path, String payload) throws IOException {
-        return sendRequest(REQUEST_METHOD.PATCH, path, payload);
+        return generateRequest(REQUEST_METHOD.PATCH, path, payload);
     }
 
     private String GET(String path) throws IOException {
+        BotMan.Log(LogMan.LogSource.GET, "Fetching data from: " + path);
         // no payload passed with GET requests
-        return sendRequest(REQUEST_METHOD.GET, path, null);
+        return generateRequest(REQUEST_METHOD.GET, path, null);
     }
 
     /**
@@ -258,7 +262,8 @@ public class DataMan {
      * @param method The HTTP request to use in this response
      * @return A {@link String} value representing a connection request URL ready for HTTP transmission.
      */
-    private HttpURLConnection generateRequest(REQUEST_METHOD method, String connectionURL) throws IOException {
+    private HttpURLConnection setPropertiesHTTP(REQUEST_METHOD method, String connectionURL) throws IOException {
+        BotMan.Log(LogMan.getSource(method), "Setting HTTP properties...");
         // connect to the database using the passed connection URL
         HttpURLConnection request = connect(connectionURL);
             // set HTTP request method type
@@ -266,12 +271,6 @@ public class DataMan {
             // set API key & authorization
             request.setRequestProperty("apikey", SUPABASE_KEY);
             request.setRequestProperty("Authorization", "Bearer " + SUPABASE_KEY);
-            // reduce load by merging duplicates
-            //TODO check fault ?
-            // ask Supabase to return the updated row (prevents empty 204 responses)
-            request.setRequestProperty("Prefer", // set preferences for this request
-                          "return=representation," + // return object to prevent numerous empty response error codes
-                          "resolution=merge-duplicates,"); // auto-merge data to prevent duplicates and wasted resources
             // set safety timeouts to prevent endless loops
             request.setConnectTimeout(CONNECTION_TIMEOUT);
             request.setReadTimeout(READ_TIMEOUT);
@@ -280,10 +279,15 @@ public class DataMan {
         if (method == REQUEST_METHOD.PATCH ||  method == REQUEST_METHOD.POST) {
             request.setRequestProperty("Content-Type", "application/json");
             request.setDoOutput(true);
+            // reduce load by merging duplicates on entry
+            request.setRequestProperty("Prefer", // set preferences for this request
+                     "return=representation," + // return object to prevent numerous empty response error codes
+                     "resolution=merge-duplicates,"); // auto-merge data to prevent duplicates and wasted resources
         }
 
         return request;
     }
+
 //
 //    /**
 //     * Generates and returns an HTTP GET request url connection suitable for ETA Bot's server to interpret.
@@ -337,10 +341,12 @@ public class DataMan {
      * @param request The {@link HttpURLConnection} to read.
      * @return The response of the {@link HttpURLConnection} connection request, if successful.
      */
-    private String readResponse(HttpURLConnection request) throws IOException {
+    private String sendRequest(HttpURLConnection request) throws IOException {
         // validate response code before continuing
         int code = request.getResponseCode();
-
+        // convert HTTP Request into LogSource for better debugging
+        LogMan.LogSource source = LogMan.getSource(request.getRequestMethod().toString());
+        BotMan.Log(source, "Response ["+request.getResponseCode()+"]: " + request.getResponseMessage());
         // use error stream on failure, input stream on success
         InputStream stream = (code >= 200 && code < 300)
                 ? request.getInputStream()

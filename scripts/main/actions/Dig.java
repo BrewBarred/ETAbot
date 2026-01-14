@@ -83,7 +83,7 @@ public class Dig extends Task {
 
             case 2:
                 // calculate closest bank and travel
-                //TODO setup fetchfrombank: bot.setStatus(TaskType.Fetch, "Fetching: " + REQUIRED_ITEM);
+                //TODO setup withdraw: bot.setStatus(TaskType.Fetch, "Fetching: " + REQUIRED_ITEM);
                 break;
 
             case 3:

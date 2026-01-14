@@ -7,7 +7,7 @@ import javax.swing.border.TitledBorder;
 import main.menu.SettingsPanel;
 import main.task.Task;
 import main.task.Action;
-import main.managers.FrameMan;
+import main.managers.WindowMan;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -100,7 +100,7 @@ public class BotMenu extends JFrame {
             // set default settings
             setDefaultSettings();
             // place the bot menu on a different screen to the bot client if possible
-            FrameMan.moveToAlternateMonitor(this);
+            WindowMan.moveToAlternateMonitor(this);
             // pause/play script on action press + chain with isRunning to automatically update isRunning bool
             btnToggleExecution.addActionListener(e -> bot.toggleExecutionMode());
             // listen to isRunning bool and automatically update button text on boolean value change
@@ -754,6 +754,7 @@ public class BotMenu extends JFrame {
     }
 
     private JComponent buildTabSettings() {
+        //return buildMapTab();
         return new SettingsPanel(bot);
     }
 
@@ -973,16 +974,16 @@ public class BotMenu extends JFrame {
      * Warning: This function is called by the setStatus functions, therefore, the log() function should be used to
      * print here.
      */
-    public void refresh() {
-        if (bot == null)
-            return;
+    public static void refresh() {
+        // fetch the bot man instance (cant be null and will throw error on failure)
+        BotMan bot = BotMan.getInstance();
 
         ///  Bot menu refresh tasks
         ///     -- NO SETSTATUS, SETBOTSTATUS OR BOTMENU CONSOLE LOG PRINTS HERE OR IT WILL CAUSE INFINITE RECURSION!
 
         // only refresh the sections of the bot menu that were added to the runnables list
-        for (Runnable refreshTask : getRefreshList())
-            bot.safeRun(refreshTask);
+        for (Runnable refreshTask : bot.getBotMenu().getRefreshList())
+            BotMan.getInstance().safeRun(refreshTask);
     }
 
     /**
