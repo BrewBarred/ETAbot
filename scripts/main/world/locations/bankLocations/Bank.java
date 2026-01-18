@@ -1,4 +1,4 @@
-//package main.locations.bankLocations;
+//package main.world.locations.bankLocations;
 //
 //import locations.TravelMan;
 //import org.osbot.rs07.api.map.Area;

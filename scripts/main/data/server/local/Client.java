@@ -1,4 +1,4 @@
-package main.data.local;
+package main.data.server.local;
 
 import java.io.*;
 import java.net.HttpURLConnection;

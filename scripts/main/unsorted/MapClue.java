@@ -2,7 +2,7 @@
 //// MAP Clue notes:
 //
 //
-//import main.locations.LocationFinder;
+//import main.world.locations.LocationFinder;
 //import locations.Spot;
 //import org.osbot.rs07.api.map.Area;
 //import org.osbot.rs07.api.map.Position;

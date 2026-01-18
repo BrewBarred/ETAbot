@@ -1,4 +1,4 @@
-//package main.locations;
+//package main.world.locations;
 //
 //
 //import locations.cityLocations.*;

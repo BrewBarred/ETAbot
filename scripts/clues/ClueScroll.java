@@ -1,6 +1,6 @@
 //package clues;
 //
-//import main.locations.TravelMan;
+//import main.world.locations.TravelMan;
 //import main.BotMan;
 //
 //import java.util.Arrays;

@@ -1,4 +1,0 @@
-These notes may prove useful for making the bot better automatically react to its environment later for AI and general better scripts
-
--> Check Bot class out for lots of event listeners such as time since last xp drop
--> Check skills class out to register xp fluctuations and level gains etc.

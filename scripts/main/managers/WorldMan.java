@@ -43,7 +43,7 @@ TODO: use code from this class to create a world selector in settings panel
         version = 1.1,
         info = "UI preview without freezing client (async worlds loading)",
         logo = "")
-public class WorldManExample extends Script {
+public class WorldMan extends Script {
 
     private JFrame frame;
 

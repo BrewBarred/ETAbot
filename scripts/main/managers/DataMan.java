@@ -113,7 +113,7 @@ public class DataMan {
     private String generateGET(Database table, String column) {
         String url = getColumnURL(table, column);
         // log info to console for debugging
-        BotMan.Log(LogMan.LogSource.GET, String.format("Selecting \"%s\" from \"%s\".", column, table));
+        BotMan.Log(LogMan.LogSource.GET, String.format("Fetching \"%s\" from the \"%s\" table.", column, table));
         return url;
     }
 
@@ -272,7 +272,6 @@ public class DataMan {
      * @return A {@link String} value representing a connection request URL ready for HTTP transmission.
      */
     private HttpURLConnection setPropertiesHTTP(REQUEST_METHOD method, String connectionURL) throws IOException {
-        BotMan.Log(LogMan.getSource(method), "Setting HTTP properties...");
         // connect to the database using the passed connection URL
         HttpURLConnection request = connect(connectionURL);
             // set HTTP request method type

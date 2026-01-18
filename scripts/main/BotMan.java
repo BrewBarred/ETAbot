@@ -187,17 +187,6 @@ public abstract class BotMan extends Script {
     public final void onStart() throws InterruptedException {
         try {
             new ProcessMan();
-            ///  verify java version supports explvs map
-//            try {
-//                Class.forName("javafx.application.Platform");
-//                // If no error, continue to launch your app
-//            } catch (ClassNotFoundException e) {
-//                JOptionPane.showMessageDialog(null,
-//                        "Error: JavaFX not found. Please use a Java version that includes JavaFX (e.g., Oracle JDK 8 or Azul Zulu Full).",
-//                        "Missing Components",
-//                        JOptionPane.ERROR_MESSAGE);
-//                System.exit(1);
-//            }
 //
 //            try {
 //                // 1. Get a reference to where OSBot stores data
@@ -1224,7 +1213,7 @@ public abstract class BotMan extends Script {
 
             // ensure returned caller is not a java internal function or used to output debugging statement (or they'll be useless!)
             if (!IS_JAVA_INTERNAL.test(cls) && !IS_DEBUGGING_FUN.test(method))
-                return Format(stack[i]) + "\n raw stack: " + stack[i] + "\n  method:" + stack[i].getMethodName();
+                return Format(stack[i]);
         }
         return "[Unknown Caller]";
     }

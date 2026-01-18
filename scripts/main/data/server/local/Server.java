@@ -1,4 +1,4 @@
-package main.data.local;
+package main.data.server.local;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;

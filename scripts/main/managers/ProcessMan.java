@@ -1,5 +1,6 @@
 package main.managers;
 
+import javax.swing.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,6 +47,27 @@ public class ProcessMan {
         } catch (Exception e) {
             System.err.println("Failed to launch process:");
             e.printStackTrace();
+        }
+    }
+
+    public static boolean testJavaFX() {
+        ///  verify java version supports explvs map
+        try {
+            Class.forName("javafx.application.Platform");
+            JOptionPane.showMessageDialog(null,
+                    "Success! JavaFX application files were found on local file system.",
+                    "JavaFX Found!",
+                    JOptionPane.ERROR_MESSAGE);
+            return true;
+
+            // If no error, continue to launch your app
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(null,
+                    "Error: JavaFX not found. Please use a Java version that includes JavaFX (e.g., Oracle JDK 8 or Azul Zulu Full).",
+                    "Missing Components",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+            return false;
         }
     }
 
