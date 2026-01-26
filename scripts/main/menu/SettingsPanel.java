@@ -66,7 +66,7 @@ public final class SettingsPanel extends JPanel {
 
         //TODO add floating i. "If enabled, the players account will be logged out before the script is stopped."
         JCheckBox chkLogout = new JCheckBox("Logout on script end");
-        chkLogout.setSelected(bot.isLogOnStop());
+        chkLogout.setSelected(bot.isLoggingOnStop());
         chkLogout.addActionListener(e -> bot.setLogOnStop(chkLogout.isSelected()));
 
         //TODO add floating i. "Enables/disables developer mode which gives the bot access to hidden methods and menus."

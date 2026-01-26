@@ -718,7 +718,7 @@ public abstract class BotMan extends Script {
     /**
      * Return true if this script is currently executing.
      */
-    protected boolean isRunning() {
+    public boolean isRunning() {
         return isRunning;
     }
     
@@ -783,13 +783,13 @@ public abstract class BotMan extends Script {
         settingsMan.setDrawingOverlays(draw);
     }
 
-    public boolean isLogOnStop() {
+    public boolean isLoggingOnStop() {
         return isLogOnStop;
     }
 
     public void setLogOnStop(boolean logout) {
         isLogOnStop = logout;
-        setBotStatus("Log on stop: " + (isLogOnStop() ? "Enabled" : "Disabled"));
+        setBotStatus("Log on stop: " + (isLoggingOnStop() ? "Enabled" : "Disabled"));
     }
 
     ///  Getters/setters: dev console

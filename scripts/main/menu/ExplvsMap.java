@@ -1,4 +1,4 @@
-package main.world.map;
+package main.menu;
 
 import javafx.application.Platform;
 import javafx.concurrent.Worker;

@@ -3,7 +3,6 @@
     <output-path>$USER_HOME$/OSBot/Scripts</output-path>
     <root id="archive" name="ETAbot.jar">
       <element id="module-output" name="ETAbot" />
-      <element id="library" level="project" name="osbot 2.7.68" />
     </root>
   </artifact>
 </component>

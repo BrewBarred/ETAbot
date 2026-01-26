@@ -5,6 +5,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
 import main.menu.SettingsPanel;
+import main.menu.TravelManPanel;
 import main.task.Task;
 import main.task.Action;
 import main.managers.WindowMan;
@@ -17,6 +18,7 @@ public class BotMenu extends JFrame {
      * A reference to the {@link BotMan} object that this {@link BotMenu} interacts with.
      */
     public BotMan bot;
+    private TravelManPanel travelMan;
 
     /// Bot Menu components (class-scope for dynamic updates in refresh())
 
@@ -105,7 +107,7 @@ public class BotMenu extends JFrame {
             btnToggleExecution.addActionListener(e -> bot.toggleExecutionMode());
             // listen to isRunning bool and automatically update button text on boolean value change
             btnToggleExecution.addPropertyChangeListener("isRunning", e -> {
-                    bot.log("Property changed! isRunning = " + bot.isRunning);
+                    bot.log("Property changed! isRunning = " + bot.isRunning());
             });
             // display the menu
             this.showMenu();
@@ -330,7 +332,7 @@ public class BotMenu extends JFrame {
             tabs.addTab("Dashboard", buildTabDashboard());
             tabs.addTab("Task Library", buildTabTaskLibrary());
             tabs.addTab("Task Builder", buildTabTaskBuilder());
-            tabs.addTab("Travel Manager", buildTabSettings());
+            tabs.addTab("Travel Manager", buildTabTravelMan());
             tabs.addTab("Settings", buildTabSettings());
             tabs.addTab("Logs", bot.getTabLogs());
             // note: CANNOT SET SELECTED INDEX BEFORE ADDING TABS!! ...or it will try and find the tab in an empty list.
@@ -756,6 +758,13 @@ public class BotMenu extends JFrame {
         return right;
     }
 
+    private JComponent buildTabTravelMan() {
+        if (travelMan == null)
+            travelMan = new TravelManPanel(bot);
+
+        return travelMan;
+    }
+
     private JComponent buildTabSettings() {
         //return buildMapTab();
         return new SettingsPanel(bot);
@@ -834,6 +843,12 @@ public class BotMenu extends JFrame {
         // can't close what ain't open
         if (bot == null)
             return;
+
+        bot.log("Disposing JFX components...");
+        if (travelMan != null) {
+            travelMan.dispose();
+            travelMan = null;
+        }
 
         setBotStatus("BotMenu closed!");
         // dispose of this menu

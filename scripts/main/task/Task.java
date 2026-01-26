@@ -2,6 +2,7 @@ package main.task;
 
 import main.BotMan;
 import main.managers.TaskMan;
+import main.BotMenu;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.ui.Skill;
@@ -471,7 +472,7 @@ public abstract class Task {
     /**
      * Forces children to define a {@link JPanel panel} with script-specific settings for easier interaction.
      *
-     * @return A {@link JPanel} object used as a script-settings menu tab in the {@link main.BotMenu}.
+     * @return A {@link JPanel} object used as a script-settings menu tab in the {@link BotMenu}.
      */
     public abstract JPanel getTaskSettings();
 
